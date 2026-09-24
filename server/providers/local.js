@@ -26,10 +26,15 @@ import { firePerimetersProxy } from './firePerimeters.js';
 import { cycloneProxy } from './cyclones.js';
 import { windProxy } from './wind.js';
 import { infraContextProxy } from './infraContext.js';
+import { accessGate } from './accessGate.js';
+import { flightLookupProxy } from './flightLookup.js';
+import { shepherdProxy } from '../shepherd/router.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
   return [
+    // First: every later /api route sits behind the private-access gate.
+    accessGate(),
     openSkyProxy(),
     celestrakProxy(),
     tomtomProxy(),
@@ -57,6 +62,8 @@ function localProviderPlugins() {
     cycloneProxy(),
     firePerimetersProxy(),
     infraContextProxy(),
+    flightLookupProxy(),
+    shepherdProxy(),
     keySetupEndpoint(),
   ];
 }

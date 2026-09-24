@@ -8,7 +8,7 @@
     "api/gateway.js": {
       "maxDuration": 60,
       "memory": 1024,
-      "includeFiles": "{config/**,src/data/local_data/**}"
+      "includeFiles": "{config/**,src/data/local_data/**,server/shepherd/**}"
     }
   },
   "rewrites": [
