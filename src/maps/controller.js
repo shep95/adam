@@ -1,4 +1,5 @@
 import { indexMapSources } from './registry.js';
+import { syncBasemapChrome } from './basemapChrome.js';
 import * as Cesium from 'cesium';
 import { createMapCredits } from './credits.js';
 import { acquireImageryComparison } from './imageryComparison.js';
@@ -213,6 +214,7 @@ export class MapSourceController {
     } finally {
       if (gen === this._switchGen) {
         this._isSwitching = false;
+        syncBasemapChrome(this.getActiveStack());
         // The active id has settled for this generation (activated, fell
         // back, or recovered): every subscriber hears it, silent or not.
         this._notifySubscribers();

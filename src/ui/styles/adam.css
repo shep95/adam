@@ -1,0 +1,253 @@
+/* ═══════════════════════════════════════════════
+   ADAM design system layer — #houseofasher
+
+   Loaded after every component sheet and before cyber.css (the cyber theme
+   keeps its own red/slate treatment and wins where it speaks).
+
+   1. Three accent tiers, each used only in its semantic domain:
+      primary  (cyan)  — the instrument itself: selection, live, active
+      alert    (amber) — attention: stale, partial, degraded, elevated
+      critical (red)   — failure or a tripped trigger. It stays rare so that
+                         it carries weight when it does appear.
+   2. Data panels are precision instruments: 4px corners. Rounded shapes are
+      only for interactive chips and buttons.
+   3. One monospace stack in three sizes: 10px metadata, 13px data values,
+      18px primary readouts. Panels never switch to sans-serif partway down.
+   4. Glass densifies from 0.72 to 0.85 over photographic basemaps.
+   5. Panel chrome follows the sensor mode (NVG, FLIR, cyber).
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* ── 1. Accent tiers ─────────────────────────── */
+  --accent-primary: #00d4ff;
+  --accent-primary-dim: rgba(0, 212, 255, 0.15);
+  --accent-alert: #f5a623;
+  --accent-alert-dim: rgba(245, 166, 35, 0.12);
+  --accent-alert-edge: rgba(245, 166, 35, 0.7);
+  --accent-critical: #e16666;
+  --accent-critical-dim: rgba(225, 102, 102, 0.12);
+  --accent-critical-edge: rgba(225, 102, 102, 0.75);
+
+  /* ── 2. Geometry ─────────────────────────────── */
+  --panel-radius: 4px;
+  --data-radius: 4px;
+  --btn-radius: 10px;
+  --chip-radius: 999px;
+
+  /* ── 3. Type scale ───────────────────────────── */
+  --type-meta: 10px;
+  --type-value: 13px;
+  --type-readout: 18px;
+  --weight-meta: 400;
+  --weight-value: 600;
+  --weight-readout: 600;
+
+  /* ── 4. Glass ────────────────────────────────── */
+  --glass-bg-light: rgba(12, 12, 20, 0.72);
+  --glass-bg-dense: rgba(12, 12, 20, 0.85);
+  --glass-bg: var(--glass-bg-light);
+
+  /* ── 5. Sensor chrome (neutral default) ──────── */
+  --chrome-edge: var(--glass-border);
+  --chrome-edge-glow: transparent;
+  --chrome-edge-highlight: transparent;
+
+  /* ── Motion language ─────────────────────────── */
+  --ease-brake: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-lock: 200ms;
+}
+
+/* ── 4. Dense glass over photographic basemaps ─── */
+:root[data-gev-imagery='heavy'] {
+  --glass-bg: var(--glass-bg-dense);
+}
+
+/* ── 5. Sensor-locked chrome ─────────────────────
+   NVG → phosphor green, FLIR → ironbow amber. The cyber theme keeps its own
+   red/slate chrome in cyber.css. */
+:root[data-gev-style='surveillance'] {
+  --chrome-edge: rgba(96, 255, 128, 0.42);
+  --chrome-edge-glow: rgba(96, 255, 128, 0.14);
+  --chrome-edge-highlight: rgba(170, 255, 170, 0.55);
+  --glass-border: rgba(96, 255, 128, 0.28);
+  --glass-border-hover: rgba(96, 255, 128, 0.5);
+}
+
+:root[data-gev-style='thermal'] {
+  --chrome-edge: rgba(255, 150, 40, 0.5);
+  --chrome-edge-glow: rgba(255, 96, 32, 0.16);
+  --chrome-edge-highlight: rgba(255, 214, 120, 0.7);
+  --glass-border: rgba(255, 150, 40, 0.3);
+  --glass-border-hover: rgba(255, 190, 90, 0.55);
+}
+
+:is(
+  .panel-inner,
+  .data-panel-inner,
+  .global-context-panel-inner,
+  .location-inner,
+  .recent-imagery-panel-inner,
+  .scene-panel-inner,
+  .weather-panel-inner,
+  .cctv-panel-inner,
+  #param-slider-panel,
+  #bhote-koshi-event-panel,
+  .adam-panel
+) {
+  border-radius: var(--data-radius);
+  font-family: var(--font-mono);
+}
+
+:root:is([data-gev-style='surveillance'], [data-gev-style='thermal'])
+  :is(
+    .panel-inner,
+    .data-panel-inner,
+    .global-context-panel-inner,
+    .location-inner,
+    .recent-imagery-panel-inner,
+    .scene-panel-inner,
+    .weather-panel-inner,
+    .cctv-panel-inner,
+    #param-slider-panel,
+    .adam-panel
+  ) {
+  border-color: var(--chrome-edge);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 18px var(--chrome-edge-glow),
+    inset 0 1px 0 var(--chrome-edge-highlight);
+  transition:
+    border-color 300ms var(--ease-brake),
+    box-shadow 300ms var(--ease-brake);
+}
+
+/* ── 2. Rounded treatment only for chips and buttons ── */
+.data-toggle-chip,
+.adam-chip {
+  border-radius: var(--chip-radius);
+}
+
+/* ── 3. Monospace hierarchy inside panels ─────── */
+:is(
+    .panel-inner,
+    .data-panel-inner,
+    .global-context-panel-inner,
+    .location-inner,
+    .weather-panel-inner,
+    .cctv-panel-inner,
+    .scene-panel-inner,
+    .adam-panel
+  )
+  :is(
+    .data-name,
+    .rail-card-title,
+    .poi-pill-name,
+    .location-pill,
+    .btn-label
+  ) {
+  font-family: var(--font-mono);
+}
+
+.panel-mini-label,
+.data-toggle-meta,
+.param-label,
+.pp-label,
+.hud-summary-label,
+.cctv-summary-label,
+.radio-filter-label,
+.location-toolbar-label,
+.adam-meta {
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  font-weight: var(--weight-meta);
+}
+
+.param-value,
+.pp-slider-value,
+.gev-slider-value,
+.cctv-cal-value,
+.adam-value {
+  font-family: var(--font-mono);
+  font-size: var(--type-value);
+  font-weight: var(--weight-value);
+  font-variant-numeric: tabular-nums;
+}
+
+#active-style-name,
+.adam-readout {
+  font-family: var(--font-mono);
+  font-size: var(--type-readout);
+  font-weight: var(--weight-readout);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 1. Semantic accents on existing status surfaces ── */
+.data-toggle-btn.active.feed-stale,
+.data-toggle-btn.active.feed-partial,
+.data-toggle-btn.active.feed-fallback,
+.data-toggle-btn.active.feed-degraded {
+  color: var(--accent-alert);
+  border-color: var(--accent-alert-edge);
+  background: var(--accent-alert-dim);
+  box-shadow: none;
+}
+
+.data-toggle-btn.active.feed-unavailable,
+.data-toggle-chip.chip-error {
+  color: var(--accent-critical);
+  border-color: var(--accent-critical-edge);
+  background: var(--accent-critical-dim);
+  box-shadow: none;
+}
+
+.pp-stack-status.warn,
+.recent-imagery-readout .ri-notice.warn,
+.gev-voice-cost-value[data-level='warn'],
+#global-loading-status[data-state='cancelled'] {
+  color: var(--accent-alert);
+}
+
+#global-loading-status[data-state='retry'] {
+  border-color: var(--accent-alert-edge);
+}
+
+#global-loading-status[data-state='error'],
+#cctv-source-badge[data-frame-state='error'] {
+  border-color: var(--accent-critical-edge);
+  color: var(--accent-critical);
+}
+
+#global-loading-status[data-state='error'] #global-loading-label,
+#global-loading-status[data-state='error'] #global-loading-detail,
+.radio-playback-state.error {
+  color: var(--accent-critical);
+}
+
+#gev-voice-control[data-status='executing'] {
+  border-color: var(--accent-alert-edge);
+}
+
+#gev-voice-control[data-status='executing'] #gev-voice-status {
+  color: var(--accent-alert);
+}
+
+#gev-voice-control[data-status='error'] {
+  border-color: var(--accent-critical-edge);
+}
+
+#gev-voice-control[data-status='error'] #gev-voice-status {
+  color: var(--accent-critical);
+}
+
+/* Tier utilities for ADAM components. */
+.adam-tier-primary {
+  color: var(--accent-primary);
+}
+
+.adam-tier-alert {
+  color: var(--accent-alert);
+}
+
+.adam-tier-critical {
+  color: var(--accent-critical);
+}
