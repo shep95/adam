@@ -1,5 +1,10 @@
 import * as Cesium from 'cesium';
-import { LAYER_ID, MAX_RENDERED, COLOR_BY_CLASS } from './policy.js';
+import {
+  LAYER_ID,
+  MAX_RENDERED,
+  MAX_RENDERED_GLOBAL,
+  COLOR_BY_CLASS,
+} from './policy.js';
 
 export function createRendering({
   state: layerState,
@@ -52,7 +57,10 @@ export function createRendering({
    */
 
   function renderableRecords() {
-    const rendered = layerState.records.slice(0, MAX_RENDERED);
+    const rendered = layerState.records.slice(
+      0,
+      layerState.globalMode ? MAX_RENDERED_GLOBAL : MAX_RENDERED,
+    );
     if (!layerState.selectedId) return rendered;
     if (rendered.some((record) => record.id === layerState.selectedId))
       return rendered;

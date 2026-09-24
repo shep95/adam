@@ -251,3 +251,104 @@
 .adam-tier-critical {
   color: var(--accent-critical);
 }
+
+/* ── Context card (infrastructure, airspace, landing stations) ── */
+.adam-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--chrome-edge, var(--glass-border));
+  border-radius: var(--data-radius);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 18px var(--chrome-edge-glow),
+    inset 0 1px 0 var(--chrome-edge-highlight);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+}
+
+.adam-context-card {
+  position: fixed;
+  z-index: 125;
+  width: 320px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  border-left: 2px solid var(--card-accent, var(--accent-primary));
+}
+
+.adam-context-card[hidden] {
+  display: none;
+}
+
+.adam-context-header {
+  position: relative;
+  padding-right: 28px;
+}
+
+.adam-context-kicker {
+  color: var(--text-dim);
+  letter-spacing: 1.6px;
+}
+
+.adam-context-title {
+  margin-top: 2px;
+  color: var(--card-accent, var(--accent-primary));
+}
+
+.adam-context-header .adam-ops-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+}
+
+.adam-context-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin-top: 10px;
+}
+
+.adam-context-rows dt {
+  color: var(--text-dim);
+}
+
+.adam-context-rows dd {
+  font-size: var(--type-meta);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.adam-context-note {
+  margin-top: 8px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.adam-context-link {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--accent-primary);
+}
+
+@keyframes adam-lock-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.adam-context-card.adam-lock-in {
+  animation: adam-lock-in-left var(--motion-lock) var(--ease-brake) both;
+}

@@ -24,9 +24,69 @@ export function createIngestion({
     governorRequestRender('installations-status');
   }
 
+  /**
+   * SHOW ALL: past the viewport gate, load the cached global overview of
+   * mapped airfields, naval bases and bases instead of asking for a zoom.
+   */
+  async function loadGlobalOverview() {
+    if (
+      layerState.globalMode &&
+      layerState.records.length &&
+      !layerState.loading
+    )
+      return;
+    layerState.abort?.abort();
+    const requestAbort = new AbortController();
+    layerState.abort = requestAbort;
+    layerState.loading = true;
+    parts.viewport.clearUnavailableRetry({ resetBackoff: false });
+    setInstallationStatus('loading');
+    try {
+      if (typeof source.getGlobalSites !== 'function')
+        throw new Error('Global installation overview unavailable');
+      const payload = await source.getGlobalSites({
+        signal: requestAbort.signal,
+      });
+      if (
+        requestAbort.signal.aborted ||
+        layerState.abort !== requestAbort ||
+        !layerState.enabled
+      )
+        return;
+      layerState.records = payload.records;
+      layerState.recordById = new Map(
+        layerState.records.map((record) => [record.id, record]),
+      );
+      layerState.globalMode = true;
+      layerState.lastUpdate = Date.now();
+      layerState.stale = payload.status === 'stale';
+      layerState.saturated = false;
+      layerState.failureReason = null;
+      parts.viewport.clearUnavailableRetry();
+      setInstallationStatus(layerState.stale ? 'stale' : 'ready');
+      parts.rendering.renderRecords();
+    } catch (error) {
+      if (requestAbort.signal.aborted || error?.name === 'AbortError') return;
+      layerState.failureReason = error?.failureReason || 'unavailable';
+      setInstallationStatus('unavailable', error?.message || String(error));
+      parts.viewport.scheduleUnavailableRetry();
+    } finally {
+      if (layerState.abort === requestAbort) {
+        layerState.loading = false;
+        layerState.abort = null;
+      }
+      layerState.rowControlsListener?.();
+    }
+  }
+
   async function loadInstallations() {
     if (!layerState.enabled || !layerState.viewer) return;
     const box = parts.viewport.viewportBox(layerState.viewer);
+    if (!box && layerState.showAll) {
+      await loadGlobalOverview();
+      return;
+    }
+    layerState.globalMode = false;
     // Guidance, not a fault: the layer chose not to query because the view is
     // unbounded (a global view, or Cockpit looking at the horizon). Keep it out
     // of `error` — the manager derives refresh failures and the global status
@@ -204,5 +264,10 @@ export function createIngestion({
     },
   };
 
-  return { setInstallationStatus, loadInstallations, methods };
+  return {
+    setInstallationStatus,
+    loadInstallations,
+    loadGlobalOverview,
+    methods,
+  };
 }

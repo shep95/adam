@@ -42,7 +42,16 @@ const PANEL_GROUPS = [
       'local-datacenters',
       'telegeography-submarine-cables',
       'local-dams',
+      'infra-power-lines',
+      'infra-pipelines',
+      'infra-border-crossings',
+      'infra-chokepoints',
+      'infra-ixps',
     ],
+  },
+  {
+    label: 'Airspace & Maritime',
+    ids: ['airspace-firs', 'airspace-restricted', 'maritime-zones'],
   },
   {
     label: 'Events',

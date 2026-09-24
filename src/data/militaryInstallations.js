@@ -7,6 +7,10 @@ const sourceSlot = createSourceSlot(
   createInstallationSource(),
   ['getMappedSites', 'searchNearby'],
   'Installation source',
+  {
+    getGlobalSites: () =>
+      Promise.reject(new Error('Global installation overview unavailable')),
+  },
 );
 export const configureInstallationSource = sourceSlot.configure;
 const layer = createApplicationInstallations({

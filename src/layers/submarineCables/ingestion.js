@@ -46,6 +46,8 @@ export function createIngestion({ state, parts, source }) {
 
       const cableFeatures = normalizeFeatures(cableJson, 'cable');
       const landingFeatures = normalizeFeatures(landingJson, 'landing');
+      // Landing-station cards list the cables that end at each station.
+      state._cableFeatures = cableFeatures;
 
       const cableDataSource = await Cesium.GeoJsonDataSource.load(
         { type: 'FeatureCollection', features: cableFeatures },
@@ -164,6 +166,7 @@ export function createIngestion({ state, parts, source }) {
           kind: 'landing-point',
           reference,
           label: featureLabel(feature),
+          landingId: feature?.properties?.id || null,
         });
         state._surfaceRecords.push({
           entity,

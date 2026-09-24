@@ -452,6 +452,16 @@ export const SHARE_TRACKING_RESTORE_POLICIES = Object.freeze({
  */
 export const LAYER_STATE_REGISTRY = Object.freeze([
   Object.freeze({
+    id: 'airspace-firs',
+    token: '9',
+    disposition: 'enabled-only',
+  }),
+  Object.freeze({
+    id: 'airspace-restricted',
+    token: '0',
+    disposition: 'enabled-only',
+  }),
+  Object.freeze({
     id: 'ais-live-vessels',
     token: 'a',
     disposition: 'enabled-only',
@@ -491,6 +501,27 @@ export const LAYER_STATE_REGISTRY = Object.freeze([
     disposition: 'enabled+options',
     optionOwner: 'flights',
   }),
+  Object.freeze({
+    id: 'infra-border-crossings',
+    token: '5',
+    disposition: 'enabled-only',
+  }),
+  Object.freeze({
+    id: 'infra-chokepoints',
+    token: '6',
+    disposition: 'enabled-only',
+  }),
+  Object.freeze({ id: 'infra-ixps', token: '7', disposition: 'enabled-only' }),
+  Object.freeze({
+    id: 'infra-pipelines',
+    token: '4',
+    disposition: 'enabled-only',
+  }),
+  Object.freeze({
+    id: 'infra-power-lines',
+    token: '3',
+    disposition: 'enabled-only',
+  }),
   Object.freeze({ id: 'local-dams', token: 'q', disposition: 'enabled-only' }),
   Object.freeze({
     id: 'local-datacenters',
@@ -498,6 +529,11 @@ export const LAYER_STATE_REGISTRY = Object.freeze([
     disposition: 'enabled-only',
   }),
   Object.freeze({ id: 'local-firms', token: 'w', disposition: 'enabled-only' }),
+  Object.freeze({
+    id: 'maritime-zones',
+    token: '8',
+    disposition: 'enabled-only',
+  }),
   Object.freeze({
     id: 'military',
     token: 'm',

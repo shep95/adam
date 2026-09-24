@@ -62,6 +62,33 @@ export function createInstallationSource({
         saturated: installationResponseSaturated(body),
       };
     },
+    /** Global overview of mapped airfields, naval bases and bases (show-all mode). */
+    async getGlobalSites({ signal } = {}) {
+      signal?.throwIfAborted();
+      const response = await fetchImpl('/api/infra-context/military-global', {
+        signal,
+      });
+      const body = await response.json();
+      signal?.throwIfAborted();
+      if (!response.ok || !Array.isArray(body?.elements))
+        throw Object.assign(
+          new Error(
+            body?.error || `Installation overview HTTP ${response.status}`,
+          ),
+          {
+            failureReason:
+              body?.reason === 'rate_limited' ? 'rate_limited' : 'unavailable',
+          },
+        );
+      return {
+        ...normalizeMilitaryInstallations(
+          body,
+          body.retrievedAt || new Date().toISOString(),
+        ),
+        status: body.stale ? 'stale' : 'ready',
+        saturated: false,
+      };
+    },
     async searchNearby({ latitude, longitude, radiusM }, { signal } = {}) {
       if (
         ![latitude, longitude, radiusM].every(Number.isFinite) ||

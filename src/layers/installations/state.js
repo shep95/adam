@@ -32,6 +32,10 @@ export function createState({ services }) {
     clickHandler: null,
     timer: null,
     googleSearchRequested: false,
+    /** Global overview when zoomed out past the viewport gate (SHOW ALL). */
+    showAll: false,
+    globalMode: false,
+    rowControlsListener: null,
   });
   return state;
 }

@@ -99,9 +99,47 @@ export function createControls({ state: layerState, services, parts, source }) {
       return true;
     },
 
+    setRowControlsListener(listener) {
+      layerState.rowControlsListener = listener;
+    },
+
+    /** SHOW ALL: the global overview replaces the zoom-in gate. */
+    setShowAll(enabled) {
+      layerState.showAll = Boolean(enabled);
+      layerState.rowControlsListener?.();
+      if (!layerState.enabled) return;
+      if (!layerState.showAll && layerState.globalMode) {
+        layerState.globalMode = false;
+        layerState.records = [];
+        layerState.recordById = new Map();
+        parts.rendering.renderRecords();
+      }
+      return parts.ingestion.loadInstallations();
+    },
+
+    getRowControls() {
+      return {
+        chips: [
+          {
+            id: 'show-all',
+            label: layerState.showAll ? 'SHOW ALL · ON' : 'SHOW ALL',
+            title: layerState.showAll
+              ? 'Zoomed out, the globe shows every mapped airfield, naval base and base. Click to return to viewport-only loading.'
+              : 'Show mapped military airfields, naval bases and bases worldwide when zoomed out, instead of asking you to zoom in.',
+            active: layerState.showAll,
+            disabled: !layerState.enabled,
+            onClick: () => methods.setShowAll(!layerState.showAll),
+          },
+        ],
+      };
+    },
+
     getStats() {
       return {
         count: layerState.records.length,
+        countLabel: layerState.globalMode
+          ? `${layerState.records.length.toLocaleString('en-US')} worldwide`
+          : undefined,
         lastUpdate: layerState.lastUpdate,
         stale: layerState.stale,
         saturated: layerState.saturated,

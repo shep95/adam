@@ -1164,7 +1164,9 @@
       "src/layers/submarineCables/rendering.js",
       "src/layers/submarineCables/state.js",
       "src/layers/submarineCables/surface.js",
-      "src/data/inputOwnership.js"
+      "src/data/inputOwnership.js",
+      "src/layers/contextOverlay/infoCard.js",
+      "src/layers/submarineCables/landingDetail.js"
     ],
     "external": ["cesium"]
   },
@@ -1981,7 +1983,12 @@
       "src/ui/adam/opsDeck.css",
       "src/voice/actions/cockpit.js",
       "src/ui/adam/opsDeck.js",
-      "src/voice/actions/context.js"
+      "src/voice/actions/context.js",
+      "src/layers/contextOverlay/chokepoints.js",
+      "src/layers/submarineCables/landingDetail.js",
+      "src/layers/contextOverlay/index.js",
+      "src/layers/contextOverlay/catalog.js",
+      "src/layers/contextOverlay/infoCard.js"
     ],
     "external": [
       "hls.js",
@@ -2442,7 +2449,12 @@
       "src/layers/recentImagery/thumbnails.js",
       "src/maps/imageryHost.js",
       "src/intel/geo.js",
-      "src/intel/contactPresentation.js"
+      "src/intel/contactPresentation.js",
+      "src/layers/contextOverlay/chokepoints.js",
+      "src/layers/contextOverlay/index.js",
+      "src/layers/contextOverlay/catalog.js",
+      "src/layers/contextOverlay/infoCard.js",
+      "src/layers/submarineCables/landingDetail.js"
     ],
     "external": [
       "hls.js",

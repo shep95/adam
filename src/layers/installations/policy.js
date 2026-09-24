@@ -6,6 +6,9 @@ export const MAX_VIEWPORT_DEGREES = 10;
 
 export const MAX_RENDERED = 700;
 
+/** Render cap for the SHOW ALL global overview (points only, no footprints). */
+export const MAX_RENDERED_GLOBAL = 4000;
+
 export const GOOGLE_MILITARY_PLACE_TYPES = new Set(['military_base']);
 
 export const COLOR_BY_CLASS = {

@@ -1,0 +1,8 @@
+{
+  "name": "VAT-Spy Data Project FIR boundaries",
+  "url": "https://github.com/vatsimnetwork/vatspy-data-project",
+  "files": ["Boundaries.geojson", "VATSpy.dat"],
+  "license": "CC-BY-SA-4.0",
+  "retrieved": "2026-09-24",
+  "transform": "Joined FIR names by boundary id; coordinates rounded to 0.01 degrees; consecutive duplicate vertices dropped."
+}

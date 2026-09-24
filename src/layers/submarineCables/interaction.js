@@ -1,5 +1,11 @@
 import * as Cesium from 'cesium';
 import { isPointerFree } from '../../data/inputOwnership.js';
+import { showContextCard } from '../contextOverlay/infoCard.js';
+import {
+  cablesLandingNear,
+  landingDetailRows,
+  loadLandingPointDetail,
+} from './landingDetail.js';
 
 export function createInteraction({ state, screenSpaceEventHandlerFactory }) {
   function registerPickEntity(entity, info) {
@@ -17,8 +23,43 @@ export function createInteraction({ state, screenSpaceEventHandlerFactory }) {
       const picked = viewer.scene.pick(click.position);
       const record = resolvePickRecord(picked);
       if (!record?.reference) return;
+      if (record.kind === 'landing-point')
+        showLandingCard(record, click.position);
       flyToReference(viewer, record.reference);
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  }
+
+  /** Landing-station card: offline cable list, enriched from TeleGeography. */
+  function showLandingCard(record, position) {
+    const { lon, lat } = record.reference;
+    const nearby = cablesLandingNear(lon, lat, state._cableFeatures || []);
+    showContextCard({
+      kicker: 'CABLE LANDING STATION',
+      title: record.label || 'Landing point',
+      rows: [
+        ['Cables (mapped)', String(nearby.length)],
+        ...nearby.slice(0, 10).map((cable) => ['Cable', cable.name]),
+      ],
+      note: '© TeleGeography — submarinecablemap.com (CC BY-NC-SA 3.0)',
+      link: record.landingId
+        ? {
+            href: `https://www.submarinecablemap.com/landing-point/${record.landingId}`,
+            label: 'Open on submarinecablemap.com',
+          }
+        : null,
+      position,
+      accent: '#00d4ff',
+      loadMore: record.landingId
+        ? async () => {
+            const detail = await loadLandingPointDetail(record.landingId);
+            if (!detail?.cables?.length) return null;
+            return {
+              rows: landingDetailRows(detail),
+              note: '© TeleGeography — submarinecablemap.com (CC BY-NC-SA 3.0)',
+            };
+          }
+        : null,
+    });
   }
 
   function resolvePickRecord(picked) {
