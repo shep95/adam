@@ -16,6 +16,7 @@ import {
 } from './consoleState.js';
 import { loadTzLookup } from './localTime.js';
 import { installShepherdRoom } from '../ui/shepherd/chatRoom.js';
+import { installMapInteraction } from '../ui/adam/mapInteraction.js';
 
 export function installShepherd({
   viewer,
@@ -24,6 +25,8 @@ export function installShepherd({
   runGevAction,
   mapStackController,
   cesiumToken = '',
+  getEnvironment = () => null,
+  getSkyPanel = () => null,
 }) {
   const client = createShepherdClient();
   const memory = createShepherdMemory();
@@ -82,6 +85,15 @@ export function installShepherd({
     onEvent: (event) => room?.onAgentEvent(event),
   });
   room = installShepherdRoom({ agent, client, overlay });
+  const mapInteraction = installMapInteraction({
+    viewer,
+    overlay,
+    buildings,
+    room,
+    intel,
+    getSkyPanel,
+    getEnvironment,
+  });
 
   // Remember where the operator was looking, for the next session's context.
   const removeMoveEnd = viewer.camera.moveEnd.addEventListener(() => {
@@ -101,6 +113,7 @@ export function installShepherd({
     destroy() {
       agent.abort();
       removeMoveEnd();
+      mapInteraction.destroy();
       room.destroy();
       buildings.destroy();
       overlay.destroy();

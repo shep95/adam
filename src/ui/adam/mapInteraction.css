@@ -1,0 +1,92 @@
+/* Local time under the coordinate readout — present, never loud. */
+.adam-local-time {
+  margin-top: 4px;
+  opacity: 0.4;
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  letter-spacing: 1.4px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.adam-local-time.is-floating {
+  position: fixed;
+  left: 24px;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 100;
+  color: var(--accent-primary);
+}
+
+/* Right-click menu (context layer, above panels). */
+.adam-ctx {
+  position: fixed;
+  z-index: 700;
+  min-width: 220px;
+  padding: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  animation: adam-ctx-in 120ms var(--ease-brake, ease-out) both;
+}
+
+.adam-ctx[hidden] {
+  display: none;
+}
+
+.adam-ctx-head {
+  padding: 6px 8px 8px;
+  color: var(--accent-primary);
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 4px;
+}
+
+.adam-ctx-item {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  font: inherit;
+  letter-spacing: 0.8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.adam-ctx-item:hover,
+.adam-ctx-item:focus-visible {
+  color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+  outline: none;
+}
+
+.adam-ctx-hint {
+  color: var(--text-dim);
+}
+
+@keyframes adam-ctx-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Icons and marks are part of the instrument, not content to lift. */
+img,
+svg,
+.material-symbols-outlined,
+#title-bar,
+[class*='logo'] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+body.adam-no-ion .cesium-credit-logoContainer {
+  display: none !important;
+}

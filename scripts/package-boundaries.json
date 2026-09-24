@@ -2004,7 +2004,9 @@
       "src/ui/shepherd/renderText.js",
       "src/environment/liveEnvironment.js",
       "src/ui/adam/skyPanel.js",
-      "src/ui/adam/skyPanel.css"
+      "src/ui/adam/skyPanel.css",
+      "src/ui/adam/mapInteraction.js",
+      "src/ui/adam/mapInteraction.css"
     ],
     "external": [
       "tz-lookup",

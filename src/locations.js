@@ -767,6 +767,19 @@ export function findPoiByName(query) {
   return best ? { cityId: best.cityId, index: best.index } : null;
 }
 
+/**
+ * Tell the console where a search landed so it can mark the exact spot
+ * (ADAM drops a precision pin). Fire-and-forget; no listener is required.
+ */
+function announcePlace(lat, lon, label, navigationMode) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  globalThis.dispatchEvent?.(
+    new CustomEvent('adam:place-located', {
+      detail: { lat, lon, label, navigationMode },
+    }),
+  );
+}
+
 /** Distinguishes an authority veto from a genuine not-found result. */
 export const CANCELLED_SEARCH = Object.freeze({ cancelled: true });
 
@@ -847,6 +860,7 @@ export async function searchAndFlyTo(viewer, query, options = {}) {
         onComplete: options.onComplete,
         onCancel: options.onCancel,
       });
+      announcePlace(lat, lng, label, 'natural-region-swath');
       return {
         label,
         navigationMode: 'natural-region-swath',
@@ -882,6 +896,7 @@ export async function searchAndFlyTo(viewer, query, options = {}) {
     });
     if (flight === CANCELLED_SEARCH) return CANCELLED_SEARCH;
     if (flight) {
+      announcePlace(lat, lng, label, navigationMode);
       return {
         label,
         navigationMode,
@@ -922,6 +937,12 @@ export async function searchAndFlyTo(viewer, query, options = {}) {
       onComplete: options.onComplete,
       onCancel: options.onCancel,
     },
+  );
+  announcePlace(
+    buildingBounds?.lat ?? lat,
+    buildingBounds?.lon ?? lng,
+    label,
+    navigationMode,
   );
   return {
     label,

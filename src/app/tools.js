@@ -234,6 +234,12 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] shepherd failed to load:', error));
   defer(() => shepherd?.destroy());
 
+  // The Cesium ion mark is an attribution for ion-served data; without an
+  // ion token nothing comes from ion, so the mark is not shown.
+  const ionInUse = Boolean(mapStackController?.cesiumToken);
+  document.body.classList.toggle('adam-no-ion', !ionInUse);
+  defer(() => document.body.classList.remove('adam-no-ion'));
+
   // Live environment: real sun, moon, stars and shadows for the moment on
   // the clock, with the SKY panel's time controls and local weather.
   Promise.all([
