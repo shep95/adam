@@ -13,9 +13,8 @@ import {
  * agents will not do. Both are sent.
  */
 const NOMINATIM_HEADERS = Object.freeze({
-  'User-Agent':
-    'gods-eye-view/0.1 (+https://github.com/bilawalsidhu/gods-eye-view)',
-  Referer: 'https://github.com/bilawalsidhu/gods-eye-view',
+  'User-Agent': 'adam/0.1 (+https://github.com/shep95/adam)',
+  Referer: 'https://github.com/shep95/adam',
 });
 
 /**

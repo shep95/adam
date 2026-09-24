@@ -60,3 +60,9 @@ The 3D models under public/models/ are also third-party works and are NOT
 licensed under MIT. They remain under their individual licenses. See
 public/models/README.md for the author, source, license, modification notice,
 and attribution covering each model file.
+
+---
+
+ADAM modifications Copyright (c) 2026 House of Asher (#houseofasher).
+ADAM is a derivative of God's Eye View (https://github.com/bilawalsidhu/gods-eye-view)
+by Bilawal Sidhu, used under the MIT License above.

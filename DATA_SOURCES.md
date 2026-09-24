@@ -1,6 +1,6 @@
 # Data Sources & Attribution
 
-God's Eye View's **code** is [MIT](LICENSE)-licensed. **The MIT grant covers the source code only — it does NOT extend to third-party data or visual assets.** Every third-party source keeps its own license and terms. This file documents the live and bundled data sources; bundled 3D-model provenance is recorded in [`public/models/README.md`](public/models/README.md).
+ADAM's **code** is [MIT](LICENSE)-licensed. **The MIT grant covers the source code only — it does NOT extend to third-party data or visual assets.** Every third-party source keeps its own license and terms. This file documents the live and bundled data sources; bundled 3D-model provenance is recorded in [`public/models/README.md`](public/models/README.md).
 
 How to read this:
 
@@ -81,7 +81,7 @@ The optional Local ADS-B layer and the broadcast-FM receiver use radio you recei
 - **TfL JamCams.** The camera list comes from the keyless `api.tfl.gov.uk` endpoint (an optional `TFL_APP_KEY` raises its rate limit); frames come from TfL's public S3 bucket. The "Powered by TfL Open Data" attribution is required by TfL's terms and is registered in the Data attribution popover.
 - **Ontario 511 CCTV.** The camera list comes from the keyless `511on.ca/api/v2/get/cameras` endpoint; frames are server-registered still images under `511on.ca/map/Cctv/`. The source is live-fetched at runtime and attributed under the Open Government Licence - Ontario.
 - **DelDOT live video cameras.** The keyless `tmc.deldot.gov/json/videocamera.json` catalog supplies active cameras and official `https://video.deldot.gov/live/…/playlist.m3u8` links. The local server transiently buffers bounded MPEG-TS segments in memory and deletes them on session release or idle expiry. No recordings are retained. `CCTV_DELDOT_ENABLED=0` disables the pack. Public availability is not a blanket redistribution license; deployment beyond personal local viewing needs confirmation of applicable DelDOT terms.
-- **Fintraffic weathercams.** The camera list is one keyless GeoJSON request to `tie.digitraffic.fi/api/weathercam/v1/stations` (809 stations / 2,275 presets), sent with the `Digitraffic-User: gods-eye-view` header the service asks clients to identify themselves with and with gzip; frames are stills on `weathercam.digitraffic.fi`, refreshed on each station's 600 s collection interval, which is also the client's ambient-still refresh cadence for this pack (the active camera keeps the usual 10-second refresh). One preset (a fixed camera view) is one camera; stations not `GATHERING` and presets not `inCollection` are dropped. Attribution is required by the CC BY 4.0 licence and is registered in the Data attribution popover. `CCTV_FINTRAFFIC_ENABLED=0` is the kill switch.
+- **Fintraffic weathercams.** The camera list is one keyless GeoJSON request to `tie.digitraffic.fi/api/weathercam/v1/stations` (809 stations / 2,275 presets), sent with the `Digitraffic-User: adam` header the service asks clients to identify themselves with and with gzip; frames are stills on `weathercam.digitraffic.fi`, refreshed on each station's 600 s collection interval, which is also the client's ambient-still refresh cadence for this pack (the active camera keeps the usual 10-second refresh). One preset (a fixed camera view) is one camera; stations not `GATHERING` and presets not `inCollection` are dropped. Attribution is required by the CC BY 4.0 licence and is registered in the Data attribution popover. `CCTV_FINTRAFFIC_ENABLED=0` is the kill switch.
 - **DriveBC highway cameras.** The camera list comes from the keyless `https://www.drivebc.ca/api/webcams/` endpoint served by the DriveBC.ca site ([bcgov/DriveBC.ca](https://github.com/bcgov/DriveBC.ca)); frames come from `https://www.drivebc.ca/images/<id>.jpg`, built from the numeric camera id. DataBC's [DriveBC HighwayCams](https://catalogue.data.gov.bc.ca/dataset/bc-highwaycams) catalogue entry publishes the same cameras under the Open Government Licence – British Columbia, but its CSV still lists the retired `images.drivebc.ca` frame URLs, which now return a placeholder. The licence's attribution statement is required and is registered in the Data attribution popover. By default the 250 cameras nearest Vancouver and Victoria load; `CCTV_DRIVEBC_MAX_SOURCES` changes the cap and `CCTV_DRIVEBC_ENABLED=0` turns the pack off. Some cameras in the feed are supplied by partners (TransLink, the City of Vancouver, the City of Surrey, Parks Canada / Alberta Motor Association and others); the feed's per-camera credit is carried onto the camera record and shown beside the provider in the CCTV panel.
 - **TxDOT ITS cameras.** The catalog comes from the keyless `its.txdot.gov/its/DistrictIts/GetCctvStatusListByDistrict` endpoint, one call per district. Frames come from the per-camera `GetCctvSnapshotByIcdId` endpoint, which answers JSON carrying a base64 JPEG rather than an image body; the proxy decodes it only for responses from the official TxDOT origin and validates the JPEG header before serving. Only cameras reporting `Device Online` are registered. Districts default to Austin and San Antonio (`CCTV_TXDOT_DISTRICTS`; 25 codes exist statewide); `CCTV_TXDOT_MAX_SOURCES` caps the pack and `CCTV_TXDOT_ENABLED=0` turns it off. Frames are fetched live at request time and are never stored or redistributed.
 - **Tallinn ristmikud.** Intersection camera stills are fetched live from `ristmikud.tallinn.ee` (`/last/camNNN.jpg`). The curated catalog (`config/cctv_sources.tallinn.json`) supplies coordinates and heading priors; only server-registered ristmikud HTTPS URLs are proxied. Frames are fetched at request time and never stored or redistributed. Disable with `CCTV_TALLINN_ENABLED=0`.
@@ -122,7 +122,7 @@ The [Bhote Koshi event pack](public/events/bhote-koshi-2026/README.md), under `p
 
 The submarine-cable GeoJSON is **CC BY-NC-SA 3.0** (Attribution-**NonCommercial**-**ShareAlike**). It is bundled so the cables layer works out of the box, but it is **not covered by this project's MIT license**. CC BY-NC-SA permits redistribution with attribution and share-alike — which is exactly how it ships here — but the **NonCommercial** clause means:
 
-> If you use God's Eye View commercially, delete `src/data/local_data/telegeography_submarine_cables/` (or obtain a commercial license from TeleGeography). It is one self-contained folder; the rest of the app runs without it.
+> If you use ADAM commercially, delete `src/data/local_data/telegeography_submarine_cables/` (or obtain a commercial license from TeleGeography). It is one self-contained folder; the rest of the app runs without it.
 
 The richer structured dataset is licensed separately/commercially by TeleGeography.
 
@@ -288,9 +288,9 @@ No key, new dependency, image reprojection job, or full-disk image download is n
 
 Credit: NOAA nowCOAST, NWS/OAR MRMS, NESDIS GOES and global satellite partners.
 [NOAA disclaimer](https://oceanservice.noaa.gov/disclaimer.html).
-Community context: [#85](https://github.com/bilawalsidhu/gods-eye-view/issues/85),
-[#588 radar](https://github.com/bilawalsidhu/gods-eye-view/pull/588), and
-[#457 clouds](https://github.com/bilawalsidhu/gods-eye-view/pull/457).
+Community context: [#85](https://github.com/shep95/adam/issues/85),
+[#588 radar](https://github.com/shep95/adam/pull/588), and
+[#457 clouds](https://github.com/shep95/adam/pull/457).
 This implementation is original; those contributions have not been merged here.
 
 
@@ -325,15 +325,15 @@ This implementation is original; those contributions have not been merged here.
 ### Community weather prior art
 
 The weather design builds on Gustavo Beneduzi's retained GFS/ECMWF contribution
-commits ([#459](https://github.com/bilawalsidhu/gods-eye-view/pull/459),
-[#464](https://github.com/bilawalsidhu/gods-eye-view/pull/464)). Related community
+commits ([#459](https://github.com/shep95/adam/pull/459),
+[#464](https://github.com/shep95/adam/pull/464)). Related community
 proposals informed the observed-weather experience: Sandiv D's on-demand radar
-and imagery controls ([#588](https://github.com/bilawalsidhu/gods-eye-view/pull/588));
+and imagery controls ([#588](https://github.com/shep95/adam/pull/588));
 Gustavo Beneduzi's GOES and GLM source work
-([#457](https://github.com/bilawalsidhu/gods-eye-view/pull/457),
-[#458](https://github.com/bilawalsidhu/gods-eye-view/pull/458)); and HadiMuhammed's
+([#457](https://github.com/shep95/adam/pull/457),
+[#458](https://github.com/shep95/adam/pull/458)); and HadiMuhammed's
 NOAA hazard provenance and freshness work
-([#414](https://github.com/bilawalsidhu/gods-eye-view/pull/414)).
+([#414](https://github.com/shep95/adam/pull/414)).
 The fixed nowCOAST imagery and NHC advisory implementations are original maintainer
 work; this acknowledgement does not represent merging those four PRs or equate
 NOAA density imagery with the raw GLM product.

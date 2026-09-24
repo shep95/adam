@@ -13,8 +13,7 @@ import path from 'node:path';
  * mirrors are left. Keep this honest and stable — if it is ever refused, the
  * answer is less query volume, not a new name.
  */
-const OVERPASS_USER_AGENT =
-  'gods-eye-view/0.1 (+https://github.com/bilawalsidhu/gods-eye-view)';
+const OVERPASS_USER_AGENT = 'adam/0.1 (+https://github.com/shep95/adam)';
 
 /** Ordered list of Overpass API mirrors; tried sequentially on failure/rate-limit. */
 const OVERPASS_UPSTREAMS = [
