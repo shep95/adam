@@ -4,6 +4,7 @@ import { initDrawTool } from '../annotations/drawTool.js';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
+import { createGevActionRunner } from '../voice/gevActions.js';
 import { createIntelService } from '../intel/intelService.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
 import {
@@ -197,5 +198,61 @@ export function createApplicationTools({
     })
     .catch((error) => console.warn('[adam] ops deck failed to load:', error));
   defer(() => opsDeck?.destroy());
+
+  // Shepherd: the text analyst. It drives the console through its own action
+  // runner (same handlers as voice, so both stay in step) and can run while
+  // a voice session is live.
+  let shepherd = null;
+  let environment = null;
+  let skyPanel = null;
+  const shepherdRunner = createGevActionRunner({
+    viewer,
+    styleManager,
+    dataManager,
+    sceneDirector,
+    annotations,
+    placeSearch,
+    floorServices: operations.surface.groundFloor,
+    annotationResolver: operations.annotationResolver,
+    searchNavigation: operations.searchAndFlyTo,
+  });
+  import('../shepherd/install.js')
+    .then(({ installShepherd }) => {
+      if (signal?.aborted) return;
+      shepherd = installShepherd({
+        viewer,
+        dataManager,
+        intel,
+        runGevAction: shepherdRunner,
+        mapStackController,
+        cesiumToken: mapStackController?.cesiumToken || '',
+        getEnvironment: () => environment,
+        getSkyPanel: () => skyPanel,
+      });
+      debug.shepherd = shepherd;
+    })
+    .catch((error) => console.warn('[adam] shepherd failed to load:', error));
+  defer(() => shepherd?.destroy());
+
+  // Live environment: real sun, moon, stars and shadows for the moment on
+  // the clock, with the SKY panel's time controls and local weather.
+  Promise.all([
+    import('../environment/liveEnvironment.js'),
+    import('../ui/adam/skyPanel.js'),
+  ])
+    .then(([{ createLiveEnvironment }, { installSkyPanel }]) => {
+      if (signal?.aborted) return;
+      environment = createLiveEnvironment({ viewer });
+      skyPanel = installSkyPanel({ viewer, environment, dataManager });
+      debug.environment = environment;
+      debug.skyPanel = skyPanel;
+    })
+    .catch((error) =>
+      console.warn('[adam] live environment failed to load:', error),
+    );
+  defer(() => {
+    skyPanel?.destroy();
+    environment?.destroy();
+  });
   return { sceneDirector, annotations, voiceCommands, intel };
 }

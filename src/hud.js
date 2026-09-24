@@ -18,6 +18,7 @@ import * as Cesium from 'cesium';
 import { forward as toMGRS } from 'mgrs';
 import { CITY_POIS } from './locations.js';
 import { composeLocalityTag } from './hudLocality.js';
+import { sunPosition } from './environment/astronomy.js';
 import {
   ellipsoidalToMslDisplayM,
   ensureGeoidReady,
@@ -503,28 +504,11 @@ export class IntelHUD {
    * @returns {number} Estimated sun elevation in degrees (negative = below horizon).
    */
   _estimateSunElevation(lat, lon) {
-    const now = new Date();
-    // Approximate local solar time by shifting UTC hours by longitude offset
-    const hours = now.getUTCHours() + now.getUTCMinutes() / 60 + lon / 15;
-    const solarNoon = 12;
-    const hourAngle = (hours - solarNoon) * 15;
-    // Solar declination approximation (~23.45 deg amplitude sinusoidal over the year)
-    const declination =
-      23.45 *
-      Math.sin(
-        Cesium.Math.toRadians(
-          (360 / 365) * (now.getUTCDate() + 30 * now.getUTCMonth() - 81),
-        ),
-      );
-    const latRad = Cesium.Math.toRadians(lat);
-    const decRad = Cesium.Math.toRadians(declination);
-    const haRad = Cesium.Math.toRadians(hourAngle);
-    // Standard formula: sin(el) = sin(lat)*sin(dec) + cos(lat)*cos(dec)*cos(ha)
-    const sinEl =
-      Math.sin(latRad) * Math.sin(decRad) +
-      Math.cos(latRad) * Math.cos(decRad) * Math.cos(haRad);
-    // Clamp to [-1,1] to guard against floating-point drift before asin
-    return Cesium.Math.toDegrees(Math.asin(Math.max(-1, Math.min(1, sinEl))));
+    // The scene clock, not the wall clock: when the SKY panel scrubs time the
+    // readout follows the lighting on screen.
+    const clockTime = this.viewer?.clock?.currentTime;
+    const when = clockTime ? Cesium.JulianDate.toDate(clockTime) : new Date();
+    return sunPosition(when, lat, lon).altitude;
   }
 
   /**

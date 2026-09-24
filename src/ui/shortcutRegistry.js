@@ -40,6 +40,18 @@ export const SHORTCUTS = Object.freeze([
     modes: ['tracking', 'cockpit'],
   },
   {
+    keys: ['S'],
+    action: 'Open or close Shepherd, the text analyst',
+    group: 'ADAM',
+    modes: ['globe', 'tracking', 'cockpit'],
+  },
+  {
+    keys: ['L'],
+    action: 'Live environment: sun, moon, stars, shadows, weather, time',
+    group: 'ADAM',
+    modes: ['globe', 'tracking'],
+  },
+  {
     keys: ['Space'],
     action: 'Hold to talk to the voice analyst',
     group: 'Voice',

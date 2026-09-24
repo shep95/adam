@@ -166,6 +166,24 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'set_environment',
+    description:
+      'Live environment at the view centre: real sun lighting, cast shadows, sun/moon/star field, and the scene clock. mode live = real time; offset = hoursFromNow (negative = past, up to ±168); jump = the next sunrise, solar noon, sunset or midnight at the view centre; play = run time at speed (60, 600, 3600×); pause; read = change nothing. Returns local time, day phase, sun and moon position, rise/set times, moon phase, shadow direction and length ratio, bright stars up, and current weather. Live contacts keep real positions whatever the clock shows.',
+    parameters: obj({
+      mode: {
+        type: 'string',
+        enum: ['live', 'offset', 'jump', 'play', 'pause', 'read'],
+      },
+      hoursFromNow: { type: 'number' },
+      jump: { type: 'string', enum: ['sunrise', 'noon', 'sunset', 'midnight'] },
+      speed: { type: 'number', enum: [60, 600, 3600] },
+      lighting: { type: 'boolean' },
+      shadows: { type: 'boolean' },
+      sky: { type: 'boolean' },
+      openPanel: { type: 'boolean' },
+    }),
+  },
+  {
     name: 'set_3d_buildings',
     description: 'Show or hide photorealistic 3D buildings and terrain.',
     parameters: obj({ enabled: { type: 'boolean' } }, ['enabled']),

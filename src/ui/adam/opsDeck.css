@@ -121,13 +121,17 @@
 }
 
 /* ── Rail ──────────────────────────────────────────────────────────────── */
+/* The rail sits in its own lane under the top-centre actions. The left
+   column (Data Layers, Scenes) grows with its content; anything anchored
+   beside it collides at some viewport height, so the rail lives elsewhere. */
 .adam-ops-rail {
-  position: absolute;
-  left: 24px;
-  bottom: 205px;
+  position: fixed;
+  top: 92px;
+  left: 50%;
+  translate: -50% 0;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  gap: 5px;
 }
 
 .adam-chip {
@@ -139,9 +143,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-width: 112px;
-  padding: 6px 12px;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 8px 5px 11px;
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-meta);
@@ -200,10 +204,11 @@
 
 /* ── Flyout ────────────────────────────────────────────────────────────── */
 .adam-ops-flyout {
-  position: absolute;
-  left: 150px;
-  bottom: 205px;
-  width: min(340px, calc(100vw - 180px));
+  position: fixed;
+  top: 132px;
+  left: 50%;
+  translate: -50% 0;
+  width: min(360px, calc(100vw - 32px));
   max-height: min(62vh, 560px);
   overflow: auto;
   padding: 14px 16px 16px;
@@ -596,14 +601,20 @@ body.ui-clean-view .adam-ops-root {
 
 @media (max-width: 760px) {
   .adam-ops-rail {
+    top: auto;
     left: 12px;
-    bottom: 96px;
+    right: 12px;
+    translate: none;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    justify-content: center;
   }
 
   .adam-ops-flyout {
+    top: auto;
     left: 12px;
     right: 12px;
-    bottom: 250px;
+    translate: none;
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
     width: auto;
   }
 
@@ -618,5 +629,26 @@ body.ui-clean-view .adam-ops-root {
   .adam-odo-strip,
   .adam-alert-flash.is-flashing {
     animation: none !important;
+  }
+}
+
+/* Shepherd open: right-anchored instruments step left of the chat room. */
+@media (min-width: 641px) {
+  #right-context-rail,
+  #style-indicator,
+  #key-setup-chip,
+  .hud-corner.hud-top-right,
+  .hud-corner.hud-bottom-right,
+  .adam-last-tracked {
+    transition: translate 200ms var(--ease-brake, ease-out);
+  }
+
+  body.adam-shepherd-open #right-context-rail,
+  body.adam-shepherd-open #style-indicator,
+  body.adam-shepherd-open #key-setup-chip,
+  body.adam-shepherd-open .hud-corner.hud-top-right,
+  body.adam-shepherd-open .hud-corner.hud-bottom-right,
+  body.adam-shepherd-open .adam-last-tracked {
+    translate: calc(-1 * min(400px, 100vw)) 0;
   }
 }

@@ -1,0 +1,165 @@
+/* SKY — live environment card. Shares the centre flyout slot under the rail. */
+
+.sky-card {
+  position: fixed;
+  top: 132px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 300;
+  width: min(460px, calc(100vw - 32px));
+  max-height: min(70vh, 620px);
+  overflow: auto;
+  padding: 14px 16px 16px;
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  color: var(--text-secondary);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.sky-card[hidden] {
+  display: none;
+}
+
+.sky-head {
+  position: relative;
+  padding-right: 28px;
+  margin-bottom: 12px;
+}
+
+.sky-kicker {
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+
+.sky-place {
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+.sky-clock {
+  margin-top: 6px;
+  font-size: var(--type-readout);
+  font-weight: var(--weight-readout);
+  color: var(--accent-primary);
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sky-phase {
+  margin-top: 4px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+
+.sky-card[data-phase='twilight'] .sky-phase {
+  color: var(--accent-alert);
+}
+
+.sky-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sky-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+
+.sky-cell-title {
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 3px;
+}
+
+.sky-cell-line {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.55;
+  min-height: 1.55em;
+}
+
+.sky-cell-line:first-of-type {
+  color: var(--text-primary, #e6f1f7);
+}
+
+.sky-stars {
+  margin: 12px 0 4px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.sky-time {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  display: grid;
+  gap: 8px;
+}
+
+.sky-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sky-slider {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--accent-primary);
+}
+
+.sky-offset {
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sky-btn {
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  letter-spacing: 1.2px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--chip-radius, 999px);
+  cursor: pointer;
+}
+
+.sky-btn:hover,
+.sky-btn[aria-pressed='true'] {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+}
+
+.sky-toggles {
+  margin-top: 10px;
+}
+
+@media (max-width: 760px) {
+  .sky-card {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    translate: none;
+    width: auto;
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .sky-grid {
+    grid-template-columns: 1fr;
+  }
+}
