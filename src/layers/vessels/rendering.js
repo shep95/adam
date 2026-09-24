@@ -19,6 +19,12 @@ import {
   LABEL_GRID_PX,
   CARD_MIN_SEP_PX,
 } from './policy.js';
+import {
+  contactPresentationFactor,
+  subscribePresentation,
+} from '../../intel/contactPresentation.js';
+
+import { vesselLastSeenMs } from './records.js';
 
 export function createRendering({
   vesselState,
@@ -29,6 +35,8 @@ export function createRendering({
 }) {
   const { state } = vesselState;
   let visualRecords = new WeakMap();
+  // Last presentation factor per record, composed with focus alpha.
+  const presentationFactors = new WeakMap();
 
   // The fallback preserves helper calls with externally supplied render records.
   function getVisual(record) {
@@ -197,9 +205,18 @@ export function createRendering({
 
   function installRuntime(viewer) {
     if (state.preRenderRemover || !viewer) return;
-    state.preRenderRemover = viewer.scene.preRender.addEventListener(() =>
+    const removePreRender = viewer.scene.preRender.addEventListener(() =>
       updateVisibility(),
     );
+    // A filter change repaints every chevron on the next frame.
+    const removePresentation = subscribePresentation(() => {
+      updateVisibility(true);
+      viewer.scene.requestRender?.();
+    });
+    state.preRenderRemover = () => {
+      removePreRender();
+      removePresentation();
+    };
   }
 
   function updateVisibility(force = false) {
@@ -231,11 +248,34 @@ export function createRendering({
       if (doRotations) vesselState._lastCamPoseSig = poseSig;
       const occluder = makeOccluder();
       const labelCandidates = [];
+      const wallNow = Date.now();
       for (const record of state.records.all) {
         const visual = getVisual(record);
-        const visible = isVisible(visual.surfacePosition, occluder);
+        // ADAM presentation policy: vessel type chips, time window, region
+        // fade and staleness decay. Factor 0 hides the chevron.
+        const presentation = contactPresentationFactor(
+          'ais-live-vessels',
+          {
+            lat: record.lat,
+            lon: record.lon,
+            shipType: record.type,
+            lastSeenMs: vesselLastSeenMs(record),
+          },
+          wallNow,
+        );
+        presentationFactors.set(record, presentation);
+        const visible =
+          presentation > 0 && isVisible(visual.surfacePosition, occluder);
         if (visual.billboard) {
           visual.billboard.show = visible;
+          if (visible && !focusTarget) {
+            const alpha = visual.billboard.color?.alpha ?? 1;
+            if (Math.abs(alpha - presentation) > 0.01) {
+              visual.billboard.color = (
+                visual.billboard.color || Cesium.Color.WHITE
+              ).withAlpha(presentation);
+            }
+          }
           if (visible && doRotations && scene) {
             const rot = screenProjectedRotation(
               scene,
@@ -316,13 +356,15 @@ export function createRendering({
       });
       transitioning ||= focus.transitioning;
       if (focus.active) activeCount += 1;
-      if (focusAlphaNeedsWrite(bb.color?.alpha, focus.factor, params)) {
+      const desiredAlpha =
+        focus.factor * (presentationFactors.get(record) ?? 1);
+      if (focusAlphaNeedsWrite(bb.color?.alpha, desiredAlpha, params)) {
         // Narrow always-visible amendment: the ship chevron remains present at
         // the non-zero floor while it competes with the tracked target. Preserve
         // the billboard's existing base RGB, matching the other layer patterns,
         // rather than repainting every chevron from a hard-coded WHITE base.
         const baseColor = bb.color || Cesium.Color.WHITE;
-        bb.color = baseColor.withAlpha(focus.factor);
+        bb.color = baseColor.withAlpha(desiredAlpha);
         writes += 1;
       }
     }

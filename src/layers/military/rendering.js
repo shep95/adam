@@ -10,6 +10,7 @@ import {
 import * as Cesium from 'cesium';
 import { selectModelEligible } from '../../data/modelEligibility.js';
 import { cyberSonarBaseAlpha } from '../../cyberSonar.js';
+import { contactPresentationFactor } from '../../intel/contactPresentation.js';
 import { cockpitContactDotImage } from '../../data/cockpitContactDot.js';
 import { aircraftIcon, TRACKED_ICON_PX } from '../../data/aircraftIcons.js';
 import {
@@ -920,9 +921,20 @@ export function createRendering({
       // Round 6: occlusion-test a LIFTED point for contacts at/below the
       // ellipsoid (mirror of flights.js — sub-ellipsoid points near the limb
       // read "beyond the horizon" and would hide low contacts awaiting floors).
-      const beyondHorizon = !occluder.isPointVisible(
-        flightState.records.data.get(icao24)?.cullPosition || bb.position,
-      );
+      // ADAM presentation policy — see flights/rendering.js.
+      const presentationInfo = flightState.records.data.get(icao24);
+      const presentationFactor = contactPresentationFactor('military', {
+        lat: presentationInfo?.rawLat ?? presentationInfo?.lat,
+        lon: presentationInfo?.rawLon ?? presentationInfo?.lon,
+        altitudeM: Number.isFinite(presentationInfo?.altitudeFt)
+          ? presentationInfo.altitudeFt / 3.28084
+          : null,
+        onGround: presentationInfo?.onGround === true,
+        lastSeenMs: presentationInfo?.lastContactEpochMs,
+      });
+      const beyondHorizon =
+        presentationFactor === 0 ||
+        !occluder.isPointVisible(presentationInfo?.cullPosition || bb.position);
       // A billboard flipping INTO view (horizon reveal while the camera idles)
       // gets its rotation refreshed THIS tick even without a pose change —
       // otherwise it reappears wearing its stale (often creation-north) nose for
@@ -972,7 +984,9 @@ export function createRendering({
           flightState._cockpitContactMode && !isCockpitNear
             ? 1
             : _militaryBillboardScale(icao24),
-        baseAlpha: flightState.records.missingPolls.get(icao24) ? 0.45 : 1,
+        baseAlpha:
+          (flightState.records.missingPolls.get(icao24) ? 0.45 : 1) *
+          presentationFactor,
         baseColor,
         focusFactor: focus.factor,
         cameraDistanceM,

@@ -26,6 +26,14 @@ export function normalizeVessel(row) {
   };
 }
 
+/** Wall-clock ms of a vessel's last AIS position report. */
+export function vesselLastSeenMs(record) {
+  const epoch = Number(record?.lastPositionEpoch);
+  if (Number.isFinite(epoch) && epoch > 0)
+    return epoch > 1e12 ? epoch : epoch * 1000;
+  return Number.isFinite(record?.receivedAtMs) ? record.receivedAtMs : null;
+}
+
 function finiteNumber(value) {
   if (value === null || value === undefined || value === '') return null;
   const number = Number(value);

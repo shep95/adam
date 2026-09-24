@@ -189,6 +189,7 @@ export function createQueries({
       operator: text(info?.operator),
       routeOrigin: null,
       routeDestination: null,
+      lastSeenMs: num(info?.lastContactEpochMs),
     };
   }
   const methods = {

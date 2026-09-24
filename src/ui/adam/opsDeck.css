@@ -1,0 +1,622 @@
+/* ADAM ops deck — rail, flyout, contact cards, comparison rail, alerts,
+   shortcut overlay. Tokens come from src/ui/styles/adam.css. */
+
+.adam-ops-root {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.adam-ops-root > * {
+  pointer-events: auto;
+}
+
+.adam-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--chrome-edge, var(--glass-border));
+  border-radius: var(--data-radius, 4px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 18px var(--chrome-edge-glow, transparent),
+    inset 0 1px 0 var(--chrome-edge-highlight, transparent);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+}
+
+/* ── Motion 1: cold slide-and-lock ─────────────────────────────────────── */
+@keyframes adam-lock-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes adam-lock-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.adam-lock-in {
+  animation: adam-lock-in-left var(--motion-lock, 200ms) var(--ease-brake) both;
+}
+
+.adam-pin-card.adam-lock-in,
+.adam-alert-toast.adam-lock-in,
+.adam-shortcuts-panel.adam-lock-in {
+  animation-name: adam-lock-in-up;
+}
+
+/* ── Motion 2: odometer digits ─────────────────────────────────────────── */
+.adam-odo-cell {
+  display: inline-block;
+  height: 1.15em;
+  overflow: hidden;
+  vertical-align: bottom;
+  line-height: 1.15em;
+}
+
+.adam-odo-strip {
+  display: flex;
+  flex-direction: column;
+}
+
+.adam-odo-strip > span {
+  height: 1.15em;
+}
+
+.adam-odo-up .adam-odo-strip {
+  animation: adam-odo-roll-up 260ms var(--ease-brake) forwards;
+}
+
+.adam-odo-down .adam-odo-strip {
+  animation: adam-odo-roll-down 260ms var(--ease-brake) forwards;
+}
+
+@keyframes adam-odo-roll-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-1.15em);
+  }
+}
+
+@keyframes adam-odo-roll-down {
+  from {
+    transform: translateY(-1.15em);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ── Motion 8: mechanical latch on toggles ─────────────────────────────── */
+.adam-latch,
+.data-toggle-btn,
+.data-toggle-chip {
+  transition:
+    transform 80ms var(--ease-brake),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.adam-latch:active,
+.data-toggle-btn:active,
+.data-toggle-chip:active {
+  transform: translateY(2px);
+}
+
+/* ── Rail ──────────────────────────────────────────────────────────────── */
+.adam-ops-rail {
+  position: absolute;
+  left: 24px;
+  bottom: 205px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adam-chip {
+  border-radius: var(--chip-radius, 999px);
+}
+
+.adam-ops-rail-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 112px;
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  letter-spacing: 1.6px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.adam-ops-rail-btn:hover,
+.adam-ops-rail-btn[aria-pressed='true'] {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+}
+
+.adam-ops-rail-btn.is-alert {
+  border-color: var(--accent-alert-edge);
+}
+
+.adam-ops-rail-btn.is-critical {
+  border-color: var(--accent-critical-edge);
+  color: var(--accent-critical);
+}
+
+.adam-ops-rail-key,
+.adam-kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  color: var(--text-dim);
+  text-align: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 3px;
+}
+
+.adam-ops-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 16px;
+  text-align: center;
+  color: #0a0a0f;
+  background: var(--accent-alert);
+  border-radius: 999px;
+}
+
+.adam-ops-rail-btn.is-critical .adam-ops-badge {
+  background: var(--accent-critical);
+}
+
+/* ── Flyout ────────────────────────────────────────────────────────────── */
+.adam-ops-flyout {
+  position: absolute;
+  left: 150px;
+  bottom: 205px;
+  width: min(340px, calc(100vw - 180px));
+  max-height: min(62vh, 560px);
+  overflow: auto;
+  padding: 14px 16px 16px;
+}
+
+.adam-ops-header {
+  position: relative;
+  padding-right: 28px;
+  margin-bottom: 10px;
+}
+
+.adam-ops-kicker {
+  color: var(--text-dim);
+  letter-spacing: 1.6px;
+}
+
+.adam-ops-title {
+  margin-top: 2px;
+  font-size: var(--type-readout);
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: var(--accent-primary);
+}
+
+.adam-ops-sub {
+  color: var(--text-secondary);
+}
+
+.adam-ops-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+}
+
+.adam-ops-close:hover {
+  color: var(--text-primary);
+  border-color: var(--glass-border-hover);
+}
+
+.adam-ops-section {
+  margin: 14px 0 6px;
+  color: var(--text-dim);
+  letter-spacing: 1.6px;
+}
+
+.adam-ops-note {
+  margin-top: 8px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.adam-brief-headline {
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.adam-brief-sections {
+  list-style: none;
+  margin-top: 8px;
+}
+
+.adam-brief-row {
+  padding: 8px 0;
+  border-top: 1px solid var(--glass-border);
+}
+
+.adam-brief-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.adam-brief-count {
+  color: var(--accent-primary);
+}
+
+.adam-brief-row.is-alert .adam-brief-count {
+  color: var(--accent-alert);
+}
+
+.adam-brief-facts {
+  margin-top: 2px;
+  color: var(--text-secondary);
+}
+
+.adam-brief-anomaly {
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+.adam-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adam-chip-row .adam-chip,
+.adam-card-actions .adam-chip,
+.adam-alert-actions .adam-chip,
+.adam-alert-form .adam-chip {
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  letter-spacing: 1.2px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.adam-chip.is-on,
+.adam-primary-btn {
+  color: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+  background: var(--accent-primary-dim) !important;
+}
+
+.adam-chip:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.adam-alert-list {
+  list-style: none;
+}
+
+.adam-alert-rule {
+  padding: 8px 0;
+  border-top: 1px solid var(--glass-border);
+}
+
+.adam-alert-rule.is-tripped {
+  border-left: 2px solid var(--accent-critical);
+  padding-left: 8px;
+}
+
+.adam-alert-rule-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.adam-alert-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.adam-alert-form {
+  display: grid;
+  gap: 6px;
+}
+
+.adam-input {
+  width: 100%;
+  padding: 6px 8px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--type-meta);
+  letter-spacing: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 3px;
+}
+
+/* ── Contact cards ─────────────────────────────────────────────────────── */
+.adam-contact-card {
+  padding: 10px 12px;
+}
+
+.adam-card-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding-right: 28px;
+}
+
+.adam-card-kicker {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  letter-spacing: 1.6px;
+}
+
+.adam-card-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-primary);
+}
+
+.adam-card-layer {
+  align-self: center;
+  color: var(--text-dim);
+}
+
+.adam-card-telemetry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 10px;
+  margin-top: 8px;
+}
+
+.adam-card-telemetry dt {
+  color: var(--text-dim);
+}
+
+.adam-card-telemetry dd {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.adam-card-status {
+  margin-top: 6px;
+}
+
+.adam-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.adam-contact-card.is-stale {
+  border-color: var(--accent-alert-edge);
+}
+
+.adam-contact-card.is-stale .adam-card-telemetry dd {
+  opacity: 0.6;
+}
+
+.adam-contact-card.is-lost {
+  border-color: var(--accent-critical-edge);
+}
+
+.adam-last-tracked {
+  position: absolute;
+  right: 24px;
+  bottom: 205px;
+  width: 248px;
+}
+
+.adam-last-tracked.is-collapsed .adam-card-telemetry,
+.adam-last-tracked.is-collapsed .adam-card-status {
+  display: none;
+}
+
+.adam-pin-rail {
+  position: absolute;
+  left: 50%;
+  bottom: 112px;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 420px);
+}
+
+.adam-pin-card {
+  width: 200px;
+  flex: 0 0 auto;
+}
+
+.adam-pin-hint {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--accent-alert);
+  opacity: 0;
+  transition: opacity 150ms linear;
+  white-space: nowrap;
+}
+
+.adam-pin-hint.is-visible {
+  opacity: 1;
+}
+
+/* ── Alert flash + toast ───────────────────────────────────────────────── */
+.adam-alert-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    inset 0 0 0 3px var(--accent-critical),
+    inset 0 0 120px rgba(225, 102, 102, 0.35);
+}
+
+.adam-alert-flash.is-flashing {
+  animation: adam-alert-flash 1200ms steps(1, end) 1;
+}
+
+@keyframes adam-alert-flash {
+  0%,
+  33%,
+  66% {
+    opacity: 1;
+  }
+  16%,
+  50%,
+  83%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.adam-alert-stack {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  display: grid;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.adam-alert-toast {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  min-width: 280px;
+  padding: 10px 40px 10px 12px;
+  border-color: var(--accent-critical-edge);
+}
+
+.adam-alert-toast .adam-ops-close {
+  top: 8px;
+  right: 8px;
+}
+
+/* ── Shortcut overlay ──────────────────────────────────────────────────── */
+.adam-shortcuts {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 6, 10, 0.55);
+}
+
+.adam-shortcuts[hidden] {
+  display: none;
+}
+
+.adam-shortcuts-panel {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow: auto;
+  padding: 18px 20px;
+}
+
+.adam-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 4px 20px;
+}
+
+.adam-shortcuts-group dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 10px;
+  align-items: baseline;
+}
+
+.adam-shortcuts-group dt {
+  display: flex;
+  gap: 3px;
+}
+
+.adam-shortcuts-group .adam-kbd {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary-dim);
+}
+
+.adam-shortcuts-group dd {
+  color: var(--text-secondary);
+}
+
+body.ui-clean-view .adam-ops-root {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .adam-ops-rail {
+    left: 12px;
+    bottom: 96px;
+  }
+
+  .adam-ops-flyout {
+    left: 12px;
+    right: 12px;
+    bottom: 250px;
+    width: auto;
+  }
+
+  .adam-last-tracked,
+  .adam-pin-rail {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adam-lock-in,
+  .adam-odo-strip,
+  .adam-alert-flash.is-flashing {
+    animation: none !important;
+  }
+}

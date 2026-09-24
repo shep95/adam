@@ -29,6 +29,7 @@ test('ais analyst record: full record maps every contract field', () => {
     shipType: 'Cargo',
     destination: 'OAKLAND',
     navStatus: null, // /api/ais-live does not surface NavigationalStatus
+    lastSeenMs: null,
   });
 });
 

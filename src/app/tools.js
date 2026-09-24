@@ -4,6 +4,7 @@ import { initDrawTool } from '../annotations/drawTool.js';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
+import { createIntelService } from '../intel/intelService.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
 import {
   installRenderGovernor,
@@ -176,5 +177,25 @@ export function createApplicationTools({
       delete window.__gevVoiceCommands;
   });
   debug.voiceCommands = voiceCommands;
-  return { sceneDirector, annotations, voiceCommands };
+
+  // ADAM intel: baselines, alert triggers, last tracked, pins. The ops deck UI
+  // is imported after the globe is up so it never sits on the startup parse.
+  const intel = createIntelService({ dataManager }).start();
+  defer(() => intel.stop());
+  debug.intel = intel;
+  let opsDeck = null;
+  import('../ui/adam/opsDeck.js')
+    .then(({ installOpsDeck }) => {
+      if (signal?.aborted) return;
+      opsDeck = installOpsDeck({
+        viewer,
+        dataManager,
+        intel,
+        requestRender: () => governorRequestRender('adam-ops'),
+      });
+      debug.opsDeck = opsDeck;
+    })
+    .catch((error) => console.warn('[adam] ops deck failed to load:', error));
+  defer(() => opsDeck?.destroy());
+  return { sceneDirector, annotations, voiceCommands, intel };
 }

@@ -69,6 +69,7 @@ test('military analyst record: full record maps every contract field', () => {
     operator: 'United States Air Force',
     routeOrigin: null,
     routeDestination: null,
+    lastSeenMs: null,
   });
 });
 

@@ -1,3 +1,4 @@
+import { vesselLastSeenMs } from './records.js';
 import * as Cesium from 'cesium';
 import {
   AIS_DEGRADED_STATUSES,
@@ -168,6 +169,7 @@ export function createQueries({
       shipType: text(record?.type),
       destination: text(record?.destination),
       navStatus: null,
+      lastSeenMs: vesselLastSeenMs(record),
     };
   }
 

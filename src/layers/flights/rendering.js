@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { cyberSonarBaseAlpha } from '../../cyberSonar.js';
+import { contactPresentationFactor } from '../../intel/contactPresentation.js';
 import { selectModelEligible } from '../../data/modelEligibility.js';
 import { civilAircraftModelSpec } from './modelSpec.js';
 import { CLASS_SCALE_2D } from '../../data/aircraftClass.js';
@@ -962,9 +963,21 @@ export function createRendering({
       // sub-ellipsoid point near the limb "beyond the horizon" and the fleet
       // pass would hide a plane that is really just low over high-N terrain
       // waiting for its floor to warm (ATL grounded contacts at geoid −31 m).
-      const beyondHorizon = !occluder.isPointVisible(
-        flightState._cullPositions.get(icao24) || bb.position,
-      );
+      // ADAM presentation policy (time window, altitude bands, region fade,
+      // staleness decay). A filtered-out contact is treated exactly like one
+      // beyond the limb: hidden, model released from view, no rotation work.
+      const presentationFactor = contactPresentationFactor('flights', {
+        lat: info?.rawLat,
+        lon: info?.rawLon,
+        altitudeM: info?.altitude,
+        onGround: info?.onGround === true,
+        lastSeenMs: info?.lastContactEpochMs,
+      });
+      const beyondHorizon =
+        presentationFactor === 0 ||
+        !occluder.isPointVisible(
+          flightState._cullPositions.get(icao24) || bb.position,
+        );
       // A billboard flipping INTO view (horizon reveal while the camera idles)
       // gets its rotation refreshed THIS tick even without a pose change —
       // otherwise it reappears wearing its stale (often creation-north) nose for
@@ -1020,7 +1033,9 @@ export function createRendering({
           flightState._cockpitContactMode && !isCockpitNear
             ? 1
             : _fleetBillboardScale(icao24, info?.klass),
-        baseAlpha: flightState.records.missingPolls.get(icao24) ? 0.45 : 1,
+        baseAlpha:
+          (flightState.records.missingPolls.get(icao24) ? 0.45 : 1) *
+          presentationFactor,
         baseColor,
         focusFactor: focus.factor,
         cameraDistanceM,

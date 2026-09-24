@@ -255,6 +255,7 @@ export function createQueries({
       operator: text(info?.airline),
       routeOrigin: routeOk ? text(info?.route?.origin?.code) : null,
       routeDestination: routeOk ? text(info?.route?.destination?.code) : null,
+      lastSeenMs: num(info?.lastContactEpochMs),
     };
   }
   const methods = {

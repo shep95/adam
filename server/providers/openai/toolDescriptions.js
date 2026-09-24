@@ -599,4 +599,9 @@ export const ACTION_DESCRIPTIONS = {
       'Predict the next pass in 24 hours for one satellite in the loaded catalog, identified by exact NORAD ID or name. Ambiguous names return candidates: ask for a choice rather than selecting one. Defaults to geometric passes; visibleOnly requires estimated illumination and a dark observer sky, which does not guarantee naked-eye visibility. Uses camera location unless coordinates are supplied.',
     $position: 1,
   },
+  brief_situation: {
+    description:
+      'Situational summary across EVERY loaded layer at once: aircraft, vessels, fires, earthquakes, satellites, anything anomalous against the rolling 7-day baseline, tripped alert triggers, and feeds that are not live. Use for "brief me", "what\'s active", "sitrep", "give me the picture". Read the returned `spoken` text, keeping every number verbatim; do not also call analyst_query for the same request.',
+    $position: 1,
+  },
 };

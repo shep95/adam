@@ -899,6 +899,14 @@ const schemas = [
       },
     },
   },
+  {
+    name: 'brief_situation',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+  },
 ];
 
 function freeze(value) {

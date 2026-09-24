@@ -449,6 +449,9 @@ test('a biased pass that never answered leaves the whole lookup unanswered', asy
 
 function readGeocodingConsumer(file) {
   const files = file === 'annotations/annotationResolver.js'
-    ? [file, 'annotations/resolver.js'] : [file];
+    ? [file, 'annotations/resolver.js']
+    : file === 'voice/gevActions.js'
+      ? [file, ...fs.readdirSync(path.join(ROOT, 'src', 'voice', 'actions')).map((n) => `voice/actions/${n}`)]
+      : [file];
   return files.map((name) => fs.readFileSync(path.join(ROOT, 'src', name), 'utf8')).join('\n');
 }
