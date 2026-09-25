@@ -29,22 +29,51 @@ export function formatAltitude(altM) {
  * The imagery line for the current view: GSD + NIIRS at the surface, GSD
  * only near space (NIIRS has zeroed out), scale from orbit.
  */
-export function imageryLine(altM, gsdM, niirs) {
+export function imageryLine(altM, gsdM) {
   const mode = viewModeFor(altM).id;
-  if (mode === 'orbital') return 'SCALE: GLOBAL';
+  if (mode !== 'surface') return '';
   const gsd =
-    gsdM >= 1000 ? `${(gsdM / 1000).toFixed(1)}KM` : `${gsdM.toFixed(2)}M`;
-  if (mode === 'near-space' || !(niirs >= 0.5))
-    return `GSD: ${gsd}  SCALE: REGIONAL`;
-  return `GSD: ${gsd}  NIIRS: ${niirs.toFixed(1)}`;
+    gsdM >= 1000 ? `${(gsdM / 1000).toFixed(1)} km` : `${gsdM.toFixed(2)} m`;
+  return `~${gsd} per pixel`;
 }
 
-/** Collection context line under the classification, per view mode. */
-export function collectionLine(altM, missionId, sensorId) {
+/**
+ * Provenance line: where the picture comes from, stated plainly. Everything
+ * on screen is public data; say how many live feeds are on and whether any
+ * is degraded.
+ */
+export function provenanceLine(liveFeeds = 0, degraded = null) {
+  const feeds =
+    liveFeeds > 0
+      ? `${liveFeeds} live feed${liveFeeds === 1 ? '' : 's'}`
+      : 'no feeds on';
+  return `public data · ${feeds}${degraded ? ` · ${degraded}` : ''}`;
+}
+
+/**
+ * The coordinate readout that means something at this scale: MGRS and DMS
+ * near the ground, three decimals regionally, one from orbit.
+ */
+export function coordinateText(latDeg, lonDeg, altM) {
   const mode = viewModeFor(altM).id;
-  if (mode === 'surface') return `${missionId}  ${sensorId} · EO SURFACE`;
-  if (mode === 'near-space') return `${missionId}  ${sensorId} · WIDE AREA`;
-  return `GLOBAL WATCH · ${sensorId}`;
+  const ns = latDeg >= 0 ? 'N' : 'S';
+  const ew = lonDeg >= 0 ? 'E' : 'W';
+  const dp = mode === 'orbital' ? 1 : 3;
+  return `${Math.abs(latDeg).toFixed(dp)}°${ns} ${Math.abs(lonDeg).toFixed(dp)}°${ew}`;
+}
+
+/** Degrees-minutes-seconds with the carry done (no 60.00"). */
+export function toDMS(decimal, type) {
+  const abs = Math.abs(decimal);
+  let totalHundredths = Math.round(abs * 360000);
+  const deg = Math.floor(totalHundredths / 360000);
+  totalHundredths -= deg * 360000;
+  const min = Math.floor(totalHundredths / 6000);
+  const sec = (totalHundredths - min * 6000) / 100;
+  const dir =
+    type === 'lat' ? (decimal >= 0 ? 'N' : 'S') : decimal >= 0 ? 'E' : 'W';
+  const degStr = String(deg).padStart(type === 'lon' ? 3 : 2, '0');
+  return `${degStr}°${String(min).padStart(2, '0')}'${sec.toFixed(2).padStart(5, '0')}"${dir}`;
 }
 
 /** AIS is a sea-level signal: shown only near the surface and when populated. */

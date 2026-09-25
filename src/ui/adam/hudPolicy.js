@@ -12,6 +12,33 @@
 import { showAisField, viewModeFor } from '../../hudViewMode.js';
 
 /** Highest camera altitude (m) at which each layer still reads on screen. */
+/** Short names for the top action icons (by id, then by aria-label). */
+export const TOP_ACTION_LABELS = Object.freeze({
+  'clear-selected-layers': 'clear',
+  'share-btn': 'share',
+  'tilt-map-view': 'tilt',
+  'north-up-view': 'north',
+  'reset-globe-view': 'globe',
+  'Display controls': 'display',
+  'Snapshot the view': 'snapshot',
+  'Record the view': 'record',
+  'Interface scale': 'scale',
+  Measure: 'measure',
+});
+
+export function topActionLabel(button) {
+  if (!button) return null;
+  if (TOP_ACTION_LABELS[button.id]) return TOP_ACTION_LABELS[button.id];
+  const aria = button.getAttribute?.('aria-label') || '';
+  return TOP_ACTION_LABELS[aria] || null;
+}
+
+const OUT_OF_SCALE_TITLE = 'Too small to see from this altitude — zoom in';
+const WORD_ON = 'on';
+const WORD_OFF = 'off';
+const LABEL_REC = 'REC';
+const LABEL_UTC = 'UTC';
+
 export const LAYER_MAX_VISIBLE_ALT_M = Object.freeze({
   flights: 3_000_000,
   military: 3_000_000,
@@ -61,6 +88,27 @@ export function elapsedLabel(ms) {
 export function installHudPolicy({ viewer, dataManager, doc = document }) {
   const cleanups = [];
   const root = doc.documentElement;
+
+  // ── Top action names under the icons (buttons arrive lazily) ───────────
+  const actions = doc.getElementById('top-center-actions');
+  const labelActions = () => {
+    for (const b of actions?.querySelectorAll('button') || []) {
+      if (b.querySelector('.adam-btn-label')) continue;
+      const text = topActionLabel(b);
+      if (!text) continue;
+      const tag = doc.createElement('span');
+      tag.className = 'adam-btn-label';
+      tag.setAttribute('aria-hidden', 'true');
+      tag.textContent = text;
+      b.append(tag);
+    }
+  };
+  labelActions();
+  if (actions && typeof MutationObserver === 'function') {
+    const mo = new MutationObserver(labelActions);
+    mo.observe(actions, { childList: true });
+    cleanups.push(() => mo.disconnect());
+  }
 
   // ── State strip ──────────────────────────────────────────────────────────
   const indicator = doc.getElementById('style-indicator');
@@ -152,8 +200,8 @@ export function installHudPolicy({ viewer, dataManager, doc = document }) {
     const detectOn =
       doc.getElementById('detection-toggle')?.getAttribute('aria-pressed') ===
       'true';
-    viewLine.textContent = `VIEW ${mode.label}`;
-    metaLine.textContent = `STYLE ${style} · HUD ${hudOn === false ? 'OFF' : 'TACTICAL'} · DETECT ${detectOn ? 'ON' : 'OFF'}`;
+    viewLine.textContent = `${mode.label} view`;
+    metaLine.textContent = `${style} style${hudOn === false ? ' · readouts off' : ''} · detection ${detectOn ? WORD_ON : WORD_OFF}`;
 
     // Collection clock / recording.
     const rec = doc.getElementById('hud-rec');
@@ -162,7 +210,7 @@ export function installHudPolicy({ viewer, dataManager, doc = document }) {
     if (rec) {
       rec.classList.toggle('is-recording', recording);
       const label = doc.getElementById('hud-rec-label');
-      if (label) label.textContent = recording ? 'REC' : 'COLL';
+      if (label) label.textContent = recording ? LABEL_REC : LABEL_UTC;
       const elapsed = doc.getElementById('hud-rec-elapsed');
       if (elapsed)
         elapsed.textContent = recording ? elapsedLabel(Date.now() - since) : '';
@@ -213,11 +261,12 @@ export function installHudPolicy({ viewer, dataManager, doc = document }) {
       );
 
     // Layer rows out of scale.
-    for (const row of doc.querySelectorAll('.data-toggle-row[data-layer-id]'))
-      row.classList.toggle(
-        'adam-out-of-scale',
-        layerOutOfScale(row.dataset.layerId, altM),
-      );
+    for (const row of doc.querySelectorAll('.data-toggle-row[data-layer-id]')) {
+      const out = layerOutOfScale(row.dataset.layerId, altM);
+      row.classList.toggle('adam-out-of-scale', out);
+      if (out) row.title = OUT_OF_SCALE_TITLE;
+      else if (row.title === OUT_OF_SCALE_TITLE) row.removeAttribute('title');
+    }
   }
 
   // ── Cockpit below its designed viewport: compact readout, said once ─────

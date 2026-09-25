@@ -33,7 +33,8 @@ registerHooks({
       return {
         format: 'module',
         shortCircuit: true,
-        source: 'export function forward() { return "10SEG55776339"; }\nexport default { forward };\n',
+        source:
+          'export function forward() { return "10SEG55776339"; }\nexport default { forward };\n',
       };
     }
     return next(url, context);
@@ -59,8 +60,17 @@ const SFO_ELLIPSOIDAL_M = -15;
  */
 function installHudEnvironment() {
   const elements = new Map(
-    ['hud-alt', 'hud-summary', 'hud-mgrs', 'hud-latlon', 'hud-bottom-line', 'hud-gsd', 'hud-coll', 'hud-ona', 'hud-mode']
-      .map((id) => [id, { textContent: '' }]),
+    [
+      'hud-alt',
+      'hud-summary',
+      'hud-mgrs',
+      'hud-latlon',
+      'hud-bottom-line',
+      'hud-gsd',
+      'hud-coll',
+      'hud-ona',
+      'hud-mode',
+    ].map((id) => [id, { textContent: '' }]),
   );
   const previousDocument = globalThis.document;
   globalThis.document = {
@@ -93,7 +103,9 @@ function installHudEnvironment() {
 
 test('hud.js corrects the camera height to MSL through the geoid module', () => {
   assert.equal(
-    has(/import \{[^}]*\bellipsoidalToMslDisplayM\b[^}]*\} from '\.\/data\/geoid\.js';/s),
+    has(
+      /import \{[^}]*\bellipsoidalToMslDisplayM\b[^}]*\} from '\.\/data\/geoid\.js';/s,
+    ),
     true,
     'hud.js must take the datum correction from ./data/geoid.js, not re-derive one',
   );
@@ -108,7 +120,9 @@ test('hud.js corrects the camera height to MSL through the geoid module', () => 
     'the ~2.7 MB grid must be requested once, on demand — not at HUD construction',
   );
   assert.equal(
-    has(/\.catch\(\(\) => \{\s*\/\* readout falls back to the uncorrected height \*\/\s*\}\)/),
+    has(
+      /\.catch\(\(\) => \{\s*\/\* readout falls back to the uncorrected height \*\/\s*\}\)/,
+    ),
     true,
     'a failed geoid load must leave the readout uncorrected, not unhandled',
   );
@@ -126,12 +140,12 @@ test('the corner ALT readout prints the MSL height, never the ellipsoidal one', 
     'the ALT readout must convert the camera height before printing it',
   );
   assert.equal(
-    has(/`ALT: \$\{formatAltitude\(altMslM\)\}/),
+    has(/`alt \$\{formatAltitude\(altMslM\)\}/),
     true,
     'the #hud-alt line must print altMslM',
   );
   assert.equal(
-    has(/`ALT: \$\{(?:Math\.round|formatAltitude)\(altM\)\}/),
+    has(/`alt \$\{(?:Math\.round|formatAltitude)\(altM\)\}/),
     false,
     'the #hud-alt line must not regress to the raw ellipsoidal camera height',
   );
@@ -141,7 +155,9 @@ test('the summary ALT tag agrees with the corner readout', () => {
   // Both are on screen together; a viewer reading "ALT -15M" in one corner and
   // "ALT: 17m" in the other has found a bug, not a distinction.
   assert.equal(
-    has(/const altDisplayM = Number\.isFinite\(m\.altMslM\) \? m\.altMslM : m\.altM;/),
+    has(
+      /const altDisplayM = Number\.isFinite\(m\.altMslM\) \? m\.altMslM : m\.altM;/,
+    ),
     true,
     'the summary altitude tag must prefer the MSL datum and fall back to the raw height',
   );
@@ -187,8 +203,8 @@ test('a cold tick paints both readouts uncorrected, and resolving flips both in 
 
     // Tick 1 — cold. This is also the tick that requests the grid.
     hud._updateCameraData();
-    assert.match(alt(), /^ALT: -15m/, `cold corner readout, got ${alt()}`);
-    assert.match(summary(), /\| ALT -15M \|/, `cold summary tag, got ${summary()}`);
+    assert.match(alt(), /^alt -15m/, `cold corner readout, got ${alt()}`);
+    assert.doesNotMatch(summary(), /\balt\b/i);
 
     // The HUD registered its own continuation on this same shared promise
     // during tick 1, and it registered first, so awaiting here means its
@@ -198,18 +214,14 @@ test('a cold tick paints both readouts uncorrected, and resolving flips both in 
 
     // Tick 2 — resolved. ONE tick has to move both.
     hud._updateCameraData();
-    assert.match(alt(), /^ALT: 17m/, `corrected corner readout, got ${alt()}`);
-    assert.match(
-      summary(),
-      /\| ALT 17M \|/,
-      `the summary must repaint in the same tick the corner does, got ${summary()}`,
-    );
+    assert.match(alt(), /^alt 17m/, `corrected corner readout, got ${alt()}`);
+    assert.doesNotMatch(summary(), /\balt\b/i);
 
     // Tick 3 — steady state. The repaint is a transition, not a per-tick cost.
     const summaryRevisionAfterFlip = hud._summaryRevision;
     hud._updateCameraData();
-    assert.match(alt(), /^ALT: 17m/);
-    assert.match(summary(), /\| ALT 17M \|/);
+    assert.match(alt(), /^alt 17m/);
+    assert.doesNotMatch(summary(), /\balt\b/i);
     assert.equal(
       hud._summaryRevision,
       summaryRevisionAfterFlip,
@@ -233,16 +245,19 @@ test('the corrected readouts are the MSL datum, not a coincidence of the SFO sig
   try {
     hud = new IntelHUD(env.viewer);
     hud._updateCameraData(); // cold: requests the grid, paints uncorrected
-    assert.match(env.elements.get('hud-alt').textContent, /^ALT: 100m/);
+    assert.match(env.elements.get('hud-alt').textContent, /^alt 100m/);
     await ensureGeoidReady();
     await Promise.resolve();
     hud._updateCameraData();
     assert.match(
       env.elements.get('hud-alt').textContent,
-      /^ALT: 54m/,
+      /^alt 54m/,
       `100 m ellipsoidal over London is 54 m MSL, got ${env.elements.get('hud-alt').textContent}`,
     );
-    assert.match(env.elements.get('hud-summary').textContent, /\| ALT 54M \|/);
+    assert.doesNotMatch(
+      env.elements.get('hud-summary').textContent,
+      /\balt\b/i,
+    );
   } finally {
     hud?.destroy();
     env.restore();

@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  collectionLine,
+  coordinateText,
   formatAltitude,
+  provenanceLine,
+  toDMS,
   imageryLine,
   showAisField,
   viewModeFor,
@@ -16,19 +18,24 @@ test('view mode follows camera altitude', () => {
 });
 
 test('imagery metrics are suppressed where they zero out', () => {
-  assert.equal(imageryLine(627, 0.23, 7.1), 'GSD: 0.23M  NIIRS: 7.1');
-  assert.equal(imageryLine(400_000, 150, 0), 'GSD: 150.00M  SCALE: REGIONAL');
-  assert.equal(imageryLine(95_631_700, 35861.88, 0), 'SCALE: GLOBAL');
+  assert.equal(imageryLine(627, 0.23), '~0.23 m per pixel');
+  assert.equal(imageryLine(400_000, 150), '');
+  assert.equal(imageryLine(95_631_700, 35861.88), '');
   assert.equal(formatAltitude(627), '627m');
   assert.equal(formatAltitude(95_631_700), '95,632km');
 });
 
 test('collection context and AIS follow the view', () => {
-  assert.match(collectionLine(600, 'KH11-4152', 'OPS-4129'), /EO SURFACE$/);
+  assert.equal(provenanceLine(3), 'public data · 3 live feeds');
+  assert.equal(provenanceLine(0), 'public data · no feeds on');
   assert.equal(
-    collectionLine(9e7, 'KH11-4152', 'OPS-4129'),
-    'GLOBAL WATCH · OPS-4129',
+    provenanceLine(1, 'stale cctv'),
+    'public data · 1 live feed · stale cctv',
   );
+  assert.equal(coordinateText(29.9999, -97, 18_000_000), '30.0°N 97.0°W');
+  assert.equal(coordinateText(29.99991, -97.25, 400_000), '30.000°N 97.250°W');
+  assert.equal(toDMS(29.99999999, 'lat'), '30°00\'00.00"N', 'seconds carry');
+  assert.equal(toDMS(-97.5, 'lon'), '097°30\'00.00"W');
   assert.equal(showAisField(600, 'AIS: --'), false);
   assert.equal(showAisField(600, 'AIS: MAERSK X · 12 KT'), true);
   assert.equal(showAisField(9e7, 'AIS: MAERSK X · 12 KT'), false);

@@ -24,10 +24,12 @@ import {
   moonIllumination,
 } from './environment/astronomy.js';
 import {
-  collectionLine,
   formatAltitude,
   imageryLine,
   viewModeFor,
+  provenanceLine,
+  coordinateText,
+  toDMS,
 } from './hudViewMode.js';
 import {
   ellipsoidalToMslDisplayM,
@@ -200,19 +202,17 @@ export class IntelHUD {
       <div class="hud-sonar" aria-hidden="true"></div>
 
       <div class="hud-top-bar">
-        <span class="hud-top-bar-left">TOP SECRET // SI-TK // NOFORN</span>
-        <span class="hud-top-bar-center">${this._missionId}</span>
-        <span class="hud-top-bar-right">PAGE 1/1</span>
+        <span class="hud-top-bar-left"></span>
+        <span class="hud-top-bar-center"></span>
+        <span class="hud-top-bar-right"></span>
       </div>
 
       <div class="hud-corner hud-top-left">
         <div class="hud-bracket">┌</div>
         <div class="hud-content">
-          <div class="hud-classification">TOP SECRET // SI-TK // NOFORN</div>
-          <div class="hud-system" id="hud-system">${this._missionId}  ${this._sensorId}</div>
-          <div class="hud-mode" id="hud-mode">NORMAL</div>
+          <div class="hud-system" id="hud-system">public data</div>
+          <div class="hud-mode" id="hud-mode" hidden>NORMAL</div>
           <div class="hud-summary-wrap">
-            <div class="hud-summary-label">SUMMARY</div>
             <div class="hud-summary" id="hud-summary">Awaiting telemetry...</div>
           </div>
         </div>
@@ -220,8 +220,7 @@ export class IntelHUD {
 
       <div class="hud-corner hud-top-right">
         <div class="hud-content" style="text-align:right">
-          <div class="hud-rec" id="hud-rec"><span id="hud-rec-dot">●</span> <span id="hud-rec-label">COLL</span>  <span id="hud-timestamp">2026-01-01 00:00:00Z</span><span id="hud-rec-elapsed" class="hud-rec-elapsed"></span></div>
-          <div class="hud-orbital">ORB: ${this._orbitNum}  PASS: DESC-${this._passNum}</div>
+          <div class="hud-rec" id="hud-rec"><span id="hud-rec-dot">●</span> <span id="hud-rec-label">UTC</span>  <span id="hud-timestamp">2026-01-01 00:00:00Z</span><span id="hud-rec-elapsed" class="hud-rec-elapsed"></span></div>
         </div>
         <div class="hud-bracket">┐</div>
       </div>
@@ -347,8 +346,9 @@ export class IntelHUD {
     const lonDeg = Cesium.Math.toDegrees(cartographic.longitude);
     const latDeg = Cesium.Math.toDegrees(cartographic.latitude);
     const altM = cartographic.height;
-    const latDMS = this._toDMS(latDeg, 'lat');
-    const lonDMS = this._toDMS(lonDeg, 'lon');
+    const latDMS = toDMS(latDeg, 'lat');
+    const lonDMS = toDMS(lonDeg, 'lon');
+    const surface = viewModeFor(altM).id === 'surface';
     let mgrsLabel = '---';
 
     // MGRS
@@ -358,7 +358,7 @@ export class IntelHUD {
       const formatted = this._formatMGRS(mgrsStr);
       mgrsLabel = formatted;
       const el = document.getElementById('hud-mgrs');
-      if (el) el.textContent = `MGRS: ${formatted}`;
+      if (el) el.textContent = surface ? `MGRS ${formatted}` : '';
     } catch {
       const el = document.getElementById('hud-mgrs');
       if (el) el.textContent = 'MGRS: ---';
@@ -366,7 +366,10 @@ export class IntelHUD {
 
     // Lat/Lon DMS
     const llEl = document.getElementById('hud-latlon');
-    if (llEl) llEl.textContent = `${latDMS} ${lonDMS}`;
+    if (llEl)
+      llEl.textContent = surface
+        ? `${latDMS} ${lonDMS}`
+        : coordinateText(latDeg, lonDeg, altM);
     const bottomEl = document.getElementById('hud-bottom-line');
     if (bottomEl) {
       bottomEl.textContent = `MGRS: ${mgrsLabel}  LAT: ${latDMS}  LON: ${lonDMS}`;
@@ -386,12 +389,15 @@ export class IntelHUD {
     const gsdEl = document.getElementById('hud-gsd');
     if (gsdEl) gsdEl.textContent = imageryLine(altM, gsd, niirs);
     const systemEl = document.getElementById('hud-system');
-    if (systemEl)
-      systemEl.textContent = collectionLine(
-        altM,
-        this._missionId,
-        this._sensorId,
+    if (systemEl) {
+      const layers = this._dataManager?.getAll?.() || [];
+      const live = layers.filter((l) => l.enabled).length;
+      const degraded = hudTelemetryProvenanceTag(layers);
+      systemEl.textContent = provenanceLine(
+        live,
+        degraded ? degraded.toLowerCase() : null,
       );
+    }
     if (document.documentElement?.dataset)
       document.documentElement.dataset.adamView = viewModeFor(altM).id;
 
@@ -405,7 +411,9 @@ export class IntelHUD {
     const altMslM = ellipsoidalToMslDisplayM(altM, geoidN);
     const sunEl = this._estimateSunElevation(latDeg, lonDeg);
     if (altEl)
-      altEl.textContent = `ALT: ${formatAltitude(altMslM)}   SUN: ${sunEl.toFixed(1)}° EL`;
+      altEl.textContent = surface
+        ? `alt ${formatAltitude(altMslM)} · sun ${sunEl.toFixed(0)}°`
+        : `alt ${formatAltitude(altMslM)}`;
     const moonEl = document.getElementById('hud-moon');
     if (moonEl) {
       const when = this.viewer?.clock?.currentTime
@@ -413,7 +421,9 @@ export class IntelHUD {
         : new Date();
       const moon = moonPosition(when, latDeg, lonDeg);
       const lit = Math.round(moonIllumination(when).fraction * 100);
-      moonEl.textContent = `MOON: ${lit}%  ${moon.altitude >= 0 ? '+' : ''}${moon.altitude.toFixed(1)}° EL`;
+      moonEl.textContent = surface
+        ? `moon ${lit}% · ${moon.altitude >= 0 ? '+' : ''}${moon.altitude.toFixed(0)}°`
+        : '';
     }
 
     // Collection timestamp
@@ -423,7 +433,7 @@ export class IntelHUD {
       const h = String(now.getUTCHours()).padStart(2, '0');
       const m = String(now.getUTCMinutes()).padStart(2, '0');
       const s = String(now.getUTCSeconds()).padStart(2, '0');
-      collEl.textContent = `COLL: ${h}:${m}:${s}Z`;
+      collEl.textContent = `UTC ${h}:${m}:${s}Z`;
     }
 
     // Off-nadir angle (ONA): camera pitch of -90 deg is nadir (straight down),
@@ -431,7 +441,11 @@ export class IntelHUD {
     const pitchDeg = Cesium.Math.toDegrees(camera.pitch);
     const ona = Math.max(0, 90 + pitchDeg);
     const onaEl = document.getElementById('hud-ona');
-    if (onaEl) onaEl.textContent = `ONA: ${ona.toFixed(1)}°`;
+    if (onaEl)
+      onaEl.textContent =
+        viewModeFor(altM).id === 'surface'
+          ? `look ${ona.toFixed(0)}° off vertical`
+          : '';
 
     // `altM` stays the raw ellipsoidal camera height the sensor model reads
     // (GSD/NIIRS, view band). `altMslM` is the ADDITIVE display datum — the
@@ -666,8 +680,14 @@ export class IntelHUD {
     const provenance = hudTelemetryProvenanceTag(
       this._dataManager?.getAll?.() || [],
     );
-    const line = `${modeLabel} ${band} ${localityTag} | ${region} | ALT ${altTag} | WINDOW ${winTag} | SUN ${m.sunEl.toFixed(0)}° | ONA ${m.ona.toFixed(0)}° | ${localTag}`;
-    return provenance ? `${line} | ${provenance}` : line;
+    // Where you are and how much you can see; altitude, sun and look angle
+    // have their own readouts, the style has the state strip.
+    void modeLabel;
+    void band;
+    void altTag;
+    void localTag;
+    const line = `${localityTag.toLowerCase()} · ${region.toLowerCase()} · view ${winTag.toLowerCase().replace('x', ' × ')}`;
+    return provenance ? `${line} · ${provenance.toLowerCase()}` : line;
   }
 
   /**

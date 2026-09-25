@@ -568,13 +568,13 @@ test('markup, startup ordering and accessibility remain pinned', () => {
   assert.match(visible, /earthquakes/i);
   assert.match(visible, /fires?/i, 'the tile must promise the fires it enables');
 
-  // The card's one persuasive line is OWNER-AUTHORED and pinned verbatim,
-  // unspaced em dash included. This is copy, not prose to be improved in a
-  // passing edit — changing it needs the owner, not a nicer-sounding rewrite.
+  // The card's line is owner-directed (2026-09-25): plain and specific —
+  // what the choice does and where the data comes from. Changing it needs
+  // the owner.
   assert.ok(
-    html.includes('<p id="first-run-description">It feels like a forbidden cockpit'
-      + '—then you realize the sources are public and the data is real.</p>'),
-    'the owner-authored first-run line must ship exactly as written',
+    html.includes('<p id="first-run-description">Each choice turns on a set of layers. '
+      + 'Everything shown comes from public sources; you can change layers at any time.</p>'),
+    'the owner-directed first-run line must ship exactly as written',
   );
 
   // Menu order is the owner's, read straight off the markup.

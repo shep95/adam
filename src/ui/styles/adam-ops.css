@@ -214,15 +214,7 @@ body {
 
 /* ── Layers that cannot be seen from this altitude ────────────────────── */
 .data-toggle-row.adam-out-of-scale {
-  opacity: 0.42;
-}
-
-.data-toggle-row.adam-out-of-scale .data-name::after {
-  content: ' · not visible at this altitude';
-  font-size: 9px;
-  letter-spacing: 0.6px;
-  color: var(--ops-text-dim);
-  text-transform: none;
+  opacity: 0.62;
 }
 
 /* Persistent alert channel (under the collection clock). */
@@ -343,4 +335,172 @@ body.cockpit-mode.adam-cockpit-compact
 
 #title-bar .title-logo.is-brand {
   filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.28));
+}
+
+/* ── Plain register ──────────────────────────────────────────────────────
+   The console states what it is: public data on a globe. No classification
+   costume, no corner brackets, no ops codes. Labels are quiet lowercase in
+   the condensed sans; monospace is kept for numbers that must line up. */
+#intel-hud .hud-bracket,
+#intel-hud .hud-classification,
+#intel-hud .hud-mode,
+#intel-hud .hud-summary-label,
+#intel-hud .hud-orbital,
+#intel-hud .hud-top-bar {
+  display: none !important;
+}
+
+#intel-hud .hud-content,
+#intel-hud .hud-system,
+#intel-hud .hud-summary,
+#intel-hud #hud-gsd,
+#intel-hud #hud-ona,
+#intel-hud #hud-alt,
+#intel-hud #hud-moon,
+#intel-hud #hud-localtime {
+  font-family: var(
+    --font-condensed,
+    'IBM Plex Sans Condensed',
+    sans-serif
+  ) !important;
+  letter-spacing: 0.02em !important;
+  text-transform: lowercase;
+}
+
+#intel-hud #hud-latlon,
+#intel-hud #hud-mgrs,
+#intel-hud #hud-timestamp,
+#intel-hud .hud-rec {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace) !important;
+  letter-spacing: 0.01em !important;
+}
+
+#intel-hud .hud-system {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+#intel-hud .hud-summary {
+  color: var(--text-primary, #e6f4f6);
+  font-size: 12px;
+}
+
+#intel-hud #hud-mgrs:empty,
+#intel-hud #hud-ona:empty,
+#intel-hud #hud-moon:empty,
+#intel-hud #hud-gsd:empty {
+  display: none;
+}
+
+/* Rail: words, not key codes (the keys live in tooltips and KEYS). */
+.adam-ops-rail-key {
+  display: none !important;
+}
+
+.adam-ops-rail-btn,
+.adam-ops-rail-label {
+  font-family: var(
+    --font-condensed,
+    'IBM Plex Sans Condensed',
+    sans-serif
+  ) !important;
+  letter-spacing: 0.03em !important;
+  text-transform: lowercase;
+  font-size: 12px !important;
+}
+
+.adam-ops-kicker {
+  display: none;
+}
+
+.adam-ops-title,
+.adam-ops-section,
+.adam-watch-title,
+#style-indicator,
+#style-indicator * {
+  letter-spacing: 0.04em !important;
+  text-transform: lowercase;
+  font-family: var(
+    --font-condensed,
+    'IBM Plex Sans Condensed',
+    sans-serif
+  ) !important;
+}
+
+.adam-ops-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Top action icons carry their names. */
+#top-center-actions button {
+  position: relative;
+}
+
+#top-center-actions .adam-btn-label {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  translate: -50% 0;
+  font: 400 10px var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif);
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#top-center-actions button:hover .adam-btn-label,
+#top-center-actions button[aria-pressed='true'] .adam-btn-label {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 760px) {
+  #top-center-actions .adam-btn-label {
+    display: none;
+  }
+}
+
+/* The layer list scrolls one way only. */
+#data-toggles {
+  overflow-x: hidden !important;
+}
+
+/* WATCH sits in the HUD corner as part of it, and only when there is
+   something to watch. */
+.adam-watch.is-quiet {
+  display: none;
+}
+
+.adam-watch {
+  padding: 6px 8px 8px;
+  background: rgba(6, 10, 12, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+}
+
+/* Panel titles, dock labels and the start card in the same plain register. */
+.panel-title,
+.location-toolbar-label,
+.first-run-kicker,
+#first-run-launcher strong,
+.gev-voice-kicker,
+.gev-voice-detail,
+.gev-mic-label {
+  letter-spacing: 0.03em !important;
+  text-transform: lowercase !important;
+  font-family: var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif) !important;
+}
+
+#first-run-title {
+  font-family: var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif) !important;
+  letter-spacing: 0 !important;
+  font-weight: 500;
+}
+
+.first-run-scanline {
+  display: none;
+}
+
+#title-bar h1 > span:last-child {
+  letter-spacing: 0.22em;
 }
