@@ -20,6 +20,7 @@ export const TERRARIUM_CREDIT =
 
 export const OVERLAY_GROUPS = [
   { id: 'future', label: 'future coast' },
+  { id: 'heat', label: 'heat' },
   { id: 'base', label: 'base maps' },
   { id: 'earth', label: 'earth observation' },
   { id: 'reference', label: 'reference overlays' },
@@ -52,6 +53,42 @@ export const OVERLAY_SOURCES = [
     alpha: 0.75,
     credit: 'NOAA Office for Coastal Management — Sea Level Rise Viewer',
     note: 'US coasts only, 0–10 ft above high tide, hydrologically connected areas. Follows the rise set above, rounded to whole feet.',
+  },
+  {
+    id: 'activity-heat',
+    group: 'heat',
+    label: 'human activity heat',
+    kind: 'heatlights',
+    alpha: 0.9,
+    maxLevel: 8,
+    credit: `${GIBS_CREDIT} — NASA Black Marble, shown in heat colours`,
+    note: 'Night-time light as a heat ramp: where people, cities and industry concentrate. Light, not temperature.',
+  },
+  {
+    id: 'lst-day',
+    group: 'heat',
+    label: 'surface temperature · day',
+    kind: 'gibs',
+    layer: 'MODIS_Terra_Land_Surface_Temp_Day',
+    matrix: 'Level7',
+    ext: 'png',
+    maxLevel: 7,
+    alpha: 0.75,
+    credit: `${GIBS_CREDIT} — MODIS land surface temperature`,
+    note: 'Measured land surface temperature, yesterday by day. Gaps are cloud.',
+  },
+  {
+    id: 'lst-night',
+    group: 'heat',
+    label: 'surface temperature · night',
+    kind: 'gibs',
+    layer: 'MODIS_Terra_Land_Surface_Temp_Night',
+    matrix: 'Level7',
+    ext: 'png',
+    maxLevel: 7,
+    alpha: 0.75,
+    credit: `${GIBS_CREDIT} — MODIS land surface temperature`,
+    note: 'Night-time land surface temperature: cities stay warm after dark.',
   },
   {
     id: 'esri-imagery',
@@ -359,6 +396,42 @@ export function floodColor(elev, rise) {
     Math.round(235 - 55 * depth),
     Math.round(170 + 70 * depth),
   ];
+}
+
+/** Ironbow heat ramp: 0 → transparent-black, 1 → white-hot. */
+export function ironbow(t) {
+  const stops = [
+    [0, 0, 0],
+    [34, 0, 77],
+    [125, 0, 115],
+    [219, 26, 46],
+    [255, 140, 0],
+    [255, 232, 82],
+    [255, 255, 255],
+  ];
+  const x = Math.max(0, Math.min(1, t)) * (stops.length - 1);
+  const i = Math.min(stops.length - 2, Math.floor(x));
+  const f = x - i;
+  return stops[i].map((c, k) => Math.round(c + (stops[i + 1][k] - c) * f));
+}
+
+/** Recolour night-light pixels into the heat ramp; dark stays clear. */
+export function heatPixels(data) {
+  for (let i = 0; i < data.length; i += 4) {
+    const lum =
+      (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
+    if (lum < 0.05) {
+      data[i + 3] = 0;
+      continue;
+    }
+    const t = Math.min(1, Math.pow((lum - 0.05) / 0.95, 0.6));
+    const [r, g, b] = ironbow(t);
+    data[i] = r;
+    data[i + 1] = g;
+    data[i + 2] = b;
+    data[i + 3] = Math.round(120 + 135 * t);
+  }
+  return data;
 }
 
 /** Recolour a Terrarium RGBA buffer in place into a flood tile. */

@@ -592,6 +592,25 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'heat',
+    description:
+      'Heat on the globe. action: where (satellite heat detections from NASA FIRMS over 24 h summed by country and the ten hottest places, marked on the globe; fires, gas flares, volcanoes and industry all count), thermal (thermal-camera filter on or off with on=true/false), night_vision (green night vision on the night side, on=true/false), layer (add a heat map: activity-heat = night lights as heat, lst-day / lst-night = measured land surface temperature).',
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: ['where', 'thermal', 'night_vision', 'layer'],
+        },
+        on: { type: 'boolean' },
+        layer: {
+          type: 'string',
+          enum: ['activity-heat', 'lst-day', 'lst-night'],
+        },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

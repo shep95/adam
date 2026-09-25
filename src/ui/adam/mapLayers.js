@@ -23,6 +23,7 @@ import {
   clampRise,
   floodPixels,
   gibsDate,
+  heatPixels,
   noaaSlrUrl,
   parseCustomSource,
   restoreStack,
@@ -38,6 +39,8 @@ const LABEL_DOWN = '↓';
 const LABEL_REMOVE = '×';
 const LABEL_ADD = 'add';
 const LABEL_ON = 'on';
+const LABEL_THERMAL = 'thermal camera filter';
+const LABEL_HEAT_RANK = 'where the heat is';
 const LABEL_RETRY = 'unreachable · retry';
 const LABEL_LOADING = 'loading';
 const LABEL_PARTIAL = 'some tiles failed';
@@ -58,15 +61,8 @@ function formatRise(m) {
     : `+${Math.round(m)} m`;
 }
 
-/** Terrarium elevation tiles recoloured into a flood layer for `rise` m. */
-function createSeaLevelProvider(rise, doc) {
-  const provider = new Cesium.UrlTemplateImageryProvider({
-    url: TERRARIUM_URL,
-    maximumLevel: 12,
-    credit: new Cesium.Credit(
-      'Sea level rise from Terrain Tiles elevation (AWS Open Data); bathtub model',
-    ),
-  });
+/** Wrap a tile provider so each tile is recoloured by `recolour(data)`. */
+function recolourProvider(provider, doc, recolour) {
   const base = provider.requestImage.bind(provider);
   provider.requestImage = (x, y, level, request) => {
     const pending = base(x, y, level, request);
@@ -80,12 +76,24 @@ function createSeaLevelProvider(rise, doc) {
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0);
       const data = ctx.getImageData(0, 0, w, h);
-      floodPixels(data.data, rise);
+      recolour(data.data);
       ctx.putImageData(data, 0, 0);
       return canvas;
     });
   };
   return provider;
+}
+
+/** Terrarium elevation tiles recoloured into a flood layer for `rise` m. */
+function createSeaLevelProvider(rise, doc) {
+  const provider = new Cesium.UrlTemplateImageryProvider({
+    url: TERRARIUM_URL,
+    maximumLevel: 12,
+    credit: new Cesium.Credit(
+      'Sea level rise from Terrain Tiles elevation (AWS Open Data); bathtub model',
+    ),
+  });
+  return recolourProvider(provider, doc, (data) => floodPixels(data, rise));
 }
 
 async function createProvider(source, { rise, doc }) {
@@ -119,6 +127,16 @@ async function createProvider(source, { rise, doc }) {
       });
     case 'sealevel':
       return createSeaLevelProvider(rise, doc);
+    case 'heatlights':
+      return recolourProvider(
+        new Cesium.UrlTemplateImageryProvider({
+          url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png',
+          maximumLevel: 8,
+          credit,
+        }),
+        doc,
+        heatPixels,
+      );
     case 'noaa-slr':
       return Cesium.ArcGisMapServerImageryProvider.fromUrl(noaaSlrUrl(rise), {
         enablePickFeatures: false,
@@ -134,8 +152,11 @@ export function installMapLayers({
   mapStackController = null,
   doc = document,
   storage = globalThis.localStorage,
+  getConsole = () => globalThis.__godsEyeView || {},
 }) {
   const cleanups = [];
+  let heat = null;
+  let heatNote = '';
   /** Bottom → top. */
   let entries = [];
   let rise = 0;
@@ -435,6 +456,128 @@ export function installMapLayers({
     return block;
   }
 
+  // ── Heat ─────────────────────────────────────────────────────────────
+  async function runTool(name, args) {
+    const exec = getConsole().shepherd?.executor;
+    if (!exec) return { ok: false, error: 'still loading' };
+    return JSON.parse(await exec.run(name, args));
+  }
+
+  function currentStyle() {
+    return (
+      getConsole().styleManager?.activeStyle ||
+      (thermalOn ? 'thermal' : 'normal')
+    );
+  }
+
+  async function thermalFilter(on) {
+    const want = on ?? currentStyle() !== 'thermal';
+    const r = await runTool('set_visual_style', {
+      style: want ? 'thermal' : 'normal',
+    });
+    thermalOn = r.ok !== false ? want : thermalOn;
+    render();
+    return { ok: r.ok !== false, thermal: thermalOn };
+  }
+  let thermalOn = false;
+
+  /** Where the heat is: FIRMS detections summed by country and by 1° cell. */
+  async function heatRanking({ draw = true } = {}) {
+    const intel = getConsole().intel;
+    const dm = getConsole().dataManager;
+    if (!dm?.isEnabled?.('local-firms')) {
+      await runTool('set_layers', {
+        layers: [{ id: 'local-firms', enabled: true }],
+      });
+      heatNote = 'satellite fires switched on — loading detections…';
+      render();
+      for (
+        let i = 0;
+        i < 20 && !(intel?.getRecords?.('local-firms') || []).length;
+        i += 1
+      )
+        await new Promise((r) => setTimeout(r, 750));
+    }
+    const fires = intel?.getRecords?.('local-firms') || [];
+    if (!fires.length) {
+      heatNote =
+        'no satellite heat detections loaded (FIRMS needs FIRMS_MAP_KEY on the server)';
+      render();
+      return { ok: false, error: heatNote };
+    }
+    const [{ loadCountryIndex }, { heatByCountry, hotCells }] =
+      await Promise.all([
+        import('../../intel/countryLookup.js'),
+        import('../../intel/heat.js'),
+      ]);
+    const { lookup } = await loadCountryIndex();
+    const byCountry = heatByCountry(fires, lookup, { limit: 15 });
+    const cells = hotCells(fires, lookup, { limit: 10 });
+    heat = { byCountry, cells, at: new Date().toISOString() };
+    heatNote = '';
+    if (draw)
+      getConsole().shepherd?.overlay?.drawOverlay?.({
+        title: 'hottest places · satellite heat',
+        nodes: cells.map((c, i) => ({
+          id: `heat-${i}`,
+          label: `${c.country} · ${c.frpMw.toLocaleString('en-US')} MW`,
+          lat: c.lat,
+          lon: c.lon,
+          kind: 'heat',
+        })),
+        fly: true,
+      });
+    render();
+    return {
+      ok: true,
+      detections: byCountry.detections,
+      totalMw: byCountry.totalMw,
+      countries: byCountry.countries,
+      hottestPlaces: cells,
+      note: 'FIRMS fire radiative power over the last 24 h: fires, gas flares, volcanoes and industrial heat alike.',
+    };
+  }
+
+  function heatBlock() {
+    const block = el(doc, 'div', 'adam-maps-heat');
+    const row = el(doc, 'div', 'adam-maps-presets');
+    const filter = el(doc, 'button', 'adam-chip', LABEL_THERMAL);
+    filter.type = 'button';
+    filter.classList.toggle('is-on', thermalOn);
+    filter.title =
+      'Thermal camera look for the whole view (white-hot / ironbow)';
+    filter.addEventListener('click', () => void thermalFilter());
+    const rank = el(doc, 'button', 'adam-chip', LABEL_HEAT_RANK);
+    rank.type = 'button';
+    rank.title = 'Satellite heat detections summed by country and place';
+    rank.addEventListener('click', () => void heatRanking());
+    row.append(filter, rank);
+    block.append(row);
+    if (heatNote) block.append(el(doc, 'p', 'adam-maps-note', heatNote));
+    if (heat) {
+      const list = el(doc, 'ol', 'adam-maps-heat-list');
+      for (const c of heat.byCountry.countries.slice(0, 10))
+        list.append(
+          el(
+            doc,
+            'li',
+            '',
+            `${c.country} — ${c.frpMw.toLocaleString('en-US')} MW · ${c.share}% · ${c.detections} detections`,
+          ),
+        );
+      block.append(list);
+      block.append(
+        el(
+          doc,
+          'p',
+          'adam-maps-note',
+          `${heat.byCountry.detections.toLocaleString('en-US')} detections, ${heat.byCountry.totalMw.toLocaleString('en-US')} MW in the last 24 h (NASA FIRMS). Fires, gas flares, volcanoes and industry all count; the ten hottest places are marked on the globe.`,
+        ),
+      );
+    }
+    return block;
+  }
+
   function render() {
     if (card.hidden) return;
     const header = el(doc, 'header', 'adam-ops-header');
@@ -476,6 +619,7 @@ export function installMapLayers({
       // The future-coast sources sit straight under the rise control.
       if (group.id !== 'future')
         body.append(el(doc, 'h3', 'adam-meta adam-ops-section', group.label));
+      if (group.id === 'heat') body.append(heatBlock());
       const list = el(doc, 'div', 'adam-maps-catalog');
       for (const s of sources) {
         const on = entries.some((e) => e.source.id === s.id);
@@ -621,6 +765,8 @@ export function installMapLayers({
         group: s.group,
       })),
     presets: () => SEA_LEVEL_PRESETS.map((p) => ({ ...p })),
+    heatRanking,
+    thermalFilter,
     destroy() {
       destroyed = true;
       clearTimeout(riseTimer);

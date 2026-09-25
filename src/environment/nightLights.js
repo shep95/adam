@@ -219,15 +219,17 @@ export function createNightLights({
   }
 
   let factor = 0;
+  // Night vision draws the night side itself; the lights layer steps aside.
+  let suppressed = false;
   function update() {
     const center = getCenter();
     const sun = sunPosition(environment.currentDate(), center.lat, center.lon);
     factor = nightFactor(sun.altitude);
-    syncTileLayer(factor);
+    syncTileLayer(suppressed ? 0 : factor);
     if (globeLayer) {
       const perPixel = perPixelNight();
       globeLayer.alpha = perPixel ? 1 : factor;
-      globeLayer.show = perPixel || factor > 0.02;
+      globeLayer.show = !suppressed && (perPixel || factor > 0.02);
     }
     const altM = viewer.camera.positionCartographic.height;
     const wantStreets = factor > 0.15 && altM < STREET_MAX_ALT_M;
@@ -251,6 +253,10 @@ export function createNightLights({
 
   return {
     update,
+    suppress(on) {
+      suppressed = Boolean(on);
+      update();
+    },
     state: () => ({ factor: +factor.toFixed(2), streets: status || 'idle' }),
     destroy() {
       clearInterval(timer);

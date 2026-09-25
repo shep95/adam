@@ -129,3 +129,14 @@ test('stack round-trips through storage, dropping unknowns', () => {
   assert.equal(back.layers[1].source.url, custom.url);
   assert.deepEqual(restoreStack(null), { rise: 0, layers: [] });
 });
+
+test('heat ramp: dark stays clear, bright lights run hot', async () => {
+  const { heatPixels, ironbow } = await import('./overlayCatalog.js');
+  assert.deepEqual(ironbow(0), [0, 0, 0]);
+  assert.deepEqual(ironbow(1), [255, 255, 255]);
+  const px = new Uint8ClampedArray([5, 5, 5, 255, 250, 250, 250, 255]);
+  heatPixels(px);
+  assert.equal(px[3], 0);
+  assert.ok(px[7] > 200);
+  assert.ok(px[4] >= 250);
+});

@@ -1000,6 +1000,21 @@ export function createShepherdExecutor({
         return { ok: false, error: 'nations panel is still loading' };
       return nations.ownership({ country, kind });
     },
+    heat: async ({ action, on, layer } = {}) => {
+      const maps = getConsole().mapLayers;
+      if (action === 'night_vision') {
+        const nv = getConsole().nightVision;
+        if (!nv) return { ok: false, error: 'night vision is still loading' };
+        const next = on ?? !nv.isEnabled();
+        getConsole().settings?.set?.({ night: next ? 'nvg' : 'natural' });
+        return { ok: true, nightVision: nv.set(next) };
+      }
+      if (!maps) return { ok: false, error: 'map layers are still loading' };
+      if (action === 'thermal') return maps.thermalFilter(on);
+      if (action === 'layer')
+        return { ...maps.add(layer || 'activity-heat'), ...maps.list() };
+      return maps.heatRanking();
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };

@@ -209,6 +209,7 @@ export function createApplicationTools({
   defer(viewer.camera.moveEnd.addEventListener(syncIntelFocus));
   defer(() => intel.stop());
   debug.intel = intel;
+  debug.styleManager = styleManager;
   let opsDeck = null;
   import('../ui/adam/opsDeck.js')
     .then(({ installOpsDeck }) => {
@@ -414,6 +415,7 @@ export function createApplicationTools({
   let weatherFx = null;
   let nightLights = null;
   let storm = null;
+  let nightVision = null;
   Promise.all([
     import('../environment/liveEnvironment.js'),
     import('../ui/adam/skyPanel.js'),
@@ -421,6 +423,7 @@ export function createApplicationTools({
     import('../environment/weatherFx.js'),
     import('../environment/nightLights.js'),
     import('../environment/stormImmersion.js'),
+    import('../environment/nightVision.js'),
   ])
     .then(
       ([
@@ -430,6 +433,7 @@ export function createApplicationTools({
         { createWeatherFx },
         { createNightLights },
         { createStormImmersion },
+        { createNightVision },
       ]) => {
         if (signal?.aborted) return;
         environment = createLiveEnvironment({ viewer });
@@ -448,6 +452,10 @@ export function createApplicationTools({
         debug.nightLights = nightLights;
         storm = createStormImmersion({ viewer, weatherFx, globeSky });
         debug.storm = storm;
+        nightVision = createNightVision({ viewer, nightLights });
+        debug.nightVision = nightVision;
+        // Settings may have asked for it before this module loaded.
+        debug.settings?.applyNight?.();
         skyPanel = installSkyPanel({
           viewer,
           environment,
@@ -467,6 +475,7 @@ export function createApplicationTools({
   defer(() => {
     skyPanel?.destroy();
     storm?.destroy();
+    nightVision?.destroy();
     weatherFx?.destroy();
     nightLights?.destroy();
     globeSky?.destroy();
