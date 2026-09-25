@@ -328,6 +328,18 @@ export function createApplicationTools({
     );
   defer(() => actionRunner?.destroy());
 
+  // Hover context: what is under the cursor, in words.
+  let hoverContext = null;
+  import('../ui/adam/hoverContext.js')
+    .then(({ installHoverContext }) => {
+      if (signal?.aborted) return;
+      hoverContext = installHoverContext({ viewer, intel });
+    })
+    .catch((error) =>
+      console.warn('[adam] hover context failed to load:', error),
+    );
+  defer(() => hoverContext?.destroy());
+
   // WATCH: persistent ranked picture, globe marks, ambient Shepherd lines.
   let watchStrip = null;
   import('../ui/adam/watchStrip.js')

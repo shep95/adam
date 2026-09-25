@@ -1,0 +1,27 @@
+.adam-hover {
+  position: fixed;
+  z-index: 640;
+  max-width: 320px;
+  padding: 6px 9px;
+  font: 400 12px/1.45
+    var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif);
+  color: var(--text-secondary);
+  background: rgba(6, 10, 12, 0.86);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.adam-hover[hidden] {
+  display: none;
+}
+
+.adam-hover-lead {
+  color: var(--text-primary, #e6f4f6);
+}
+
+@media (hover: none) {
+  .adam-hover {
+    display: none;
+  }
+}
