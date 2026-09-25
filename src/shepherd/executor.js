@@ -1050,6 +1050,25 @@ export function createShepherdExecutor({
       }
       return { ok: false, error: `unknown action ${action}` };
     },
+    symbols_scan: async ({ lat, lon, radius_km } = {}) => {
+      const sym = getConsole().symbols;
+      if (!sym) return { ok: false, error: 'symbols panel is still loading' };
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        const scene = viewer.scene;
+        const c = scene.canvas;
+        const ray = viewer.camera.getPickRay({
+          x: c.clientWidth / 2,
+          y: c.clientHeight / 2,
+        });
+        const hit = ray && scene.globe.pick(ray, scene);
+        const carto = hit
+          ? scene.globe.ellipsoid.cartesianToCartographic(hit)
+          : viewer.camera.positionCartographic;
+        lat = (carto.latitude * 180) / Math.PI;
+        lon = (carto.longitude * 180) / Math.PI;
+      }
+      return sym.scan(lat, lon, { radiusKm: radius_km || 5 });
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };

@@ -641,6 +641,16 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'symbols_scan',
+    description:
+      "Symbols from the sky for a city area (lat, lon, radius_km up to 15; defaults to the view centre): sacred sites of every faith with counts by religion, esoteric sites (Masonic and similar lodges, obelisks, pyramids, megaliths), and shapes read from above — cruciform church plans, star forts, pentagons, and star junctions where many streets radiate from one roundabout. Marks them on the globe. It reports what is mapped and measured, not hidden meanings; say so, and don't speculate about individuals.",
+    parameters: obj({
+      lat: { type: 'number' },
+      lon: { type: 'number' },
+      radius_km: { type: 'number', minimum: 0.5, maximum: 15 },
+    }),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

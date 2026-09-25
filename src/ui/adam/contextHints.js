@@ -228,6 +228,7 @@ export function installContextHints({
         ],
         ["what's here", () => con.placeDossier?.open?.(lat, lon)],
         ['3d buildings', () => con.shepherd?.buildings?.toggle?.()],
+        ['symbols from the sky', () => con.symbols?.scan?.(lat, lon)],
       ]);
     } else if (hint === 'night') {
       markSeen('night');

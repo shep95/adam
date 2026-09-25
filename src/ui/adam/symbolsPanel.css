@@ -1,0 +1,18 @@
+/* SYMBOLS: shares the what's-here card layout; sits just below it. */
+.adam-symbols {
+  top: calc(196px / var(--adam-ui-scale, 1));
+}
+
+.adam-symbols-go {
+  padding: 0;
+  font: 500 12.5px var(--adam-font-sans);
+  color: var(--text-primary, #e6f4f6);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.adam-symbols-go:hover {
+  color: var(--accent-primary);
+}

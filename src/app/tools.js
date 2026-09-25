@@ -425,6 +425,17 @@ export function createApplicationTools({
     space?.destroy();
   });
 
+  // SYMBOLS FROM THE SKY: sacred and esoteric sites, shapes from above.
+  let symbols = null;
+  import('../ui/adam/symbolsPanel.js')
+    .then(({ installSymbolsPanel }) => {
+      if (signal?.aborted) return;
+      symbols = installSymbolsPanel({ viewer });
+      debug.symbols = symbols;
+    })
+    .catch((error) => console.warn('[adam] symbols failed to load:', error));
+  defer(() => symbols?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')
