@@ -62,3 +62,9 @@ test('disabled and malformed input is ignored', () => {
     0,
   );
 });
+
+test('reduced render effects are reported without raising a fault', () => {
+  const h = assessHealth([], { effectsReduced: true });
+  assert.equal(h.level, 'nominal');
+  assert.equal(h.capabilities[0].id, 'render');
+});

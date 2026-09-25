@@ -16,6 +16,7 @@ import {
   holdContinuousRender,
   releaseContinuousRender,
 } from '../renderGovernor.js';
+import { installFrameBudget } from '../frameBudget.js';
 
 /** Attach scene tools, rendering listeners and the application debug handle. */
 export function createApplicationTools({
@@ -104,6 +105,9 @@ export function createApplicationTools({
   // nothing animates per frame. Installed AFTER every module above has had
   // its chance to register pre-install holds. (perf wave 2)
   installRenderGovernor(viewer);
+  // Frame budget: shed the ambient grade and freeze animated style shaders
+  // when the GPU falls under ~30 fps, then probe back.
+  defer(installFrameBudget(viewer));
 
   // Install the explicit scope mask used by the DISPLAY controls.
   installScopeMask(viewer);

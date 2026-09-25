@@ -9,6 +9,7 @@ import {
   SHARPEN_SHADER,
   TRANSITION_DURATION_MS,
 } from './visualPresets.js';
+import { isEffectsReduced, subscribeEffectsBudget } from '../frameBudget.js';
 
 /** Own the post-process stages and their animation, without DOM dependencies. */
 export class VisualEffects {
@@ -50,6 +51,10 @@ export class VisualEffects {
     this.destroyed = false;
     this.stageEntries = [];
     this.previousBloom = null;
+    // Frame budget: animated shaders freeze while reduced and resume after.
+    this.unsubscribeBudget = subscribeEffectsBudget((reduced) => {
+      if (!reduced) this.startAnimationLoop();
+    });
   }
 
   initStyles() {
@@ -196,7 +201,11 @@ export class VisualEffects {
       }
       let animatedStageVisible = false;
       for (const [, stage] of this.stageEntries) {
-        if (stage.enabled && stage.uniforms.time !== undefined) {
+        if (
+          stage.enabled &&
+          stage.uniforms.time !== undefined &&
+          !isEffectsReduced()
+        ) {
           stage.uniforms.time = elapsedSec;
           if (stage.uniforms.intensity > 0.001) animatedStageVisible = true;
         }
@@ -213,6 +222,7 @@ export class VisualEffects {
   stop() {
     if (this.stopped) return;
     this.stopped = true;
+    this.unsubscribeBudget?.();
     if (this.frameId !== null) this.cancelFrame(this.frameId);
     this.frameId = null;
     this.releaseRender('style-anim');

@@ -15,6 +15,7 @@ import * as Cesium from 'cesium';
 import './opsDeck.css';
 import { setOdometer } from './odometer.js';
 import { assessHealth } from './systemHealth.js';
+import { isEffectsReduced } from '../../frameBudget.js';
 import {
   applyProfile,
   collectProfile,
@@ -706,6 +707,7 @@ export function installOpsDeck({
     }
     return assessHealth(snapshots, {
       online: globalThis.navigator?.onLine !== false,
+      effectsReduced: isEffectsReduced(),
       webgl: healthFacts.webgl,
       photoreal: doc.body?.classList?.contains('adam-no-ion')
         ? false

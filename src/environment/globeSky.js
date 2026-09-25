@@ -17,6 +17,7 @@
  */
 import * as Cesium from 'cesium';
 import { governorRequestRender } from '../renderGovernor.js';
+import { isEffectsReduced, subscribeEffectsBudget } from '../frameBudget.js';
 import {
   ambientGrade,
   shadowGeometry,
@@ -242,7 +243,7 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
       // Time of day is local: full grade near the ground, none at globe scale
       // (where the terminator and globe lighting already tell the story).
       const f = gradeStrengthForAltitude(alt);
-      stage.enabled = state.grade && lit && f > 0.01;
+      stage.enabled = state.grade && lit && f > 0.01 && !isEffectsReduced();
       uniforms.exposure = 1 + (g.exposure - 1) * f;
       uniforms.tint = new Cesium.Cartesian3(...g.tint);
       uniforms.tintAmount = g.tintAmount * f;
@@ -257,6 +258,7 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
     governorRequestRender('adam-sky');
   }
 
+  const unsubscribeBudget = subscribeEffectsBudget(() => update());
   let timer = null;
   function schedule() {
     clearInterval(timer);
@@ -288,6 +290,7 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
     destroy() {
       clearInterval(timer);
       unsubscribe();
+      unsubscribeBudget();
       removeMoveEnd();
       if (stage) scene.postProcessStages.remove(stage);
       viewer.dataSources.remove(source, true);

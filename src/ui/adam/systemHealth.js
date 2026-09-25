@@ -41,6 +41,8 @@ export function assessHealth(snapshots = [], capabilities = {}) {
     cap('network', 'NETWORK', false, 'browser reports offline');
   if (capabilities.webgl === false)
     cap('webgl', 'WEBGL', false, 'context lost — reload to recover');
+  if (capabilities.effectsReduced)
+    cap('render', 'RENDER', false, 'reduced effects — GPU under frame budget');
   if (capabilities.photoreal === false)
     cap('photoreal', '3D TILES', false, 'keyless imagery + OSM extrusion');
   else if (capabilities.photoreal === true)
