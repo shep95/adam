@@ -7,6 +7,11 @@
  *              browser asks once); falls back to the globe canvas alone when
  *              tab capture is refused or unsupported. Saves MP4 or WebM.
  *   ui scale   80–140% for every panel and control; the globe is untouched
+ *
+ * Every file is cleaned before it is saved (captureClean.js): no EXIF, text,
+ * timestamps, ICC profile or encoder strings. Snapshots are saved as lossless
+ * WebP when that round-trips to identical pixels and is smaller than the PNG;
+ * recordings use a bitrate sized to the picture instead of a fixed rate.
  */
 import './captureTools.css';
 import {
@@ -15,6 +20,12 @@ import {
   pickRecorderType,
   stampName,
 } from './captureMath.js';
+import {
+  recordingBitrate,
+  samePixels,
+  scrubMedia,
+  stripPngMetadata,
+} from './captureClean.js';
 import {
   holdContinuousRender,
   releaseContinuousRender,
@@ -142,13 +153,39 @@ export function installCaptureTools({ viewer, doc = document }) {
     ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(216, 230, 238, 0.7)';
     ctx.fillText(right, w - strip * 0.5, h + strip / 2);
-    const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
-    if (blob) save(blob, stampName('adam', 'png'), doc);
+    const file = await cleanSnapshot(out, ctx);
+    if (file) save(file.blob, stampName('adam', file.ext), doc);
     flash.classList.remove('is-on');
     void flash.offsetWidth;
     flash.classList.add('is-on');
   }
   snapBtn.addEventListener('click', () => void snapshot());
+
+  /** Smallest metadata-free encoding with identical pixels. */
+  async function cleanSnapshot(canvas, ctx) {
+    const pngBlob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+    if (!pngBlob) return null;
+    const png = stripPngMetadata(new Uint8Array(await pngBlob.arrayBuffer()));
+    let best = { blob: new Blob([png], { type: 'image/png' }), ext: 'png' };
+    try {
+      const webp = await new Promise((r) => canvas.toBlob(r, 'image/webp', 1));
+      if (webp?.type === 'image/webp' && webp.size < best.blob.size) {
+        const bmp = await createImageBitmap(webp);
+        const check = doc.createElement('canvas');
+        check.width = canvas.width;
+        check.height = canvas.height;
+        const cctx = check.getContext('2d', { willReadFrequently: true });
+        cctx.drawImage(bmp, 0, 0);
+        bmp.close?.();
+        const a = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const b = cctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        if (samePixels(a, b)) best = { blob: webp, ext: 'webp' };
+      }
+    } catch {
+      /* keep the PNG */
+    }
+    return best;
+  }
 
   // ── Record ──────────────────────────────────────────────────────────────
   const recBtn = iconButton(doc, 'fiber_manual_record', 'Record the view');
@@ -189,15 +226,29 @@ export function installCaptureTools({ viewer, doc = document }) {
     const opened = await openStream();
     stream = opened.stream;
     const chunks = [];
+    const settings = stream.getVideoTracks()[0]?.getSettings?.() || {};
     recorder = new MediaRecorder(stream, {
       ...(type ? { mimeType: type } : {}),
-      videoBitsPerSecond: 8_000_000,
+      videoBitsPerSecond: recordingBitrate(
+        settings.width || viewer.scene.canvas.width,
+        settings.height || viewer.scene.canvas.height,
+        settings.frameRate || 30,
+        type,
+      ),
     });
     recorder.ondataavailable = (e) => e.data?.size && chunks.push(e.data);
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
       const mime = recorder?.mimeType || type || 'video/webm';
+      let bytes = new Uint8Array(
+        await new Blob(chunks, { type: mime }).arrayBuffer(),
+      );
+      try {
+        bytes = scrubMedia(bytes, mime);
+      } catch {
+        /* save unscrubbed rather than lose the recording */
+      }
       save(
-        new Blob(chunks, { type: mime }),
+        new Blob([bytes], { type: mime }),
         stampName(
           `adam-${opened.scope}`,
           mime.includes('mp4') ? 'mp4' : 'webm',

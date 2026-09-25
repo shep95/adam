@@ -27,6 +27,12 @@ The top action bar adds **snapshot** (PNG of the view with a caption strip),
 MP4 or WebM) and **interface scale** (80–140% for every panel; the globe is
 untouched).
 
+Captures are cleaned before download: no EXIF, text, timestamps, ICC
+profile or encoder strings (PNG chunks stripped; WebM/MP4 dates and
+application tags blanked). Snapshots switch to lossless WebP only when it
+decodes to identical pixels and is smaller; recordings use a bitrate sized to
+the picture.
+
 Right-click the globe for: copy coordinates, drop pin, fly here, ask Shepherd
 about here, live sky here, a 25 nm aircraft alert zone, and 3D buildings.
 Location searches end on a precision pin. The local time at the camera sits
