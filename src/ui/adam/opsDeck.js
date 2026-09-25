@@ -569,6 +569,16 @@ export function installOpsDeck({
       option.value = key;
       layer.append(option);
     }
+    const zoneSelect = el(doc, 'select', 'adam-input');
+    zoneSelect.setAttribute('aria-label', 'Zone');
+    const drawOpt = el(doc, 'option', '', 'DRAW A NEW ZONE');
+    drawOpt.value = '';
+    zoneSelect.append(drawOpt);
+    for (const z of intel.listZones?.() || []) {
+      const o = el(doc, 'option', '', `ZONE · ${z.name.toUpperCase()}`);
+      o.value = z.id;
+      zoneSelect.append(o);
+    }
     const amount = el(doc, 'input', 'adam-input');
     amount.type = 'number';
     amount.min = '0';
@@ -616,12 +626,17 @@ export function installOpsDeck({
       'adam-chip adam-latch adam-primary-btn',
       async () => {
         draw.disabled = true;
-        const ring = await capturePolygon(viewer, {
-          color: '#f5a623',
-          onHint: (text) => {
-            if (zoneHint) zoneHint.textContent = text;
-          },
-        });
+        const saved = zoneSelect.value
+          ? intel.zoneById?.(zoneSelect.value)
+          : null;
+        const ring = saved
+          ? saved.ring
+          : await capturePolygon(viewer, {
+              color: '#f5a623',
+              onHint: (text) => {
+                if (zoneHint) zoneHint.textContent = text;
+              },
+            });
         draw.disabled = false;
         if (!ring) {
           if (zoneHint) zoneHint.textContent = 'Zone cancelled.';
@@ -651,7 +666,7 @@ export function installOpsDeck({
       },
     );
     form.addEventListener('submit', (event) => event.preventDefault());
-    form.append(kind, layer, amount, label, draw, zoneHint);
+    form.append(kind, layer, zoneSelect, amount, label, draw, zoneHint);
     body.append(form);
     body.append(
       el(

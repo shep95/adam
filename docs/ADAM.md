@@ -34,6 +34,13 @@ application tags blanked). Snapshots switch to lossless WebP only when it
 decodes to identical pixels and is smaller; recordings use a bitrate sized to
 the picture.
 
+**MEASURE** (ruler on the top bar): LINE (range and bearing per leg and
+total), AREA (area and perimeter), RINGS (range rings) and CORRIDOR (a band
+along a route), great circle or rhumb, in km, nm or mi. SAVE ZONE keeps any
+shape as a named zone, drawn on the globe, selectable in ALERTS ("alert me
+when any vessel enters this corridor") and known to Shepherd (`measure`,
+`range_rings`, `create_zone`, `list_zones`, `create_alert_zone` with a zone).
+
 Right-click the globe for: copy coordinates, drop pin, fly here, ask Shepherd
 about here, live sky here, a 25 nm aircraft alert zone, and 3D buildings.
 Location searches end on a precision pin. The local time at the camera sits

@@ -302,6 +302,19 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] rewind failed to load:', error));
   defer(() => rewind?.destroy());
 
+  // MEASURE: range, bearing, area, rings, corridors; zones.
+  let measureTool = null;
+  import('../ui/adam/measureTool.js')
+    .then(({ installMeasureTool }) => {
+      if (signal?.aborted) return;
+      measureTool = installMeasureTool({ viewer, intel });
+      debug.measure = measureTool;
+    })
+    .catch((error) =>
+      console.warn('[adam] measure tool failed to load:', error),
+    );
+  defer(() => measureTool?.destroy());
+
   // WATCH: persistent ranked picture, globe marks, ambient Shepherd lines.
   let watchStrip = null;
   import('../ui/adam/watchStrip.js')

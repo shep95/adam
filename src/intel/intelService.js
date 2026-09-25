@@ -43,6 +43,8 @@ const PINS_KEY = 'adam.intel.pins.v1';
 const LAST_BRIEF_KEY = 'adam.intel.lastBrief.v1';
 export const MISSION_KEY = 'adam.intel.mission.v1';
 export const WATCH_LOG_KEY = 'adam.intel.watchlog.v1';
+export const ZONES_KEY = 'adam.intel.zones.v1';
+const ZONES_MAX = 40;
 const WATCH_LOG_MAX = 500;
 /** Fine baselines apply below this camera altitude, around the view. */
 export const FINE_BASELINE_MAX_ALT_M = 200_000;
@@ -287,6 +289,27 @@ export function createIntelService({
     emit('baselines-sampled', { size: baselines.size() });
   }
 
+  // ── Zones: named areas the operator drew; alerts and Shepherd use them ──
+  const cleanRing = (ring) =>
+    (Array.isArray(ring) ? ring : [])
+      .slice(0, 256)
+      .map((p) => [Number(p?.[0]), Number(p?.[1])])
+      .filter(
+        ([lon, lat]) =>
+          Number.isFinite(lon) &&
+          Number.isFinite(lat) &&
+          Math.abs(lat) <= 90 &&
+          Math.abs(lon) <= 180,
+      );
+  let zones = (readJson(localStorage, ZONES_KEY, []) || [])
+    .map((z) => ({ ...z, ring: cleanRing(z?.ring) }))
+    .filter((z) => z.id && z.ring.length >= 3)
+    .slice(0, ZONES_MAX);
+  const saveZones = () => {
+    writeJson(localStorage, ZONES_KEY, zones);
+    emit('zones-changed', zones);
+  };
+
   const patterns = createPatternWatch();
   let mission = readJson(localStorage, MISSION_KEY, null);
 
@@ -435,6 +458,38 @@ export function createIntelService({
     /** Behaviour patterns over the last ~45 min (orbits, AIS dark, meetings, jumps). */
     patterns: (options) => patterns.findings(options),
 
+    listZones: () => zones.map((z) => ({ ...z, ring: z.ring.slice() })),
+    zoneById: (id) => zones.find((z) => z.id === id || z.name === id) || null,
+    addZone({ name = '', kind = 'polygon', ring = [], meta = {} } = {}) {
+      const clean = cleanRing(ring);
+      if (clean.length < 3 || zones.length >= ZONES_MAX) return null;
+      const zone = {
+        id: `zone-${Math.random().toString(36).slice(2, 9)}`,
+        name:
+          String(name || '')
+            .replace(/[\u0000-\u001f<>]/g, '')
+            .slice(0, 60) || `ZONE ${zones.length + 1}`,
+        kind: ['polygon', 'circle', 'corridor'].includes(kind)
+          ? kind
+          : 'polygon',
+        ring: clean,
+        meta: {
+          radiusKm: Number(meta.radiusKm) || null,
+          widthKm: Number(meta.widthKm) || null,
+          areaKm2: Number(meta.areaKm2) || null,
+        },
+        createdAt: now(),
+      };
+      zones = [...zones, zone];
+      saveZones();
+      return zone;
+    },
+    removeZone(id) {
+      const before = zones.length;
+      zones = zones.filter((z) => z.id !== id);
+      if (zones.length !== before) saveZones();
+      return zones.length !== before;
+    },
     /** Append to the watch log (and notify for alert/critical). */
     logEvent,
     /** Watch log, newest first; filter by kind or since (ms epoch). */

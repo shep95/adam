@@ -192,6 +192,11 @@ export function createShepherdExecutor({
   }
 
   function createAlertZone(args) {
+    const zone = args.zone ? intel?.zoneById?.(args.zone) : null;
+    if (args.zone && !zone)
+      return { ok: false, error: `no zone ${args.zone}; see list_zones` };
+    if (!zone && ![args.lat, args.lon].every((v) => Number.isFinite(Number(v))))
+      return { ok: false, error: 'give lat/lon/radiusNm or a saved zone id' };
     const radiusKm = Math.max(
       0.5,
       Math.min(2000, Number(args.radiusNm) * NM_TO_KM || 50),
@@ -199,7 +204,9 @@ export function createShepherdExecutor({
     const rule = intel?.alerts?.add?.({
       kind: args.kind,
       layerKey: args.layer,
-      ring: circleRing(Number(args.lat), Number(args.lon), radiusKm),
+      ring: zone
+        ? zone.ring
+        : circleRing(Number(args.lat), Number(args.lon), radiusKm),
       threshold:
         args.kind === 'count-in-zone' || args.kind === 'fire-in-zone'
           ? Math.max(0, Math.floor(Number(args.threshold) || 0))
@@ -549,6 +556,81 @@ export function createShepherdExecutor({
         newest,
       };
     },
+    measure: ({ points = [], rhumb = false, unit = 'km' } = {}) => {
+      const pts = points.filter(
+        (p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lon),
+      );
+      if (pts.length < 2) return { ok: false, error: 'two or more points' };
+      const tool = getConsole().measure;
+      if (tool)
+        return { ok: true, ...tool.measure(pts, { rhumbLine: rhumb, unit }) };
+      return { ok: false, error: 'measure tool is still loading' };
+    },
+    range_rings: ({ lat, lon, unit = 'km' } = {}) => {
+      const tool = getConsole().measure;
+      if (!tool) return { ok: false, error: 'measure tool is still loading' };
+      return { ok: true, ...tool.rings({ lat, lon }, { unit }) };
+    },
+    create_zone: async ({
+      name,
+      kind,
+      lat,
+      lon,
+      radiusKm,
+      widthKm,
+      points = [],
+    } = {}) => {
+      const g = await import('../intel/geoMeasure.js');
+      const pts = points.filter(
+        (p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lon),
+      );
+      let ring = null;
+      if (kind === 'circle' && Number.isFinite(lat) && Number.isFinite(lon))
+        ring = g.circleRing(
+          { lat, lon },
+          Math.max(0.1, Number(radiusKm) || 10),
+        );
+      else if (kind === 'polygon' && pts.length >= 3)
+        ring = pts.map((p) => [p.lon, p.lat]);
+      else if (kind === 'corridor' && pts.length >= 2)
+        ring = g.corridorRing(pts, Math.max(0.05, Number(widthKm) || 5));
+      if (!ring)
+        return {
+          ok: false,
+          error:
+            'circle needs lat/lon/radiusKm; polygon 3+ points; corridor 2+ points',
+        };
+      const zone = intel?.addZone?.({
+        name,
+        kind,
+        ring,
+        meta: {
+          radiusKm,
+          widthKm,
+          areaKm2: g.polygonAreaKm2(ring.map(([x, y]) => ({ lat: y, lon: x }))),
+        },
+      });
+      return zone
+        ? {
+            ok: true,
+            zone: {
+              id: zone.id,
+              name: zone.name,
+              kind: zone.kind,
+              areaKm2: Math.round(zone.meta.areaKm2),
+            },
+          }
+        : { ok: false, error: 'zone rejected (limit 40)' };
+    },
+    list_zones: () => ({
+      ok: true,
+      zones: (intel?.listZones?.() || []).map((z) => ({
+        id: z.id,
+        name: z.name,
+        kind: z.kind,
+        areaKm2: z.meta?.areaKm2 ? Math.round(z.meta.areaKm2) : null,
+      })),
+    }),
     apply_scenario: async ({ id, replace = true } = {}) => {
       const { applyScenario } = await import('../ui/adam/scenarios.js');
       return applyScenario(dataManager, id, { replace, intel });

@@ -75,6 +75,9 @@ export function readConsoleState({
     overlay: overlay?.summary?.() || null,
     buildings3d: buildings?.state?.() || null,
     mission: intel?.getMission?.()?.text || null,
+    zones: (intel?.listZones?.() || []).map(
+      (z) => `${z.name} (${z.kind}, ${z.id})`,
+    ),
     watch: (() => {
       try {
         return (intel?.triage?.({ limit: 5 }) || []).map(
@@ -123,6 +126,7 @@ export function formatConsoleBlock(state) {
   if (state.overlay) lines.push(`overlay: ${state.overlay}`);
   if (state.buildings3d) lines.push(`3d buildings: ${state.buildings3d}`);
   if (state.mission) lines.push(`mission: ${state.mission}`);
+  if (state.zones?.length) lines.push(`zones: ${state.zones.join(', ')}`);
   if (state.watch?.length)
     lines.push(`watch (ranked 0-100):\n  ${state.watch.join('\n  ')}`);
   return lines.join('\n');

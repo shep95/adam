@@ -100,13 +100,14 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
         lat: { type: 'number' },
         lon: { type: 'number' },
         radiusNm: { type: 'number' },
+        zone: { type: 'string' },
         threshold: { type: 'number' },
         maxSpeedKts: { type: 'number' },
         minMagnitude: { type: 'number' },
         minFrp: { type: 'number' },
         label: { type: 'string' },
       },
-      ['kind', 'lat', 'lon', 'radiusNm'],
+      ['kind'],
     ),
   },
   {
@@ -272,6 +273,66 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
       format: { type: 'string', enum: ['csv', 'json'] },
       inViewOnly: { type: 'boolean' },
     }),
+  },
+  {
+    name: 'measure',
+    description:
+      'Measure range and bearing along points [{lat, lon}] (2+), great circle by default or rhumb=true; draws it on the globe with per-leg labels. unit km|nm|mi.',
+    parameters: obj(
+      {
+        points: {
+          type: 'array',
+          items: obj({ lat: { type: 'number' }, lon: { type: 'number' } }, [
+            'lat',
+            'lon',
+          ]),
+        },
+        rhumb: { type: 'boolean' },
+        unit: { type: 'string', enum: ['km', 'nm', 'mi'] },
+      },
+      ['points'],
+    ),
+  },
+  {
+    name: 'range_rings',
+    description:
+      'Draw labelled range rings around a point (km: 10/25/50/100, nm or mi: 5/10/25/50).',
+    parameters: obj(
+      {
+        lat: { type: 'number' },
+        lon: { type: 'number' },
+        unit: { type: 'string', enum: ['km', 'nm', 'mi'] },
+      },
+      ['lat', 'lon'],
+    ),
+  },
+  {
+    name: 'create_zone',
+    description:
+      'Save a named zone the operator and alerts can use: kind circle (center + radiusKm), polygon (points), or corridor (points along a route + widthKm half-width). Returns its id for create_alert_zone.',
+    parameters: obj(
+      {
+        name: { type: 'string' },
+        kind: { type: 'string', enum: ['circle', 'polygon', 'corridor'] },
+        lat: { type: 'number' },
+        lon: { type: 'number' },
+        radiusKm: { type: 'number' },
+        widthKm: { type: 'number' },
+        points: {
+          type: 'array',
+          items: obj({ lat: { type: 'number' }, lon: { type: 'number' } }, [
+            'lat',
+            'lon',
+          ]),
+        },
+      },
+      ['name', 'kind'],
+    ),
+  },
+  {
+    name: 'list_zones',
+    description: 'List saved zones (id, name, kind, area).',
+    parameters: obj({}),
   },
   {
     name: 'apply_scenario',
