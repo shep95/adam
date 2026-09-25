@@ -767,6 +767,29 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'infra',
+    description:
+      'Data-centre build-out (INFRA panel). action: data_centres (sites in view coloured by function — ai training, hyperscale, colocation, enterprise, government, crypto, edge — from OpenStreetMap), power (plants by fuel, 230 kV+ substations and HV lines in view; power is the binding siting constraint), water (treatment, reclaimed and reservoirs in view), chips (curated fabs, packaging and equipment makers worldwide, public ~2025), materials (curated raw-material and refining chokepoints, public ~2025), predict (a transparent siting-pressure heatmap over the view from live substation and cluster signals — a heuristic and a model output, NEVER a confirmed site; say so), links (supply-chain edges substation/plant/water → data centre, solid co-located and dashed inferred), open. The view must be about 400 km across or less for the live layers. ADAM does not rank which shared asset to disable.',
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: [
+            'data_centres',
+            'power',
+            'water',
+            'chips',
+            'materials',
+            'predict',
+            'links',
+            'open',
+          ],
+        },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

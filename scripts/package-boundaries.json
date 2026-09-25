@@ -2072,6 +2072,8 @@
       "src/intel/crime.js",
       "src/ui/adam/resourcesPanel.js",
       "src/intel/resources.js",
+      "src/ui/adam/infraPanel.js",
+      "src/intel/datacenters.js",
       "src/ui/adam/leadershipPanel.js",
       "src/intel/leadership.js",
       "src/ui/adam/liveSession.css",

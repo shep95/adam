@@ -540,6 +540,19 @@ export function createApplicationTools({
     );
   defer(() => leadership?.destroy());
 
+  // INFRA: data centres, power, water, chips, materials and siting prediction.
+  let infra = null;
+  import('../ui/adam/infraPanel.js')
+    .then(({ installInfraPanel }) => {
+      if (signal?.aborted) return;
+      infra = installInfraPanel({ viewer });
+      debug.infra = infra;
+    })
+    .catch((error) =>
+      console.warn('[adam] infra panel failed to load:', error),
+    );
+  defer(() => infra?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

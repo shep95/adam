@@ -1164,6 +1164,19 @@ export function createShepherdExecutor({
       if (action === 'subdivisions') return l.subdivisions(id);
       return { ok: true, ...l.state() };
     },
+    infra: async ({ action } = {}) => {
+      const g = getConsole().infra;
+      if (!g) return { ok: false, error: 'infra panel is still loading' };
+      g.open();
+      if (action === 'data_centres') return g.dataCentres();
+      if (action === 'power') return g.power();
+      if (action === 'water') return g.water();
+      if (action === 'chips') return g.chips(true);
+      if (action === 'materials') return g.materials(true);
+      if (action === 'predict') return g.predict();
+      if (action === 'links') return g.links(true);
+      return { ok: true };
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };
