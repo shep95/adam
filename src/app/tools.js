@@ -479,6 +479,17 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] session failed to load:', error));
   defer(() => liveSession?.destroy());
 
+  // Pop any panel out into its own window (⧉ in its header).
+  let popout = null;
+  import('../ui/adam/panelPopout.js')
+    .then(({ installPanelPopout }) => {
+      if (signal?.aborted) return;
+      popout = installPanelPopout({});
+      debug.popout = popout;
+    })
+    .catch((error) => console.warn('[adam] pop-out failed to load:', error));
+  defer(() => popout?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

@@ -321,3 +321,41 @@ html:not([data-resize='off'])
     max-width: calc(100vw - 32px);
   }
 }
+
+/* ── Pop-out ───────────────────────────────────────────────────────────── */
+.adam-popout {
+  margin-left: auto;
+  padding: 0 6px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-dim);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.adam-popout:hover {
+  color: var(--accent-primary);
+}
+
+.adam-ops-header .adam-popout {
+  position: absolute;
+  top: 0;
+  right: 28px;
+}
+
+/* In its own window the panel fills it. */
+.is-popped,
+.is-popped[hidden] {
+  position: static !important;
+  display: flex !important;
+  flex-direction: column;
+  width: 100% !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  translate: none !important;
+  zoom: 1 !important;
+  resize: none !important;
+  border-radius: 0 !important;
+}
