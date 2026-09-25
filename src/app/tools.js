@@ -6,6 +6,7 @@ import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { createGevActionRunner } from '../voice/gevActions.js';
 import { applyDisplayPolicy } from '../ui/adam/displayPolicy.js';
+import { installHudPolicy } from '../ui/adam/hudPolicy.js';
 import { createIntelService } from '../intel/intelService.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
 import {
@@ -240,6 +241,9 @@ export function createApplicationTools({
 
   const displayPolicy = applyDisplayPolicy({ styleManager });
   defer(() => displayPolicy.destroy());
+  const hudPolicy = installHudPolicy({ viewer, dataManager });
+  defer(() => hudPolicy.destroy());
+  debug.hudPolicy = hudPolicy;
 
   // Motion language: scan-line, acquisition, trail trace, phosphor bloom,
   // scope waveform, panel drift, NVG/FLIR ignition.

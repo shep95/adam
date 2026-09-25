@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════
+   ADAM operational terminal — palette, type, HUD discipline.
+
+   Palette (operator spec):
+     accent        #00BCD4   authoritative, not luminous
+     data dim      #1A6E7A   present but not primary signal
+     alert         #E53935   alerts and armed state only
+     background    #060A0C   cold near-black
+     surface       #0D1517   panels, separated without borders
+     text          #B0BEC5   long-session luminance
+     text dim      #455A64   labels, units, empty fields
+   Type: IBM Plex Mono for data, IBM Plex Sans Condensed for labels/nav.
+   Sizes: data 11–13px, labels 9–10px, primary coordinates 14px.
+   The cyber theme keeps its own red/slate treatment.
+   ═══════════════════════════════════════════════ */
+
+:root {
+  --ops-accent: #00bcd4;
+  --ops-data-dim: #1a6e7a;
+  --ops-alert: #e53935;
+  --ops-bg: #060a0c;
+  --ops-surface: #0d1517;
+  --ops-text: #b0bec5;
+  --ops-text-dim: #455a64;
+
+  --bg-dark: var(--ops-bg);
+  --menu-bg: var(--ops-surface);
+  --glass-bg: rgba(13, 21, 23, 0.88);
+  --glass-bg-light: rgba(13, 21, 23, 0.86);
+  --glass-bg-dense: rgba(13, 21, 23, 0.94);
+  --glass-border: rgba(176, 190, 197, 0.07);
+  --accent: var(--ops-accent);
+  --accent-dim: rgba(0, 188, 212, 0.12);
+  --accent-glow: rgba(0, 188, 212, 0.22);
+  --accent-primary: var(--ops-accent);
+  --accent-primary-dim: rgba(0, 188, 212, 0.12);
+  --accent-critical: var(--ops-alert);
+  --accent-critical-dim: rgba(229, 57, 53, 0.12);
+  --accent-critical-edge: rgba(229, 57, 53, 0.75);
+  --text-primary: var(--ops-text);
+  --text-secondary: #7b8d95;
+  --text-dim: var(--ops-text-dim);
+
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', 'SF Mono', monospace;
+  --font-label: 'IBM Plex Sans Condensed', 'IBM Plex Sans', 'Inter', sans-serif;
+  --type-meta: 10px;
+  --type-value: 12px;
+  --type-readout: 14px;
+}
+
+body {
+  background: var(--ops-bg);
+}
+
+/* Labels and navigation in the condensed sans; data stays monospace. */
+.adam-ops-rail-label,
+.pp-label,
+.pp-header-label,
+.panel-title,
+.sky-kicker,
+.sky-cell-title,
+.indicator-label,
+.data-name,
+.btn-label {
+  font-family: var(--font-label);
+  letter-spacing: 1.4px;
+}
+
+/* ── HUD: position and colour carry hierarchy, not size ───────────────── */
+:root:not([data-ui-theme='cyber']) #intel-hud {
+  --hud-color: var(--ops-accent);
+  --hud-glow: rgba(0, 188, 212, 0.14);
+  --hud-border: rgba(0, 188, 212, 0.12);
+}
+
+:root:not([data-ui-theme='cyber']) #intel-hud * {
+  text-shadow: none;
+}
+
+#intel-hud .hud-content {
+  font-size: 12px;
+  letter-spacing: 1.4px;
+}
+
+#intel-hud .hud-classification {
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+#intel-hud .hud-mode {
+  font-size: 14px;
+  letter-spacing: 2.4px;
+}
+
+#intel-hud .hud-system,
+#intel-hud .hud-summary-label,
+#intel-hud .hud-orbital,
+#intel-hud #hud-ona,
+#intel-hud #hud-moon,
+#intel-hud .adam-local-time {
+  color: var(--ops-data-dim);
+  opacity: 1;
+  font-size: 11px;
+}
+
+#intel-hud #hud-mgrs,
+#intel-hud #hud-latlon {
+  font-size: 14px;
+  letter-spacing: 1.6px;
+}
+
+#intel-hud .hud-bracket {
+  opacity: 0.35;
+}
+
+/* Summary: never truncate operational context; wrap to two lines. */
+#intel-hud .hud-summary {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 560px;
+  line-height: 1.45;
+}
+
+#intel-hud .hud-summary-wrap {
+  max-width: 560px;
+}
+
+/* Satellite pass metadata only when the satellite view applies. */
+:root:not(.adam-sat-context) #intel-hud .hud-orbital {
+  display: none;
+}
+
+/* Collection time is the single clock; the dot and REC appear only while
+   a capture is actually recording, with its elapsed time. */
+#intel-hud #hud-rec:not(.is-recording) #hud-rec-dot {
+  display: none;
+}
+
+#intel-hud #hud-rec.is-recording #hud-rec-dot,
+#intel-hud #hud-rec.is-recording #hud-rec-label {
+  color: var(--ops-alert);
+}
+
+#intel-hud .hud-rec-elapsed {
+  margin-left: 8px;
+  color: var(--ops-alert);
+}
+
+#intel-hud .hud-rec-elapsed:empty {
+  display: none;
+}
+
+/* Empty or out-of-context fields are suppressed, not shown as "--". */
+#intel-hud .is-suppressed {
+  display: none !important;
+}
+
+/* ── Tagline off the live screen ──────────────────────────────────────── */
+#title-bar .subtitle {
+  display: none;
+}
+
+/* ── Legal attribution: always present and legible, just quiet ────────── */
+#cesium-credits,
+.cesium-widget-credits {
+  font-size: 9px !important;
+}
+
+#cesium-credits,
+#cesium-credits a,
+.cesium-widget-credits,
+.cesium-widget-credits a {
+  color: var(--ops-text-dim) !important;
+}
+
+#cesium-credits:hover,
+#cesium-credits:hover a {
+  color: var(--ops-text) !important;
+}
+
+/* ── State strip replaces "ACTIVE STYLE" ──────────────────────────────── */
+#style-indicator.adam-state-strip > :not(.adam-state) {
+  display: none;
+}
+
+.adam-state {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  font-family: var(--font-mono);
+}
+
+.adam-state-view {
+  font-size: 13px;
+  letter-spacing: 2.4px;
+  color: var(--ops-accent);
+}
+
+.adam-state-meta {
+  font-size: 9px;
+  letter-spacing: 1.6px;
+  color: var(--ops-data-dim);
+  white-space: nowrap;
+}
+
+/* ── Right rail: panels only when relevant ────────────────────────────── */
+.adam-rail-idle {
+  display: none !important;
+}
+
+/* ── Layers that cannot be seen from this altitude ────────────────────── */
+.data-toggle-row.adam-out-of-scale {
+  opacity: 0.42;
+}
+
+.data-toggle-row.adam-out-of-scale .data-name::after {
+  content: ' · not visible at this altitude';
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  color: var(--ops-text-dim);
+  text-transform: none;
+}

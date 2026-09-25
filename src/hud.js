@@ -18,7 +18,17 @@ import * as Cesium from 'cesium';
 import { forward as toMGRS } from 'mgrs';
 import { CITY_POIS } from './locations.js';
 import { composeLocalityTag } from './hudLocality.js';
-import { sunPosition } from './environment/astronomy.js';
+import {
+  sunPosition,
+  moonPosition,
+  moonIllumination,
+} from './environment/astronomy.js';
+import {
+  collectionLine,
+  formatAltitude,
+  imageryLine,
+  viewModeFor,
+} from './hudViewMode.js';
 import {
   ellipsoidalToMslDisplayM,
   ensureGeoidReady,
@@ -199,7 +209,7 @@ export class IntelHUD {
         <div class="hud-bracket">┌</div>
         <div class="hud-content">
           <div class="hud-classification">TOP SECRET // SI-TK // NOFORN</div>
-          <div class="hud-system">${this._missionId}  ${this._sensorId}</div>
+          <div class="hud-system" id="hud-system">${this._missionId}  ${this._sensorId}</div>
           <div class="hud-mode" id="hud-mode">NORMAL</div>
           <div class="hud-summary-wrap">
             <div class="hud-summary-label">SUMMARY</div>
@@ -210,7 +220,7 @@ export class IntelHUD {
 
       <div class="hud-corner hud-top-right">
         <div class="hud-content" style="text-align:right">
-          <div class="hud-rec"><span id="hud-rec-dot">●</span> REC  <span id="hud-timestamp">2026-01-01 00:00:00Z</span></div>
+          <div class="hud-rec" id="hud-rec"><span id="hud-rec-dot">●</span> <span id="hud-rec-label">COLL</span>  <span id="hud-timestamp">2026-01-01 00:00:00Z</span><span id="hud-rec-elapsed" class="hud-rec-elapsed"></span></div>
           <div class="hud-orbital">ORB: ${this._orbitNum}  PASS: DESC-${this._passNum}</div>
         </div>
         <div class="hud-bracket">┐</div>
@@ -227,22 +237,14 @@ export class IntelHUD {
       <div class="hud-corner hud-bottom-right">
         <div class="hud-content" style="text-align:right">
           <div id="hud-gsd">GSD: --m  NIIRS: --</div>
+          <div id="hud-ona">ONA: --°</div>
           <div id="hud-alt">ALT: --m   SUN: --° EL</div>
+          <div id="hud-moon" class="hud-moon">MOON: --</div>
           <div id="hud-ais-vessel" class="hud-ais-vessel">AIS: --</div>
         </div>
         <div class="hud-bracket">┘</div>
       </div>
 
-      <div class="hud-edge hud-left-edge">
-        <div id="hud-coll">COLL: --:--:--Z</div>
-        <div id="hud-ona">ONA: --°</div>
-      </div>
-
-      <div class="hud-edge hud-right-edge">
-        <div>BAND: PAN</div>
-        <div>BITS: 11</div>
-        <div>LVL: 1A</div>
-      </div>
 
       <div class="hud-bottom-bar">
         <span id="hud-bottom-line">LAT: --  LON: --  MGRS: ---</span>
@@ -380,9 +382,18 @@ export class IntelHUD {
       0,
       Math.min(9, 10.25 - 3.32 * Math.log10(gsdInches)),
     );
+    // Imagery metrics only where they mean something (see hudViewMode.js).
     const gsdEl = document.getElementById('hud-gsd');
-    if (gsdEl)
-      gsdEl.textContent = `GSD: ${gsd.toFixed(2)}m  NIIRS: ${niirs.toFixed(1)}`;
+    if (gsdEl) gsdEl.textContent = imageryLine(altM, gsd, niirs);
+    const systemEl = document.getElementById('hud-system');
+    if (systemEl)
+      systemEl.textContent = collectionLine(
+        altM,
+        this._missionId,
+        this._sensorId,
+      );
+    if (document.documentElement?.dataset)
+      document.documentElement.dataset.adamView = viewModeFor(altM).id;
 
     // Altitude — reported as height above MEAN SEA LEVEL. `altM` is the raw
     // ellipsoidal camera height, which reads far below zero wherever the geoid
@@ -394,7 +405,16 @@ export class IntelHUD {
     const altMslM = ellipsoidalToMslDisplayM(altM, geoidN);
     const sunEl = this._estimateSunElevation(latDeg, lonDeg);
     if (altEl)
-      altEl.textContent = `ALT: ${Math.round(altMslM)}m   SUN: ${sunEl.toFixed(1)}° EL`;
+      altEl.textContent = `ALT: ${formatAltitude(altMslM)}   SUN: ${sunEl.toFixed(1)}° EL`;
+    const moonEl = document.getElementById('hud-moon');
+    if (moonEl) {
+      const when = this.viewer?.clock?.currentTime
+        ? Cesium.JulianDate.toDate(this.viewer.clock.currentTime)
+        : new Date();
+      const moon = moonPosition(when, latDeg, lonDeg);
+      const lit = Math.round(moonIllumination(when).fraction * 100);
+      moonEl.textContent = `MOON: ${lit}%  ${moon.altitude >= 0 ? '+' : ''}${moon.altitude.toFixed(1)}° EL`;
+    }
 
     // Collection timestamp
     const collEl = document.getElementById('hud-coll');

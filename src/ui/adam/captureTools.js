@@ -210,6 +210,7 @@ export function installCaptureTools({ viewer, doc = document }) {
       track.addEventListener('ended', () => stopRecording());
     recorder.start(1000);
     started = Date.now();
+    doc.documentElement.dataset.adamRecordingSince = String(started);
     recBtn.classList.add('is-recording');
     recBtn.title = `Stop recording (${opened.scope === 'tab' ? 'full view' : 'globe only'})`;
     timer.hidden = false;
@@ -231,6 +232,7 @@ export function installCaptureTools({ viewer, doc = document }) {
     stream = null;
     recorder = null;
     releaseContinuousRender('adam-recording');
+    delete doc.documentElement.dataset.adamRecordingSince;
     recBtn.classList.remove('is-recording');
     recBtn.title = 'Record the view';
     timer.hidden = true;

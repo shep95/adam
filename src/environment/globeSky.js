@@ -136,20 +136,6 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
       outlineColor: Cesium.Color.fromCssColorString('#fff3cf').withAlpha(0.6),
       outlineWidth: 6,
     },
-    label: {
-      text: 'sun overhead',
-      font: '500 11px "JetBrains Mono", ui-monospace, monospace',
-      fillColor: Cesium.Color.fromCssColorString('#ffd27a'),
-      outlineColor: Cesium.Color.BLACK.withAlpha(0.8),
-      outlineWidth: 3,
-      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cesium.Cartesian2(14, -12),
-      horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
-      distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-        3e6,
-        Number.POSITIVE_INFINITY,
-      ),
-    },
   });
   const moonMarker = source.entities.add({
     id: 'adam-sky-moon',
@@ -159,20 +145,6 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
       color: Cesium.Color.fromCssColorString('#dfe8f5'),
       outlineColor: Cesium.Color.fromCssColorString('#9fb4d6').withAlpha(0.5),
       outlineWidth: 4,
-    },
-    label: {
-      text: 'moon overhead',
-      font: '500 11px "JetBrains Mono", ui-monospace, monospace',
-      fillColor: Cesium.Color.fromCssColorString('#dfe8f5'),
-      outlineColor: Cesium.Color.BLACK.withAlpha(0.8),
-      outlineWidth: 3,
-      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cesium.Cartesian2(12, -10),
-      horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
-      distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-        3e6,
-        Number.POSITIVE_INFINITY,
-      ),
     },
   });
   const shadowArrow = source.entities.add({
