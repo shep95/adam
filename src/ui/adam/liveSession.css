@@ -1,0 +1,25 @@
+.adam-session-person {
+  grid-template-columns: 12px 1fr auto auto;
+}
+
+.adam-session-person .adam-volc-swatch {
+  background: #ff9f0a;
+  border-radius: 50%;
+}
+
+.adam-session-log {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.adam-session-form {
+  display: flex;
+  margin-top: 6px;
+}
+
+.adam-session-form .adam-input {
+  flex: 1;
+}

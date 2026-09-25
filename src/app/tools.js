@@ -468,6 +468,17 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] symbols failed to load:', error));
   defer(() => symbols?.destroy());
 
+  // SESSION: several operators on one picture (invite link #live=<room>).
+  let liveSession = null;
+  import('../ui/adam/liveSession.js')
+    .then(({ installLiveSession }) => {
+      if (signal?.aborted) return;
+      liveSession = installLiveSession({ viewer });
+      debug.session = liveSession;
+    })
+    .catch((error) => console.warn('[adam] session failed to load:', error));
+  defer(() => liveSession?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

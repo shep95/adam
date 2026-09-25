@@ -666,6 +666,31 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'live_session',
+    description:
+      'Work the picture with other operators. action: start (create a room; returns the invite link to give people), status (who is in the room and where each is looking), follow (your camera follows an operator by name; empty name stops), pin (drop a pin at the view centre for everyone, optional label), note (send text to the room), share_overlay (send the current Shepherd overlay to everyone), leave.',
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: [
+            'start',
+            'status',
+            'follow',
+            'pin',
+            'note',
+            'share_overlay',
+            'leave',
+          ],
+        },
+        name: { type: 'string' },
+        label: { type: 'string' },
+        text: { type: 'string' },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

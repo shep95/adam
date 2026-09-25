@@ -35,6 +35,7 @@ import { placeMediaProxy } from './placeMedia.js';
 import { keyedFeedsProxy } from './keyedFeeds.js';
 import { ownershipProxy } from './ownership.js';
 import { earthSpaceProxy } from './earthSpace.js';
+import { sessionsProxy } from './sessions.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -76,6 +77,7 @@ function localProviderPlugins() {
     keyedFeedsProxy(),
     ownershipProxy(),
     earthSpaceProxy(),
+    sessionsProxy(),
     keySetupEndpoint(),
   ];
 }

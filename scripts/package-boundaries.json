@@ -2059,6 +2059,8 @@
       "src/ui/adam/volcanoPanel.css",
       "src/ui/adam/spacePanel.js",
       "src/ui/adam/spectrumPanel.js",
+      "src/ui/adam/liveSession.js",
+      "src/ui/adam/liveSession.css",
       "src/intel/spectrum.js",
       "src/intel/trackArchive.js",
       "src/ui/adam/spacePanel.css",

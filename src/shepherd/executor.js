@@ -1078,6 +1078,55 @@ export function createShepherdExecutor({
       sp.open();
       return { ok: true };
     },
+    live_session: async ({ action, name, label, text } = {}) => {
+      const s = getConsole().session;
+      if (!s) return { ok: false, error: 'session panel is still loading' };
+      switch (action) {
+        case 'start':
+          return s.state().room ? { ok: true, ...s.state() } : s.start();
+        case 'follow':
+          return s.follow(name || null);
+        case 'pin':
+          await s.pinHere(label || '');
+          return { ok: true, ...s.state() };
+        case 'note':
+          await s.note(text);
+          return { ok: true };
+        case 'share_overlay': {
+          const fc = getConsole().shepherd?.overlay?.geojson?.();
+          const nodes = [];
+          const links = [];
+          for (const f of fc?.features || []) {
+            const p = f.properties || {};
+            if (f.geometry?.type === 'Point' && p.id)
+              nodes.push({
+                id: p.id,
+                label: p.label,
+                kind: p.kind,
+                lat: f.geometry.coordinates[1],
+                lon: f.geometry.coordinates[0],
+                note: p.note,
+              });
+            else if (f.geometry?.type === 'LineString' && p.from)
+              links.push({ from: p.from, to: p.to, label: p.label });
+          }
+          if (!nodes.length) return { ok: false, error: 'no overlay to share' };
+          await s.shareOverlay(
+            {
+              title: 'shared overlay',
+              nodes: nodes.slice(0, 150),
+              links: links.slice(0, 150),
+            },
+            'shared overlay',
+          );
+          return { ok: true, nodes: nodes.length, links: links.length };
+        }
+        case 'leave':
+          return s.leave();
+        default:
+          return { ok: true, ...s.state() };
+      }
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };

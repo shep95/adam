@@ -536,6 +536,9 @@ export class ShareLinkManager {
     if (this._destroyed || this._initialRestorePending) return;
     const params = this._buildHashParams();
     if (!params) return;
+    // A live-session room rides along with the camera state.
+    const live = new URLSearchParams(window.location.hash.slice(1)).get('live');
+    if (live) params.set('live', live);
     history.replaceState(null, '', `#${params.toString()}`);
   }
 
