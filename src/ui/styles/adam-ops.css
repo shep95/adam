@@ -9,7 +9,7 @@
      surface       #0D1517   panels, separated without borders
      text          #B0BEC5   long-session luminance
      text dim      #455A64   labels, units, empty fields
-   Type: IBM Plex Mono for data, IBM Plex Sans Condensed for labels/nav.
+   Type: ADAM Sans / ADAM Mono (chosen in settings; Geist by default).
    Sizes: data 11–13px, labels 9–10px, primary coordinates 14px.
    The cyber theme keeps its own red/slate treatment.
    ═══════════════════════════════════════════════ */
@@ -41,8 +41,8 @@
   --text-secondary: #7b8d95;
   --text-dim: var(--ops-text-dim);
 
-  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', 'SF Mono', monospace;
-  --font-label: 'IBM Plex Sans Condensed', 'IBM Plex Sans', 'Inter', sans-serif;
+  --font-mono: 'ADAM Mono', 'ADAM Mono', 'SF Mono', monospace;
+  --font-label: 'ADAM Sans', 'ADAM Sans', 'ADAM Sans', sans-serif;
   --type-meta: 10px;
   --type-value: 12px;
   --type-readout: 14px;
@@ -360,7 +360,7 @@ body.cockpit-mode.adam-cockpit-compact
 #intel-hud #hud-localtime {
   font-family: var(
     --font-condensed,
-    'IBM Plex Sans Condensed',
+    'ADAM Sans',
     sans-serif
   ) !important;
   letter-spacing: 0.02em !important;
@@ -371,7 +371,7 @@ body.cockpit-mode.adam-cockpit-compact
 #intel-hud #hud-mgrs,
 #intel-hud #hud-timestamp,
 #intel-hud .hud-rec {
-  font-family: var(--font-mono, 'IBM Plex Mono', monospace) !important;
+  font-family: var(--font-mono, 'ADAM Mono', monospace) !important;
   letter-spacing: 0.01em !important;
 }
 
@@ -401,7 +401,7 @@ body.cockpit-mode.adam-cockpit-compact
 .adam-ops-rail-label {
   font-family: var(
     --font-condensed,
-    'IBM Plex Sans Condensed',
+    'ADAM Sans',
     sans-serif
   ) !important;
   letter-spacing: 0.03em !important;
@@ -422,7 +422,7 @@ body.cockpit-mode.adam-cockpit-compact
   text-transform: lowercase;
   font-family: var(
     --font-condensed,
-    'IBM Plex Sans Condensed',
+    'ADAM Sans',
     sans-serif
   ) !important;
 }
@@ -442,7 +442,7 @@ body.cockpit-mode.adam-cockpit-compact
   top: calc(100% + 3px);
   left: 50%;
   translate: -50% 0;
-  font: 400 10px var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif);
+  font: 400 10px var(--font-condensed, 'ADAM Sans', sans-serif);
   letter-spacing: 0.02em;
   color: var(--text-dim);
   white-space: nowrap;
@@ -488,11 +488,11 @@ body.cockpit-mode.adam-cockpit-compact
 .gev-mic-label {
   letter-spacing: 0.03em !important;
   text-transform: lowercase !important;
-  font-family: var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif) !important;
+  font-family: var(--font-condensed, 'ADAM Sans', sans-serif) !important;
 }
 
 #first-run-title {
-  font-family: var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif) !important;
+  font-family: var(--font-condensed, 'ADAM Sans', sans-serif) !important;
   letter-spacing: 0 !important;
   font-weight: 500;
 }

@@ -137,7 +137,7 @@ export function createActionRunner({
         },
         label: {
           text: `+${p.min >= 60 ? `${Math.floor(p.min / 60)}h${String(p.min % 60).padStart(2, '0')}` : `${p.min}m`}`,
-          font: '500 10px "IBM Plex Mono", monospace',
+          font: '500 10px "ADAM Mono", monospace',
           fillColor: cyan,
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 3,
@@ -155,7 +155,7 @@ export function createActionRunner({
         },
         label: {
           text: `ENTERS ${result.eta.minutes >= 60 ? `${Math.floor(result.eta.minutes / 60)}h${String(result.eta.minutes % 60).padStart(2, '0')}` : `${result.eta.minutes}m`}`,
-          font: '600 11px "IBM Plex Mono", monospace',
+          font: '600 11px "ADAM Mono", monospace',
           fillColor: Cesium.Color.fromCssColorString('#E53935'),
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 3,

@@ -39,6 +39,7 @@ function fixture() {
   vm.runInContext(source, context);
   const stop = context.startApplicationChrome({
     initializeSettings: context.initKeySetup,
+    initializeWelcome: context.initFirstRunExperience,
     loadingScreen: {
       classList: { add: (value) => events.push(value) },
       addEventListener: (type, listener) => listeners.set(type, listener),
@@ -123,4 +124,23 @@ test('shutdown during the cover transition cancels the listener and fallback', a
   transition();
   f.fire(900);
   assert.deepEqual(f.events, ['hidden', 'settings:destroy']);
+});
+
+test('no onboarding by default: the cover lifts and nothing else opens', async () => {
+  const context = { console, setTimeout: (fn) => (fn(), 1), clearTimeout() {} };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+  const events = [];
+  context.startApplicationChrome({
+    loadingScreen: {
+      classList: { add: (v) => events.push(v) },
+      addEventListener: (type, fn) => fn(),
+      removeEventListener() {},
+    },
+    styleManager: { initialRestorePromise: Promise.resolve() },
+    dataManager: {},
+    signal: new AbortController().signal,
+  });
+  await flush();
+  assert.deepEqual(events, ['hidden']);
 });

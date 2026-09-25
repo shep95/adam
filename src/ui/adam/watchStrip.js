@@ -124,7 +124,7 @@ export function installWatchStrip({
         },
         label: {
           text: `${item.score} · ${item.title}`,
-          font: '500 11px "IBM Plex Mono", monospace',
+          font: '500 11px "ADAM Mono", monospace',
           fillColor: color,
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 3,

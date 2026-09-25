@@ -146,7 +146,7 @@ export function installCaptureTools({ viewer, doc = document }) {
     const local = doc.getElementById('hud-localtime')?.textContent || '';
     const left = `ADAM · ${(carto.latitude * RAD).toFixed(5)}, ${(carto.longitude * RAD).toFixed(5)} · alt ${Math.round(carto.height)} m`;
     const right = `${now.toISOString().replace(/\.\d+Z$/, 'Z')}${local ? ` · ${local.toUpperCase()}` : ''} · #HOUSEOFASHER`;
-    ctx.font = `500 ${Math.round(strip * 0.42)}px "JetBrains Mono", ui-monospace, monospace`;
+    ctx.font = `500 ${Math.round(strip * 0.42)}px "ADAM Mono", ui-monospace, monospace`;
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#00bcd4';
     ctx.fillText(left, strip * 0.5, h + strip / 2);

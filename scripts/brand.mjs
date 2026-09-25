@@ -7,7 +7,7 @@
  * Writes public/brand/{favicon-32.png, apple-touch-icon.png, icon-512.png,
  * logo.png, og-image.png} with sharp, then points index.html and the logo
  * templates at them. Re-running with a new image replaces the set. The
- * original vector logo stays in public/logo.svg as the fallback.
+ * vector sheep mark in public/brand/ stays as the fallback.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

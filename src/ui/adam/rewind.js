@@ -1,13 +1,13 @@
 /**
  * REWIND (R): scrub back through the last ~45 minutes of held tracks.
  *
- * Ghost markers show where every tracked aircraft and vessel was at the
+ * Past-position markers show where every tracked aircraft and vessel was at the
  * chosen moment, with a short tail of the five minutes before it. Live
  * contacts keep their real positions underneath; LIVE returns to now. Play
  * runs history forward at 30× (one real second = 30 s of history).
  *
  * The history is the pattern watcher's decimated samples (one per ~30 s), so
- * ghosts are interpolated — a reconstruction, labelled as such.
+ * markers are interpolated — a reconstruction, labelled as such.
  */
 import * as Cesium from 'cesium';
 import './rewind.css';
@@ -94,8 +94,8 @@ export function installRewind({ viewer, intel, doc = document }) {
       governorRequestRender('adam-rewind');
       return;
     }
-    const ghosts = api.snapshotAt(at);
-    for (const g of ghosts) {
+    const past = api.snapshotAt(at);
+    for (const g of past) {
       const color = Cesium.Color.fromCssColorString(
         COLORS[g.layerKey] || '#B0BEC5',
       );
@@ -129,7 +129,7 @@ export function installRewind({ viewer, intel, doc = document }) {
           });
       }
     }
-    readout.textContent = `${clock(at)} · −${Math.round((Date.now() - at) / 60_000)} min · ${ghosts.length}`;
+    readout.textContent = `${clock(at)} · −${Math.round((Date.now() - at) / 60_000)} min · ${past.length}`;
     governorRequestRender('adam-rewind');
   }
 

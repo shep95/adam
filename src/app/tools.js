@@ -380,6 +380,17 @@ export function createApplicationTools({
     );
   defer(() => placeDossier?.destroy());
 
+  // SETTINGS: fonts, size, lettering, panel sizes, night view, language, logo.
+  let uiSettings = null;
+  import('../ui/adam/uiSettings.js')
+    .then(({ installUiSettings }) => {
+      if (signal?.aborted) return;
+      uiSettings = installUiSettings({});
+      debug.settings = uiSettings;
+    })
+    .catch((error) => console.warn('[adam] settings failed to load:', error));
+  defer(() => uiSettings?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

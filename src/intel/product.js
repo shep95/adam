@@ -115,18 +115,18 @@ export function buildProduct(p = {}) {
 <title>${title}</title>
 <style>
 :root{--ink:#0d1517;--dim:#455a64;--line:#cfd8dc;--accent:#00838f}
-*{box-sizing:border-box}body{margin:0;font:13px/1.5 "IBM Plex Sans","Segoe UI",Arial,sans-serif;color:var(--ink);background:#fff}
-.mark{position:sticky;top:0;text-align:center;font:600 12px "IBM Plex Mono",monospace;letter-spacing:2px;padding:4px;background:#fff;border-bottom:2px solid var(--ink)}
+*{box-sizing:border-box}body{margin:0;font:13px/1.5 system-ui,"Segoe UI",Arial,sans-serif;color:var(--ink);background:#fff}
+.mark{position:sticky;top:0;text-align:center;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:2px;padding:4px;background:#fff;border-bottom:2px solid var(--ink)}
 .mark.bottom{position:static;border-top:2px solid var(--ink);border-bottom:0;margin-top:32px}
 main{max-width:980px;margin:0 auto;padding:24px}
 .cover{border:2px solid var(--ink);padding:28px;margin:12px 0 28px}
 .cover h1{margin:6px 0 10px;font-size:26px}
-.meta{font:12px "IBM Plex Mono",monospace;color:var(--dim)}
+.meta{font:12px ui-monospace,Menlo,monospace;color:var(--dim)}
 h2{font-size:15px;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:4px;margin-top:28px}
 .bluf{border-left:4px solid var(--accent);padding:8px 14px;background:#f1f8f9;font-size:14px}
 table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left}
 th{background:#eceff1;font-weight:600}code{font-size:11px;word-break:break-all}.alt{color:var(--dim);margin-top:4px;font-style:italic}
-figure{margin:0}figure img{width:100%;border:1px solid var(--line)}figcaption{font:11px "IBM Plex Mono",monospace;color:var(--dim);margin-top:4px}
+figure{margin:0}figure img{width:100%;border:1px solid var(--line)}figcaption{font:11px ui-monospace,Menlo,monospace;color:var(--dim);margin-top:4px}
 .none{color:var(--dim);font-style:italic}.key td:first-child{font-weight:600;width:110px}
 @media print{.mark{position:static}h2{break-after:avoid}table,figure{break-inside:avoid}}
 </style></head><body>

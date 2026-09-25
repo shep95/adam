@@ -2048,6 +2048,8 @@
       "src/ui/adam/cctvDirectory.js",
       "src/ui/adam/placeDossier.js",
       "src/ui/adam/mapLayers.js",
+      "src/ui/adam/uiSettings.js",
+      "src/ui/adam/uiSettings.css",
       "src/ui/adam/mapLayers.css",
       "src/maps/overlayCatalog.js",
       "src/nations/telecomData.js",

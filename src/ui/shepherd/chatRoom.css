@@ -16,7 +16,7 @@
   -webkit-backdrop-filter: blur(18px) saturate(1.1);
   border-left: 1px solid rgba(0, 188, 212, 0.14);
   color: var(--ops-text, #b0bec5);
-  font-family: var(--font-mono, 'JetBrains Mono', ui-monospace, monospace);
+  font-family: var(--font-mono, 'ADAM Mono', ui-monospace, monospace);
   font-weight: 300;
   font-size: var(--type-value, 13px);
   line-height: 1.55;

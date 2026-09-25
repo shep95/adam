@@ -1,0 +1,290 @@
+/* ── Modern base: fonts, scrollbars, form controls, lowercase ──────────
+   "ADAM Sans" and "ADAM Mono" are the families the settings panel loads
+   (Geist by default); every stylesheet and canvas label names them, so a
+   font change reaches the whole interface. System fonts back them up. */
+:root {
+  --adam-font-sans:
+    'ADAM Sans', 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+  --adam-font-mono:
+    'ADAM Mono', 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas,
+    monospace;
+  --font-sans: var(--adam-font-sans);
+  --font-label: var(--adam-font-sans);
+  --font-condensed: var(--adam-font-sans);
+  --font-mono: var(--adam-font-mono);
+  --scroll-thumb: rgba(0, 212, 255, 0.28);
+  --scroll-thumb-hover: rgba(0, 212, 255, 0.5);
+  --control-radius: 5px;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--adam-font-sans);
+}
+
+body {
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbars: thin, rounded, in the accent ───────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── Checkboxes: a rounded square with a drawn tick ─────────────────── */
+input[type='checkbox']:not(.native) {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  display: inline-grid;
+  place-content: center;
+  vertical-align: middle;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(176, 190, 197, 0.35);
+  border-radius: var(--control-radius);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+input[type='checkbox']:not(.native)::before {
+  content: '';
+  width: 9px;
+  height: 5px;
+  margin-top: -2px;
+  border: 2px solid #061015;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(-45deg) scale(0);
+  transition: transform 140ms ease;
+}
+
+input[type='checkbox']:not(.native):hover {
+  border-color: var(--accent-primary, #00d4ff);
+}
+
+input[type='checkbox']:not(.native):checked {
+  background: var(--accent-primary, #00d4ff);
+  border-color: var(--accent-primary, #00d4ff);
+}
+
+input[type='checkbox']:not(.native):checked::before {
+  transform: rotate(-45deg) scale(1);
+}
+
+input[type='checkbox']:not(.native):focus-visible,
+input[type='radio']:not(.native):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.25);
+}
+
+input[type='checkbox']:not(.native):disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Radios ─────────────────────────────────────────────────────────── */
+input[type='radio']:not(.native) {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  display: inline-grid;
+  place-content: center;
+  border: 1.5px solid rgba(176, 190, 197, 0.35);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+input[type='radio']:not(.native)::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-primary, #00d4ff);
+  transform: scale(0);
+  transition: transform 140ms ease;
+}
+
+input[type='radio']:not(.native):checked {
+  border-color: var(--accent-primary, #00d4ff);
+}
+
+input[type='radio']:not(.native):checked::before {
+  transform: scale(1);
+}
+
+/* ── Sliders ────────────────────────────────────────────────────────── */
+input[type='range']:not(.native) {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']:not(.native)::-webkit-slider-runnable-track {
+  height: 4px;
+  background: rgba(176, 190, 197, 0.18);
+  border-radius: 999px;
+}
+
+input[type='range']:not(.native)::-moz-range-track {
+  height: 4px;
+  background: rgba(176, 190, 197, 0.18);
+  border-radius: 999px;
+}
+
+input[type='range']:not(.native)::-moz-range-progress {
+  height: 4px;
+  background: var(--accent-primary, #00d4ff);
+  border-radius: 999px;
+}
+
+input[type='range']:not(.native)::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  background: var(--accent-primary, #00d4ff);
+  border: 2px solid #061015;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--accent-primary, #00d4ff);
+}
+
+input[type='range']:not(.native)::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-primary, #00d4ff);
+  border: 2px solid #061015;
+  border-radius: 50%;
+}
+
+/* ── Selects and text inputs ────────────────────────────────────────── */
+select:not(.native) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 5px 28px 5px 10px;
+  color: var(--text-primary, #e6f4f6);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2300d4ff' stroke-width='1.5'/%3E%3C/svg%3E")
+      no-repeat right 10px center,
+    rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(176, 190, 197, 0.2);
+  border-radius: var(--control-radius);
+}
+
+select:not(.native):focus-visible,
+input[type='text']:focus-visible,
+input[type='search']:focus-visible,
+input[type='url']:focus-visible {
+  outline: none;
+  border-color: var(--accent-primary, #00d4ff);
+}
+
+/* ── Lowercase everywhere ───────────────────────────────────────────────
+   All interface text is lowercase; settings → lettering turns it off.
+   What people type, and icon ligatures, keep their own case. */
+html:not([data-case='as-written']) body,
+html:not([data-case='as-written']) body * {
+  text-transform: lowercase !important;
+}
+
+/* Things that must keep their case even inside chrome. */
+html:not([data-case='as-written'])
+  :is(
+    .material-symbols-outlined,
+    .adam-case-keep,
+    .adam-case-keep *,
+    input,
+    textarea,
+    [contenteditable]
+  ) {
+  text-transform: none !important;
+}
+
+/* ── Resizable panels ───────────────────────────────────────────────────
+   Floating cards take a resize grip; the settings panel remembers sizes. */
+html:not([data-resize='off'])
+  :is(
+    .adam-panel.adam-maps,
+    .adam-panel.adam-cctv-dir,
+    .adam-panel.adam-place,
+    .adam-panel.adam-settings,
+    .adam-ops-flyout,
+    .nat-card,
+    .sky-card,
+    .adam-shepherd-room
+  ) {
+  resize: both;
+  min-width: 260px;
+  min-height: 160px;
+  max-width: calc(100vw - 16px);
+}
+
+/* ── Credits corner: small and quiet, never gone ────────────────────────
+   Esri's terms require "Powered by Esri" on screen while its imagery shows,
+   and the open-data licences require attribution, so the line stays — at
+   9px in a dim colour (never faded out), with the full list behind an ⓘ. */
+#cesium-credits,
+#cesium-credits a {
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.02em !important;
+  text-decoration: none !important;
+  color: rgba(200, 212, 218, 0.55) !important;
+}
+
+#cesium-credits:hover a,
+#cesium-credits:focus-within a {
+  color: rgba(226, 236, 240, 0.9) !important;
+}
+
+#cesium-credits .cesium-credit-expand-link {
+  font-size: 0 !important;
+  text-decoration: none !important;
+}
+
+#cesium-credits .cesium-credit-expand-link::before {
+  content: 'ⓘ';
+  font-size: 11px;
+  color: rgba(200, 212, 218, 0.7);
+}

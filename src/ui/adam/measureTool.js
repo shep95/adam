@@ -236,7 +236,7 @@ export function installMeasureTool({ viewer, intel, doc = document }) {
       position: Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat),
       label: {
         text,
-        font: '600 12px "IBM Plex Mono", monospace',
+        font: '600 12px "ADAM Mono", monospace',
         fillColor: color,
         outlineColor: Cesium.Color.BLACK,
         outlineWidth: 3,
@@ -355,7 +355,7 @@ export function installMeasureTool({ viewer, intel, doc = document }) {
         ),
         label: {
           text: z.name.toUpperCase(),
-          font: '600 10px "IBM Plex Mono", monospace',
+          font: '600 10px "ADAM Mono", monospace',
           fillColor: AMBER,
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 3,

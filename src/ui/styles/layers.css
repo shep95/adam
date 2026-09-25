@@ -371,7 +371,7 @@
   gap: 10px;
   padding: 1px 3px 7px;
   border-bottom: 1px solid rgba(34, 230, 230, 0.14);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'ADAM Mono', monospace;
 }
 #space-mission-panel-host .space-mission-roster-header > div {
   display: grid;
@@ -417,7 +417,7 @@
   border-radius: 4px;
   color: #d8ffff;
   background: rgba(42, 113, 171, 0.045);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'ADAM Mono', monospace;
   text-align: left;
   cursor: pointer;
   transition:
@@ -499,7 +499,7 @@
   padding: 18px 10px;
   color: rgba(190, 230, 230, 0.48);
   font:
-    8px/1.5 'JetBrains Mono',
+    8px/1.5 'ADAM Mono',
     monospace;
   letter-spacing: 0.09em;
   text-align: center;
@@ -509,7 +509,7 @@
   padding: 3px;
   color: rgba(190, 230, 230, 0.58);
   font:
-    7px/1.4 'JetBrains Mono',
+    7px/1.4 'ADAM Mono',
     monospace;
   letter-spacing: 0.08em;
   text-align: center;
@@ -522,7 +522,7 @@
   border-top: 1px solid rgba(34, 230, 230, 0.18);
   color: rgba(190, 230, 230, 0.58);
   font:
-    8px 'JetBrains Mono',
+    8px 'ADAM Mono',
     monospace;
   letter-spacing: 0.18em;
 }
@@ -545,7 +545,7 @@
   padding: 12px 0;
   color: var(--hud-cyan, #22e6e6);
   font:
-    11px 'JetBrains Mono',
+    11px 'ADAM Mono',
     monospace;
   letter-spacing: 0.08em;
 }
@@ -568,7 +568,7 @@
   margin: 0 0 6px;
   color: #22e6e6;
   font:
-    10px 'JetBrains Mono',
+    10px 'ADAM Mono',
     monospace;
   letter-spacing: 0.17em;
 }
@@ -581,7 +581,7 @@
   table-layout: fixed;
   color: #d8ffff;
   font:
-    9px 'JetBrains Mono',
+    9px 'ADAM Mono',
     monospace;
   letter-spacing: 0.025em;
 }
@@ -635,7 +635,7 @@
   justify-content: space-between;
   color: rgba(190, 230, 230, 0.68);
   font:
-    8px 'JetBrains Mono',
+    8px 'ADAM Mono',
     monospace;
   letter-spacing: 0.16em;
 }
@@ -651,7 +651,7 @@
   justify-content: space-between;
   color: rgba(190, 230, 230, 0.42);
   font:
-    7px 'JetBrains Mono',
+    7px 'ADAM Mono',
     monospace;
   letter-spacing: 0.08em;
 }
@@ -675,7 +675,7 @@
     rgba(34, 230, 230, 0.08)
   );
   font:
-    9px 'JetBrains Mono',
+    9px 'ADAM Mono',
     monospace;
   letter-spacing: 0.16em;
   cursor: pointer;
@@ -729,7 +729,7 @@
   color: #22e6e6;
   background: rgba(34, 230, 230, 0.08);
   font:
-    15px/1 'JetBrains Mono',
+    15px/1 'ADAM Mono',
     monospace;
   cursor: pointer;
   transition:
@@ -778,7 +778,7 @@
   background: rgba(8, 34, 42, 0.72);
   color: #22e6e6;
   font:
-    11px 'JetBrains Mono',
+    11px 'ADAM Mono',
     monospace;
   letter-spacing: 0.12em;
   cursor: pointer;
@@ -805,7 +805,7 @@
   text-align: center;
   color: #d8ffff;
   font:
-    11px 'JetBrains Mono',
+    11px 'ADAM Mono',
     monospace;
   letter-spacing: 0.1em;
 }
@@ -921,7 +921,7 @@
   min-width: 188px;
   color: #fff;
   font:
-    9px/1.38 'JetBrains Mono',
+    9px/1.38 'ADAM Mono',
     monospace;
   letter-spacing: 0.075em;
   text-shadow:

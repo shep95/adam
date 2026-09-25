@@ -1,12 +1,14 @@
-import { initFirstRunExperience } from '../firstRunExperience.js';
-
-/** Reveal welcome controls only after restoration and the loading transition. */
+/**
+ * Hide the loading cover once restoration settles. No onboarding runs by
+ * default: the globe opens straight away. A caller may still pass
+ * `initializeWelcome` to reveal something after the cover lifts.
+ */
 export function startApplicationChrome({
   loadingScreen,
   styleManager,
   dataManager,
   signal,
-  initializeWelcome = initFirstRunExperience,
+  initializeWelcome = null,
   initializeSettings,
 }) {
   let disposed = false;

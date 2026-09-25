@@ -148,7 +148,7 @@ export function createShepherdOverlay({
       },
       label: {
         text: `${node.label.toLowerCase()}${conf}`,
-        font: '500 12px "JetBrains Mono", ui-monospace, monospace',
+        font: '500 12px "ADAM Mono", ui-monospace, monospace',
         fillColor: color,
         outlineColor: Cesium.Color.BLACK.withAlpha(0.8),
         outlineWidth: 3,
@@ -324,7 +324,7 @@ export function createShepherdOverlay({
         },
         label: {
           text: text.toLowerCase(),
-          font: '500 12px "JetBrains Mono", ui-monospace, monospace',
+          font: '500 12px "ADAM Mono", ui-monospace, monospace',
           fillColor: cyan,
           outlineColor: Cesium.Color.BLACK.withAlpha(0.8),
           outlineWidth: 3,
