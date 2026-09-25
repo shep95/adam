@@ -573,17 +573,30 @@ export function createIntelService({
      * and, given a zone id, when it would enter it.
      */
     predict({ layerKey, id, minutes = 240, zone = null } = {}) {
-      const records = getRecords(layerKey);
       const key = String(id || '')
         .trim()
         .toLowerCase();
-      const r = records.find((x) =>
+      const match = (x) =>
         [x.mmsi, x.icao24, x.callsign, x.name, x.id].some(
           (v) => v != null && String(v).trim().toLowerCase() === key,
-        ),
-      );
+        );
+      // No layer given: look through every contact layer.
+      const layers = layerKey
+        ? [layerKey]
+        : ['ais-live-vessels', 'flights', 'military'];
+      let r = null;
+      for (const k of layers) {
+        r = (getRecords(k) || []).find(match) || null;
+        if (r) {
+          layerKey = k;
+          break;
+        }
+      }
       if (!r)
-        return { ok: false, error: `${id} is not in ${layerKey} right now` };
+        return {
+          ok: false,
+          error: `${id} is not in ${layerKey || 'vessels, flights or military'} right now`,
+        };
       const vessel = layerKey === 'ais-live-vessels';
       const track = predictTrack(
         {
