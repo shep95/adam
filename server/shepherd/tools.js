@@ -273,6 +273,12 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'get_exposure',
+    description:
+      'Infrastructure exposure: mapped datacentres and dams inside the screening reach of live hazards — earthquakes M4.5+ in the last 48 h (40-500 km by magnitude) and satellite fires ≥50 MW (5 km). Needs the earthquakes / FIRMS and datacentre / dam layers on. Reach is a screening distance, not damage; say so.',
+    parameters: obj({ limit: { type: 'integer', minimum: 1, maximum: 20 } }),
+  },
+  {
     name: 'get_patterns',
     description:
       'Behaviour patterns seen over the last ~45 minutes of live data: orbit (aircraft circling ≥2 turns in 30 km), ais-dark (vessel under way stopped reporting 20+ min), meeting (two slow vessels ≤500 m apart 20+ min in open water), jump (impossible position change). Each has a confidence and an alternative reading; report both. Needs flights/military/vessels layers on for a while.',

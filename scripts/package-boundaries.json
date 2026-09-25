@@ -1994,6 +1994,7 @@
       "src/intel/alertRules.js",
       "src/intel/intelService.js",
       "src/intel/patternWatch.js",
+      "src/intel/exposure.js",
       "src/intel/contactPresentation.js",
       "src/ui/adam/opsDeck.css",
       "src/voice/actions/cockpit.js",

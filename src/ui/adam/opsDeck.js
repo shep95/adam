@@ -301,6 +301,44 @@ export function installOpsDeck({
         ),
       );
     }
+    const exposed = intel.exposure?.({ limit: 4 }) || [];
+    if (exposed.length) {
+      body.append(
+        el(
+          doc,
+          'h3',
+          'adam-meta adam-ops-section',
+          'EXPOSURE · ASSETS IN HAZARD REACH',
+        ),
+      );
+      for (const x of exposed) {
+        const row = button(
+          doc,
+          '',
+          'adam-brief-pattern',
+          () =>
+            viewer.camera.flyTo({
+              destination: Cesium.Cartesian3.fromDegrees(
+                x.hazard.lon,
+                x.hazard.lat,
+                Math.max(40_000, x.reachKm * 2600),
+              ),
+              duration: 1.6,
+            }),
+          { title: 'Screening radius, not a damage estimate' },
+        );
+        row.append(
+          el(
+            doc,
+            'span',
+            'adam-meta adam-tier-alert',
+            x.hazard.label.toUpperCase(),
+          ),
+          el(doc, 'span', 'adam-meta adam-brief-facts', x.statement),
+        );
+        body.append(row);
+      }
+    }
     const watched = intel.patterns?.({ limit: 6 }) || [];
     if (watched.length) {
       body.append(

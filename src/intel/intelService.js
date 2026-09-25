@@ -22,6 +22,7 @@ import {
 } from './briefing.js';
 import { layerSnapshots } from '../data/layerSnapshot.js';
 import { createPatternWatch } from './patternWatch.js';
+import { assessExposure } from './exposure.js';
 
 export const BASELINE_LAYERS = Object.freeze([
   'flights',
@@ -321,6 +322,10 @@ export function createIntelService({
 
     /** Behaviour patterns over the last ~45 min (orbits, AIS dark, meetings, jumps). */
     patterns: (options) => patterns.findings(options),
+
+    /** Infrastructure (datacentres, dams) inside the reach of live quakes and strong fires. */
+    exposure: ({ limit = 8 } = {}) =>
+      assessExposure(getRecords, { now: now(), limit }),
     /** Held track history (~45 min) for rewind: range, positions at a time, one track. */
     rewind: {
       range: () => patterns.range(),

@@ -50,6 +50,12 @@ two slow vessels meeting in open water, and impossible position jumps. Each
 finding shows in BRIEF (click to fly there) with a confidence and the plainest
 alternative reading; Shepherd reads them with `get_patterns`.
 
+**Infrastructure exposure.** With earthquakes or FIRMS fires on alongside
+datacentres or dams, BRIEF lists assets inside each hazard's screening reach
+(M4.5+ quakes in the last 48 h: 40–500 km by magnitude; fires ≥ 50 MW: 5 km).
+It is a screening distance, not a damage estimate. Shepherd reads it with
+`get_exposure`.
+
 ## Shepherd
 
 A streaming chat analyst on the right edge. It reads a `[console]` block with

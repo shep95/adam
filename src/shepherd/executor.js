@@ -547,6 +547,22 @@ export function createShepherdExecutor({
         newest,
       };
     },
+    get_exposure: ({ limit } = {}) => {
+      const exposure = intel?.exposure?.({ limit: limit || 8 });
+      if (!exposure)
+        return { ok: false, error: 'intel service is not running' };
+      const on = (k) => Boolean(dataManager.isEnabled?.(k));
+      return {
+        ok: true,
+        exposure,
+        layersOn: {
+          earthquakes: on('earthquakes'),
+          fires: on('local-firms'),
+          datacentres: on('local-datacenters'),
+          dams: on('local-dams'),
+        },
+      };
+    },
     get_patterns: ({ kind, limit } = {}) => {
       const findings = intel?.patterns?.({
         kind: kind || null,
