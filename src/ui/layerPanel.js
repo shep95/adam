@@ -1,4 +1,5 @@
 import { syncChipGroup } from './chipGroup.js';
+import { setIcon } from './iconGlyphs.js';
 import { syncRowList } from './rowList.js';
 import { layerFeedState } from '../data/feedState.js';
 export { layerFeedState } from '../data/feedState.js';
@@ -232,7 +233,7 @@ export class LayerPanel {
       const icon = document.createElement('span');
       icon.className = 'data-icon';
       icon.setAttribute('aria-hidden', 'true');
-      icon.textContent = layer.icon;
+      setIcon(icon, layer.icon);
       const name = document.createElement('span');
       name.className = 'data-name';
       name.textContent = panelLabel(layer);

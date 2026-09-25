@@ -1,4 +1,5 @@
 import { createRailCardBlocks } from './railCardBlocks.js';
+import { setIcon } from './iconGlyphs.js';
 
 const set = (node, key, value) => {
   if (node[key] !== value) node[key] = value;
@@ -88,7 +89,10 @@ export function createRailCards({
         set(row.title, 'textContent', card.title);
         if (row.title.getAttribute('title') !== card.title)
           row.title.setAttribute('title', card.title);
-        set(row.icon, 'textContent', card.icon || '');
+        if (row.icon.dataset.glyph !== (card.icon || '')) {
+          row.icon.dataset.glyph = card.icon || '';
+          setIcon(row.icon, card.icon || '');
+        }
         set(row.icon, 'hidden', !card.icon);
         set(row.badge, 'textContent', card.badge || '');
         set(row.badge, 'hidden', !card.badge);

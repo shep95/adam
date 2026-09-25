@@ -20,7 +20,8 @@ test('every application shortcut binding is listed for the globe', () => {
     'utf8',
   );
   const letters = [...source.matchAll(/key === '([a-z])'/g)].map((m) => m[1]);
-  assert.ok(letters.length >= 6);
+  // V (clean view) was retired with the Clean UI control.
+  assert.ok(letters.length >= 5);
   for (const key of letters) assert.ok(listed(key, 'globe'), `${key} missing`);
   for (const digit of ['1', '2', '3', '4', '5', '6', '7'])
     assert.ok(listed(digit, 'globe'), `${digit} missing`);

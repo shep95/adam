@@ -53,7 +53,7 @@ export function createRendering({
       marker.className = 'military-awareness-direction-marker';
       const arrow = document.createElement('span');
       arrow.className = 'military-awareness-direction-arrow';
-      arrow.textContent = '➜';
+      arrow.textContent = '→';
       const label = document.createElement('span');
       label.className = 'military-awareness-direction-label';
       marker.append(arrow, label);

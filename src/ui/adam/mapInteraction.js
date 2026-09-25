@@ -235,7 +235,7 @@ export function installMapInteraction({
   chip.title =
     '3D buildings: photoreal tiles with a key, OpenStreetMap footprints without';
   chip.setAttribute('aria-pressed', 'false');
-  chip.append(el(doc, 'span', 'adam-ops-rail-label', '3D'));
+  chip.append(el(doc, 'span', 'adam-ops-rail-label', 'BUILDINGS'));
   chip.addEventListener('click', async () => {
     chip.disabled = true;
     try {

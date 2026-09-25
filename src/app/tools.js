@@ -5,6 +5,7 @@ import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { createGevActionRunner } from '../voice/gevActions.js';
+import { applyDisplayPolicy } from '../ui/adam/displayPolicy.js';
 import { createIntelService } from '../intel/intelService.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
 import {
@@ -233,6 +234,9 @@ export function createApplicationTools({
     })
     .catch((error) => console.warn('[adam] shepherd failed to load:', error));
   defer(() => shepherd?.destroy());
+
+  const displayPolicy = applyDisplayPolicy({ styleManager });
+  defer(() => displayPolicy.destroy());
 
   // The Cesium ion mark is an attribution for ion-served data; without an
   // ion token nothing comes from ion, so the mark is not shown.

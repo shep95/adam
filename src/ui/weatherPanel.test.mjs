@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { symbolForGlyph } from './iconGlyphs.js';
 import assert from 'node:assert/strict';
 import { createWeatherPanel } from './weatherPanel.js';
 import { railFixture } from './railTestFixture.mjs';
@@ -558,8 +559,11 @@ test('all five headers retain descriptor icons and disclosure state when opened 
         true,
       );
       assert.equal(header.children[1].className, 'rail-card-disclosure');
-      assert.equal(heading.children[0].className, 'data-icon');
-      assert.equal(heading.children[0].textContent, entry.icon);
+      assert.match(heading.children[0].className, /^data-icon\b/);
+      assert.equal(
+        heading.children[0].textContent,
+        symbolForGlyph(entry.icon) ?? entry.icon,
+      );
       assert.equal(heading.children[0].hidden, false);
       assert.equal(heading.children[1].textContent, entry.summary.label);
       assert.equal(

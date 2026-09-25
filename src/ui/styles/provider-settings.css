@@ -240,7 +240,18 @@
 }
 
 .key-setup-tier {
-  font-size: 0.55rem;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.key-setup-tier.is-metered {
+  background: var(--accent-critical, #e16666);
+}
+
+.key-setup-tier.is-free {
+  background: var(--accent-alert, #f5a623);
 }
 
 .key-setup-exposed {

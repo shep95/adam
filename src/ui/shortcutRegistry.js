@@ -106,12 +106,6 @@ export const SHORTCUTS = Object.freeze([
     modes: ['globe', 'tracking'],
   },
   {
-    keys: ['V'],
-    action: 'Toggle clean view (hide chrome)',
-    group: 'View',
-    modes: ['globe', 'tracking'],
-  },
-  {
     keys: ['O'],
     action: 'Toggle orbit around the view target',
     group: 'View',

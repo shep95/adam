@@ -1,0 +1,9 @@
+/* Controls retired by the display policy (see displayPolicy.js). */
+#hud-layout-row,
+#scope-slider-row,
+#clean-view-toggle,
+#clean-view-exit,
+.pp-toggle-group:has(#bloom-toggle),
+.pp-toggle-group:has(#sharpen-toggle) {
+  display: none !important;
+}

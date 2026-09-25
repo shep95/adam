@@ -17,28 +17,9 @@ import {
   releaseContinuousRender,
 } from '../renderGovernor.js';
 
-const PREFS_KEY = 'adam.environment.v1';
 const LIVE_REPAINT_MS = 20_000;
 const MAX_OFFSET_MS = 7 * 86_400_000;
 export const PLAY_SPEEDS = Object.freeze([1, 60, 600, 3600]);
-
-function readPrefs() {
-  try {
-    return (
-      JSON.parse(globalThis.localStorage?.getItem(PREFS_KEY) || '{}') || {}
-    );
-  } catch {
-    return {};
-  }
-}
-
-function writePrefs(prefs) {
-  try {
-    globalThis.localStorage?.setItem(PREFS_KEY, JSON.stringify(prefs));
-  } catch {
-    /* ignore */
-  }
-}
 
 /** Clamp an arbitrary offset request to ±7 days. */
 export function clampOffsetMs(ms) {
@@ -51,16 +32,19 @@ export function createLiveEnvironment({ viewer }) {
   const scene = viewer.scene;
   const clock = viewer.clock;
   const listeners = new Set();
-  const saved = readPrefs();
+  // The environment always matches the physical place: sunlight, sky and
+  // weather are not operator options. Shadows follow the camera — on close in
+  // (where they read and are affordable), off at regional and globe scale.
   const state = {
-    lighting: saved.lighting !== false,
-    shadows: Boolean(saved.shadows),
-    sky: saved.sky !== false,
+    lighting: true,
+    shadows: false,
+    sky: true,
     mode: 'live',
     offsetMs: 0,
     speed: 1,
     playing: false,
   };
+  const SHADOW_MAX_ALT_M = 15_000;
   let repaintTimer = null;
   let removeTick = null;
 
@@ -74,13 +58,14 @@ export function createLiveEnvironment({ viewer }) {
     }
   };
 
-  function persist() {
-    writePrefs({
-      lighting: state.lighting,
-      shadows: state.shadows,
-      sky: state.sky,
-    });
+  function autoShadows() {
+    const want = viewer.camera.positionCartographic.height < SHADOW_MAX_ALT_M;
+    if (want === state.shadows) return;
+    state.shadows = want;
+    applyScene();
+    emit();
   }
+  const removeMoveEnd = viewer.camera.moveEnd.addEventListener(autoShadows);
 
   function applyScene() {
     const globe = scene.globe;
@@ -201,26 +186,9 @@ export function createLiveEnvironment({ viewer }) {
       emit();
       return snapshot();
     },
-    setLighting(on) {
-      state.lighting = Boolean(on);
-      persist();
-      applyScene();
-      emit();
-    },
-    setShadows(on) {
-      state.shadows = Boolean(on);
-      persist();
-      applyScene();
-      emit();
-    },
-    setSky(on) {
-      state.sky = Boolean(on);
-      persist();
-      applyScene();
-      emit();
-    },
     destroy() {
       clearInterval(repaintTimer);
+      removeMoveEnd();
       removeTick?.();
       releaseContinuousRender('adam-environment-play');
       listeners.clear();
@@ -229,5 +197,6 @@ export function createLiveEnvironment({ viewer }) {
 
   syncClock();
   applyScene();
+  autoShadows();
   return api;
 }

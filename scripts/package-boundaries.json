@@ -384,6 +384,7 @@
       "src/ui/layerPanel.js",
       "src/ui/weatherPanel.js",
       "src/ui/railCards.js",
+      "src/ui/iconGlyphs.js",
       "src/ui/railCardBlocks.js",
       "src/ui/chipGroup.js",
       "src/ui/rowList.js",
@@ -565,6 +566,7 @@
       "src/ui/layerPanel.js",
       "src/ui/weatherPanel.js",
       "src/ui/railCards.js",
+      "src/ui/iconGlyphs.js",
       "src/ui/railCardBlocks.js",
       "src/ui/chipGroup.js",
       "src/ui/rowList.js",
@@ -1760,6 +1762,7 @@
       "src/ui/layerPanel.js",
       "src/ui/weatherPanel.js",
       "src/ui/railCards.js",
+      "src/ui/iconGlyphs.js",
       "src/ui/railCardBlocks.js",
       "src/ui/chipGroup.js",
       "src/ui/rowList.js",
@@ -2008,7 +2011,9 @@
       "src/ui/adam/skyPanel.js",
       "src/ui/adam/skyPanel.css",
       "src/ui/adam/mapInteraction.js",
-      "src/ui/adam/mapInteraction.css"
+      "src/ui/adam/mapInteraction.css",
+      "src/ui/adam/displayPolicy.js",
+      "src/ui/adam/displayPolicy.css"
     ],
     "external": [
       "tz-lookup",

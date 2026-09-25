@@ -87,13 +87,13 @@ test('number keys retain the seven style mappings', () => {
 
 test('letter shortcuts retain uppercase handling and existing actions', () => {
   const f = shortcuts();
+  // V (clean view) was retired with the Clean UI control and is now inert.
   for (const key of ['H', 'o', 'V', 'f', 'D', 'c']) f.press(key);
   assert.deepEqual(
     f.calls,
     [
       'toggleHud',
       'toggleOrbit',
-      'toggleCleanView',
       'toggleLayers',
       'cycleDetection',
       'toggleCctv',

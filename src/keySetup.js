@@ -59,7 +59,8 @@ export function stripKeylessBasemapFromHash(hash) {
   }
 }
 
-const TIER_DOTS = Object.freeze({ metered: '🔴', free: '🟡' });
+// Tier is shown as a coloured dot (CSS), not an emoji.
+const TIER_CLASS = Object.freeze({ metered: 'is-metered', free: 'is-free' });
 
 /** Build one key row. All content is our own registry text, set via textContent. */
 function buildRow(documentRef, key) {
@@ -78,8 +79,7 @@ function buildRow(documentRef, key) {
   const title = documentRef.createElement('strong');
   title.textContent = key.title;
   const tier = documentRef.createElement('span');
-  tier.className = 'key-setup-tier';
-  tier.textContent = TIER_DOTS[key.tier] || '';
+  tier.className = `key-setup-tier ${TIER_CLASS[key.tier] || ''}`.trim();
   tier.title =
     key.tier === 'metered'
       ? 'Metered — a billing-enabled account'

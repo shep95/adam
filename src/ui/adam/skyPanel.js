@@ -25,6 +25,7 @@ const RAD = 180 / Math.PI;
 const HOUR = 3_600_000;
 const SIMULATED = ' · simulated';
 const NOW_LABEL = 'now';
+const PLAY_ICON = Object.freeze({ play: 'play_arrow', pause: 'pause' });
 
 function el(doc, tag, className, text) {
   const node = doc.createElement(tag);
@@ -216,12 +217,13 @@ export function installSkyPanel({
     ),
   );
   const speeds = el(doc, 'div', 'sky-row');
-  const playBtn = btn(doc, '▶', () => {
+  const playBtn = btn(doc, PLAY_ICON.play, () => {
     const s = environment.snapshot();
     if (s.playing) environment.pause();
     else environment.play(currentSpeed);
   });
   playBtn.setAttribute('aria-label', 'Play or pause time');
+  playBtn.classList.add('material-symbols-outlined', 'sky-play');
   let currentSpeed = 600;
   const speedBtns = PLAY_SPEEDS.filter((s) => s > 1).map((s) => {
     const b = btn(doc, `${s}×`, () => {
@@ -243,21 +245,6 @@ export function installSkyPanel({
     b.dataset.toggle = label;
     return b;
   };
-  const tLight = toggle(
-    'SUNLIGHT',
-    () => environment.snapshot().lighting,
-    (v) => environment.setLighting(v),
-  );
-  const tShadow = toggle(
-    'SHADOWS',
-    () => environment.snapshot().shadows,
-    (v) => environment.setShadows(v),
-  );
-  const tSky = toggle(
-    'SUN · MOON · STARS',
-    () => environment.snapshot().sky,
-    (v) => environment.setSky(v),
-  );
   const tRadar = toggle(
     'RADAR',
     () => dataManager?.isEnabled?.('weather-radar'),
@@ -274,23 +261,7 @@ export function installSkyPanel({
       renderToggles();
     },
   );
-  const tGrade = toggle(
-    'TIME-OF-DAY COLOUR',
-    () => Boolean(globeSky?.state().grade),
-    (v) => {
-      globeSky?.set({ grade: v });
-      renderToggles();
-    },
-  );
-  const tPrecip = toggle(
-    'RAIN · SNOW',
-    () => Boolean(weatherFx?.state().enabled),
-    (v) => {
-      weatherFx?.setEnabled(v);
-      renderToggles();
-    },
-  );
-  toggles.append(tLight, tShadow, tSky, tLines, tGrade, tPrecip, tRadar);
+  toggles.append(tLines, tRadar);
 
   card.append(head, dial, grid, starsLine, time, toggles);
   doc.body.append(card);
@@ -345,16 +316,10 @@ export function installSkyPanel({
 
   function renderToggles() {
     const s = environment.snapshot();
-    tLight.setAttribute('aria-pressed', String(s.lighting));
-    tShadow.setAttribute('aria-pressed', String(s.shadows));
-    tSky.setAttribute('aria-pressed', String(s.sky));
     const g = globeSky?.state();
     if (g) {
       tLines.setAttribute('aria-pressed', String(g.terminator));
-      tGrade.setAttribute('aria-pressed', String(g.grade));
     }
-    if (weatherFx)
-      tPrecip.setAttribute('aria-pressed', String(weatherFx.state().enabled));
     tRadar.setAttribute(
       'aria-pressed',
       String(Boolean(dataManager?.isEnabled?.('weather-radar'))),
@@ -428,7 +393,7 @@ export function installSkyPanel({
             `${r.shadow.lengthRatio.toFixed(1)}× object height`,
             s.shadows
               ? 'rendered on terrain + buildings'
-              : 'turn on SHADOWS to render',
+              : 'rendered on screen below 15 km',
           ]
         : ['sun below horizon', 'no cast shadows', ''],
     );
@@ -452,7 +417,7 @@ export function installSkyPanel({
       slider.value = String(Math.max(-24, Math.min(24, hours)));
     offsetLabel.textContent = isLive ? NOW_LABEL : offsetText;
     liveBtn.setAttribute('aria-pressed', String(s.mode === 'live'));
-    playBtn.textContent = s.playing ? '❚❚' : '▶';
+    playBtn.textContent = s.playing ? PLAY_ICON.pause : PLAY_ICON.play;
     for (const b of speedBtns)
       b.setAttribute(
         'aria-pressed',

@@ -34,7 +34,6 @@ export function bindApplicationShortcuts({
     const key = event.key.toLowerCase();
     if (key === 'h') actions.toggleHud();
     if (key === 'o') actions.toggleOrbit();
-    if (key === 'v') actions.toggleCleanView();
     if (key === 'f') actions.toggleLayers();
     if (key === 'd') actions.cycleDetection();
     if (key === 'c') actions.toggleCctv();
