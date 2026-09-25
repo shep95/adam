@@ -286,3 +286,51 @@ body.cockpit-mode.adam-cockpit-compact
 .adam-lost-escalated #cockpit-context-uncertainty {
   color: var(--ops-alert) !important;
 }
+
+/* ── Phones: one row of actions beside the logo, HUD corner text yields to
+   the panel stack (the state strip and SKY card carry the same facts). ── */
+@media (max-width: 520px) {
+  #top-center-actions {
+    left: 60px;
+    right: 8px;
+    gap: 3px;
+    justify-content: flex-end;
+    overflow-x: auto;
+    scrollbar-width: none;
+    transform: none;
+  }
+
+  #top-center-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  #top-center-actions button {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+  }
+
+  #top-center-actions .material-symbols-outlined {
+    font-size: 18px;
+  }
+
+  #top-center-actions .adam-cap-divider {
+    display: none;
+  }
+
+  .hud-corner.hud-top-left {
+    display: none;
+  }
+
+  .adam-rec-time {
+    top: auto;
+    bottom: -14px;
+  }
+
+  /* Collapsed dock wings keep their icon; the voice tile covers the words. */
+  #location-bar .location-toolbar-label,
+  #control-panel.collapsed .panel-title {
+    font-size: 0;
+    letter-spacing: 0;
+  }
+}
