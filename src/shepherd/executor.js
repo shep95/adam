@@ -547,6 +547,29 @@ export function createShepherdExecutor({
         newest,
       };
     },
+    cctv_find: async ({ query = '', coverage = false, limit } = {}) => {
+      const dir = getConsole().cctvDirectory;
+      if (!dir)
+        return { ok: false, error: 'camera directory is still loading' };
+      if (coverage) return { ok: true, coverage: await dir.coverage() };
+      return {
+        ok: true,
+        cameras: await dir.find({ query, limit: limit || 10 }),
+      };
+    },
+    cctv_connect: async ({ id, nearest = false } = {}) => {
+      const dir = getConsole().cctvDirectory;
+      if (!dir)
+        return { ok: false, error: 'camera directory is still loading' };
+      let target = id;
+      if (!target && nearest) target = (await dir.find({ limit: 1 }))[0]?.id;
+      if (!target)
+        return {
+          ok: false,
+          error: 'give an id from cctv_find or nearest=true',
+        };
+      return dir.connect(target);
+    },
     get_exposure: ({ limit } = {}) => {
       const exposure = intel?.exposure?.({ limit: limit || 8 });
       if (!exposure)

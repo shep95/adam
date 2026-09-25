@@ -273,6 +273,25 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'cctv_find',
+    description:
+      'Search the public CCTV catalog (traffic and city cameras published by transport agencies — US, Canada, UK, Finland, Estonia, Germany, Australia). query matches road, junction, city, agency or country; omit it for the cameras nearest the view. Returns ids for cctv_connect. Use cctv_find with coverage=true to list countries and agencies.',
+    parameters: obj({
+      query: { type: 'string' },
+      coverage: { type: 'boolean' },
+      limit: { type: 'integer', minimum: 1, maximum: 30 },
+    }),
+  },
+  {
+    name: 'cctv_connect',
+    description:
+      'Connect to one public camera: turns CCTV on, selects it, flies there, opens its live feed and projects the frame onto the ground. Pass an id from cctv_find, or nearest=true for the camera closest to the view.',
+    parameters: obj({
+      id: { type: 'string' },
+      nearest: { type: 'boolean' },
+    }),
+  },
+  {
     name: 'get_exposure',
     description:
       'Infrastructure exposure: mapped datacentres and dams inside the screening reach of live hazards — earthquakes M4.5+ in the last 48 h (40-500 km by magnitude) and satellite fires ≥50 MW (5 km). Needs the earthquakes / FIRMS and datacentre / dam layers on. Reach is a screening distance, not damage; say so.',

@@ -302,6 +302,19 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] rewind failed to load:', error));
   defer(() => rewind?.destroy());
 
+  // CAMERAS: directory of every public camera, with one-click connect.
+  let cctvDirectory = null;
+  import('../ui/adam/cctvDirectory.js')
+    .then(({ installCctvDirectory }) => {
+      if (signal?.aborted) return;
+      cctvDirectory = installCctvDirectory({ viewer, dataManager });
+      debug.cctvDirectory = cctvDirectory;
+    })
+    .catch((error) =>
+      console.warn('[adam] camera directory failed to load:', error),
+    );
+  defer(() => cctvDirectory?.destroy());
+
   // The Cesium ion mark is an attribution for ion-served data; without an
   // ion token nothing comes from ion, so the mark is not shown.
   const ionInUse = Boolean(mapStackController?.cesiumToken);

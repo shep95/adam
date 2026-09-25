@@ -1,0 +1,125 @@
+/* ── CAMERAS directory: the centre flyout slot, like SKY ──────────────── */
+.adam-cctv-dir {
+  position: fixed;
+  top: calc(132px / var(--adam-ui-scale, 1));
+  left: 50%;
+  translate: -50% 0;
+  z-index: 610;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 300px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  zoom: var(--adam-ui-scale, 1);
+}
+
+.adam-cctv-dir[hidden] {
+  display: none;
+}
+
+.adam-cctv-body {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.adam-cctv-search {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.adam-cctv-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adam-cctv-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.adam-cctv-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.adam-cctv-name {
+  overflow: hidden;
+  font: 500 12px var(--font-mono);
+  color: var(--text-primary, #e6f4f6);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.adam-cctv-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.adam-cctv-connect {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  font: 500 var(--type-meta) var(--font-mono);
+  letter-spacing: 1.5px;
+  color: var(--accent-primary);
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--chip-radius, 999px);
+  cursor: pointer;
+}
+
+.adam-cctv-connect:hover,
+.adam-cctv-row.is-live .adam-cctv-connect {
+  color: #060a0c;
+  background: var(--accent-primary);
+}
+
+.adam-cctv-country {
+  margin: 6px 0 10px;
+}
+
+.adam-cctv-country-name {
+  margin-bottom: 4px;
+  font: 600 var(--type-meta) var(--font-mono);
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+}
+
+.adam-cctv-agency {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  font: 400 12px var(--font-mono);
+  color: var(--text-primary, #e6f4f6);
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.adam-cctv-agency + .adam-cctv-agency {
+  margin-top: 4px;
+}
+
+.adam-cctv-agency:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+}
+
+@media (max-width: 760px) {
+  .adam-cctv-dir {
+    top: auto;
+    bottom: 150px;
+    max-height: 60vh;
+  }
+}
