@@ -81,10 +81,18 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
   {
     name: 'create_alert_zone',
     description:
-      'Create an alert trigger around a point: count-in-zone fires when more than `threshold` contacts of the layer are inside; speed-in-zone fires when any contact exceeds maxSpeedKts inside. Use for "tell me when any military aircraft enters 50nm of this point" (count-in-zone, layer military, threshold 0, radiusNm 50).',
+      'Create an alert trigger around a point: count-in-zone fires when more than `threshold` contacts of the layer are inside; speed-in-zone fires when any contact exceeds maxSpeedKts inside; quake-in-zone fires on an earthquake of at least minMagnitude in the last 24 h (layer ignored, earthquakes switched on); fire-in-zone fires on more than `threshold` satellite fire detections of at least minFrp MW (layer ignored, FIRMS switched on). Use for "tell me when any military aircraft enters 50nm of this point" (count-in-zone, layer military, threshold 0, radiusNm 50) or "alert me to any M6 quake within 500 nm of Tokyo" (quake-in-zone, minMagnitude 6, radiusNm 500).',
     parameters: obj(
       {
-        kind: { type: 'string', enum: ['count-in-zone', 'speed-in-zone'] },
+        kind: {
+          type: 'string',
+          enum: [
+            'count-in-zone',
+            'speed-in-zone',
+            'quake-in-zone',
+            'fire-in-zone',
+          ],
+        },
         layer: {
           type: 'string',
           enum: ['flights', 'military', 'ais-live-vessels'],
@@ -94,9 +102,11 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
         radiusNm: { type: 'number' },
         threshold: { type: 'number' },
         maxSpeedKts: { type: 'number' },
+        minMagnitude: { type: 'number' },
+        minFrp: { type: 'number' },
         label: { type: 'string' },
       },
-      ['kind', 'layer', 'lat', 'lon', 'radiusNm'],
+      ['kind', 'lat', 'lon', 'radiusNm'],
     ),
   },
   {

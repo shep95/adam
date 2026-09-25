@@ -423,3 +423,58 @@ test('brief delta, BLUF markdown and capped-count disclosure', async () => {
     false,
   );
 });
+
+test('hazard alerts: quakes by magnitude in 24 h, fires by count and FRP', () => {
+  const ring = [
+    [-10, -10],
+    [10, -10],
+    [10, 10],
+    [-10, 10],
+  ];
+  const quake = normalizeAlertRule({
+    kind: 'quake-in-zone',
+    layerKey: 'flights',
+    ring,
+    minMagnitude: 5,
+  });
+  assert.equal(quake.layerKey, 'earthquakes');
+  assert.equal(quake.label, 'M5+ quake in zone');
+  const now = Date.UTC(2026, 8, 25);
+  const quakes = [
+    { lat: 1, lon: 1, magnitude: 4.9, timeMs: now - 1000 },
+    { lat: 2, lon: 2, magnitude: 6.1, timeMs: now - 2 * 86_400_000 },
+    { lat: 50, lon: 50, magnitude: 7, timeMs: now },
+  ];
+  assert.equal(evaluateAlertRule(quake, quakes, now).triggered, false);
+  quakes.push({
+    lat: 3,
+    lon: 3,
+    magnitude: 5.4,
+    timeMs: now - 3600_000,
+    place: 'offshore',
+  });
+  const hit = evaluateAlertRule(quake, quakes, now);
+  assert.equal(hit.triggered, true);
+  assert.match(hit.detail, /M5\.4 offshore/);
+
+  const fire = normalizeAlertRule({
+    kind: 'fire-in-zone',
+    ring,
+    threshold: 1,
+    minFrp: 50,
+  });
+  assert.equal(fire.layerKey, 'local-firms');
+  const fires = [
+    { lat: 0, lon: 0, frp: 80 },
+    { lat: 1, lon: 0, frp: 20 },
+  ];
+  assert.equal(evaluateAlertRule(fire, fires, now).triggered, false);
+  fires.push({ lat: 2, lon: 0, frp: 300 });
+  const burning = evaluateAlertRule(fire, fires, now);
+  assert.equal(burning.triggered, true);
+  assert.match(burning.detail, /peak 300 MW/);
+  assert.equal(
+    normalizeAlertRule({ kind: 'quake-in-zone', ring, minMagnitude: 11 }),
+    null,
+  );
+});

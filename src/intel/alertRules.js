@@ -2,10 +2,14 @@
  * Alert trigger rules: the operator defines a condition over live contacts
  * and ADAM flashes when it trips.
  *
- * Two rule kinds:
+ * Rule kinds:
  *   count-in-zone  — more than `threshold` contacts of a layer inside a polygon
  *   speed-in-zone  — any vessel/aircraft inside a polygon faster than
  *                    `maxSpeedKts` knots (for example, harbor speed limits)
+ *   quake-in-zone  — an earthquake of at least `minMagnitude` inside the zone
+ *                    in the last 24 h (USGS feed)
+ *   fire-in-zone   — more than `threshold` satellite fire detections of at
+ *                    least `minFrp` MW inside the zone (NASA FIRMS)
  *
  * Evaluation is pure; `createAlertMonitor` adds edge triggering (fires once on
  * the rising edge, re-arms after the condition clears) and persistence.
@@ -16,7 +20,15 @@ import { pointInPolygon } from './geo.js';
 export const ALERT_RULE_KINDS = Object.freeze([
   'count-in-zone',
   'speed-in-zone',
+  'quake-in-zone',
+  'fire-in-zone',
 ]);
+/** Hazard kinds read a fixed layer. */
+export const HAZARD_RULE_LAYERS = Object.freeze({
+  'quake-in-zone': 'earthquakes',
+  'fire-in-zone': 'local-firms',
+});
+const QUAKE_WINDOW_MS = 24 * 3600_000;
 export const ALERT_LAYERS = Object.freeze([
   'flights',
   'military',
@@ -36,7 +48,11 @@ const MPS_TO_KTS = 1.943844;
 export function normalizeAlertRule(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const kind = ALERT_RULE_KINDS.includes(raw.kind) ? raw.kind : null;
-  const layerKey = ALERT_LAYERS.includes(raw.layerKey) ? raw.layerKey : null;
+  const layerKey = HAZARD_RULE_LAYERS[kind]
+    ? HAZARD_RULE_LAYERS[kind]
+    : ALERT_LAYERS.includes(raw.layerKey)
+      ? raw.layerKey
+      : null;
   if (!kind || !layerKey) return null;
   const ring = Array.isArray(raw.ring)
     ? raw.ring
@@ -64,11 +80,24 @@ export function normalizeAlertRule(raw) {
       .slice(0, 60),
     enabled: raw.enabled !== false,
   };
-  if (kind === 'count-in-zone') {
-    const threshold = Math.floor(Number(raw.threshold));
+  if (kind === 'count-in-zone' || kind === 'fire-in-zone') {
+    const threshold = Math.floor(
+      Number(kind === 'fire-in-zone' ? (raw.threshold ?? 0) : raw.threshold),
+    );
     if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100000)
       return null;
     rule.threshold = threshold;
+    if (kind === 'fire-in-zone') {
+      const minFrp = Number(raw.minFrp ?? 0);
+      if (!Number.isFinite(minFrp) || minFrp < 0 || minFrp > 100000)
+        return null;
+      rule.minFrp = minFrp;
+    }
+  } else if (kind === 'quake-in-zone') {
+    const minMagnitude = Number(raw.minMagnitude);
+    if (!Number.isFinite(minMagnitude) || minMagnitude < 0 || minMagnitude > 10)
+      return null;
+    rule.minMagnitude = minMagnitude;
   } else {
     const maxSpeedKts = Number(raw.maxSpeedKts);
     if (!Number.isFinite(maxSpeedKts) || maxSpeedKts <= 0 || maxSpeedKts > 2000)
@@ -79,7 +108,11 @@ export function normalizeAlertRule(raw) {
     rule.label =
       kind === 'count-in-zone'
         ? `>${rule.threshold} ${layerKey} in zone`
-        : `${layerKey} over ${rule.maxSpeedKts} kt in zone`;
+        : kind === 'quake-in-zone'
+          ? `M${rule.minMagnitude}+ quake in zone`
+          : kind === 'fire-in-zone'
+            ? `>${rule.threshold} fires${rule.minFrp ? ` ≥${rule.minFrp} MW` : ''} in zone`
+            : `${layerKey} over ${rule.maxSpeedKts} kt in zone`;
   }
   return rule;
 }
@@ -98,7 +131,7 @@ export function recordSpeedKts(record) {
  * @param {Array<object>} records - Records with lat/lon (and speed).
  * @returns {{triggered: boolean, count: number, matches: Array<object>, detail: string}}
  */
-export function evaluateAlertRule(rule, records) {
+export function evaluateAlertRule(rule, records, now = Date.now()) {
   const inside = (records || []).filter(
     (r) =>
       Number.isFinite(r?.lat) &&
@@ -112,6 +145,37 @@ export function evaluateAlertRule(rule, records) {
       count: inside.length,
       matches: triggered ? inside.slice(0, 12) : [],
       detail: `${inside.length} ${rule.layerKey} in zone (limit ${rule.threshold})`,
+    };
+  }
+  if (rule.kind === 'quake-in-zone') {
+    const hits = inside
+      .filter(
+        (r) =>
+          Number.isFinite(r.magnitude) &&
+          r.magnitude >= rule.minMagnitude &&
+          (!Number.isFinite(r.timeMs) || now - r.timeMs <= QUAKE_WINDOW_MS),
+      )
+      .sort((a, b) => b.magnitude - a.magnitude);
+    return {
+      triggered: hits.length > 0,
+      count: hits.length,
+      matches: hits.slice(0, 12),
+      detail: hits.length
+        ? `${hits.length} quake${hits.length === 1 ? '' : 's'} M${rule.minMagnitude}+ · strongest M${hits[0].magnitude.toFixed(1)}${hits[0].place ? ` ${hits[0].place}` : ''}`
+        : `no M${rule.minMagnitude}+ quake in the last 24 h`,
+    };
+  }
+  if (rule.kind === 'fire-in-zone') {
+    const hot = inside.filter(
+      (r) => !rule.minFrp || (Number.isFinite(r.frp) && r.frp >= rule.minFrp),
+    );
+    const triggered = hot.length > rule.threshold;
+    const peak = hot.reduce((m, r) => Math.max(m, r.frp || 0), 0);
+    return {
+      triggered,
+      count: hot.length,
+      matches: triggered ? hot.slice(0, 12) : [],
+      detail: `${hot.length} fire detection${hot.length === 1 ? '' : 's'}${rule.minFrp ? ` ≥${rule.minFrp} MW` : ''} in zone (limit ${rule.threshold})${hot.length ? ` · peak ${Math.round(peak)} MW` : ''}`,
     };
   }
   const fast = inside.filter((r) => {
@@ -218,7 +282,11 @@ export function createAlertMonitor({
       let changed = false;
       for (const rule of rules.values()) {
         if (!rule.enabled) continue;
-        const result = evaluateAlertRule(rule, getRecords(rule.layerKey) || []);
+        const result = evaluateAlertRule(
+          rule,
+          getRecords(rule.layerKey) || [],
+          now,
+        );
         const prior = state.get(rule.id);
         const wasTriggered = prior?.triggered || false;
         state.set(rule.id, {

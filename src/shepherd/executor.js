@@ -201,11 +201,15 @@ export function createShepherdExecutor({
       layerKey: args.layer,
       ring: circleRing(Number(args.lat), Number(args.lon), radiusKm),
       threshold:
-        args.kind === 'count-in-zone'
+        args.kind === 'count-in-zone' || args.kind === 'fire-in-zone'
           ? Math.max(0, Math.floor(Number(args.threshold) || 0))
           : undefined,
       maxSpeedKts:
         args.kind === 'speed-in-zone' ? Number(args.maxSpeedKts) : undefined,
+      minMagnitude:
+        args.kind === 'quake-in-zone' ? Number(args.minMagnitude) : undefined,
+      minFrp:
+        args.kind === 'fire-in-zone' ? Number(args.minFrp) || 0 : undefined,
       label: args.label,
     });
     if (!rule)
@@ -213,7 +217,8 @@ export function createShepherdExecutor({
         ok: false,
         error: 'rule rejected (bad values or 24-rule limit reached)',
       };
-    if (!dataManager.isEnabled(args.layer)) void setLayer(args.layer, true);
+    if (!dataManager.isEnabled(rule.layerKey))
+      void setLayer(rule.layerKey, true);
     return { ok: true, rule: { id: rule.id, label: rule.label } };
   }
 

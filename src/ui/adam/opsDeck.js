@@ -25,7 +25,7 @@ import {
 } from './operatorProfile.js';
 import { layerSnapshots } from '../../data/layerSnapshot.js';
 import { capturePolygon } from '../../intel/polygonCapture.js';
-import { ALERT_LAYERS } from '../../intel/alertRules.js';
+import { ALERT_LAYERS, HAZARD_RULE_LAYERS } from '../../intel/alertRules.js';
 import {
   ALTITUDE_BANDS,
   TIME_WINDOWS,
@@ -430,6 +430,8 @@ export function installOpsDeck({
     for (const [value, label] of [
       ['count-in-zone', 'MORE THAN N CONTACTS IN ZONE'],
       ['speed-in-zone', 'CONTACT FASTER THAN X KT IN ZONE'],
+      ['quake-in-zone', 'EARTHQUAKE OF MAGNITUDE M+ IN ZONE'],
+      ['fire-in-zone', 'MORE THAN N FIRE DETECTIONS IN ZONE'],
     ]) {
       const option = el(doc, 'option', '', label);
       option.value = value;
@@ -455,11 +457,28 @@ export function installOpsDeck({
     label.setAttribute('aria-label', 'Label');
     const syncAmount = () => {
       const speed = kind.value === 'speed-in-zone';
+      const quake = kind.value === 'quake-in-zone';
+      const fire = kind.value === 'fire-in-zone';
+      layer.hidden = quake || fire;
+      amount.step = quake ? '0.1' : '1';
       amount.setAttribute(
         'aria-label',
-        speed ? 'Max speed (knots)' : 'Max contacts',
+        speed
+          ? 'Max speed (knots)'
+          : quake
+            ? 'Minimum magnitude'
+            : fire
+              ? 'Max fire detections'
+              : 'Max contacts',
       );
-      amount.placeholder = speed ? 'MAX KT' : 'MAX CONTACTS';
+      amount.placeholder = speed
+        ? 'MAX KT'
+        : quake
+          ? 'MIN MAGNITUDE'
+          : fire
+            ? 'MAX FIRES'
+            : 'MAX CONTACTS';
+      if (quake && Number(amount.value) > 10) amount.value = '5';
       if (speed && layer.value !== 'ais-live-vessels')
         layer.value = 'ais-live-vessels';
     };
@@ -489,10 +508,15 @@ export function installOpsDeck({
           layerKey: layer.value,
           ring,
           label: label.value,
-          ...(kind.value === 'count-in-zone'
+          ...(kind.value === 'count-in-zone' || kind.value === 'fire-in-zone'
             ? { threshold: value }
-            : { maxSpeedKts: value }),
+            : kind.value === 'quake-in-zone'
+              ? { minMagnitude: value }
+              : { maxSpeedKts: value }),
         });
+        const hazardLayer = HAZARD_RULE_LAYERS[kind.value];
+        if (rule && hazardLayer && !dataManager?.isEnabled?.(hazardLayer))
+          void dataManager?.setEnabled?.(hazardLayer, true, { origin: 'user' });
         if (zoneHint)
           zoneHint.textContent = rule
             ? `Armed: ${rule.label}`
@@ -509,11 +533,14 @@ export function installOpsDeck({
         doc,
         'p',
         'adam-meta adam-ops-note',
-        'Triggers are checked every 5 s against live contacts and flash when they trip. They are stored in this browser only.',
+        'Triggers are checked every 5 s against live data and flash when they trip. Quake and fire triggers switch their layer on. They are stored in this browser only.',
       ),
     );
     flyout.replaceChildren(
-      flyoutHeader('ALERT TRIGGERS', 'Zone counts and zone speed limits'),
+      flyoutHeader(
+        'ALERT TRIGGERS',
+        'Zone counts, speed limits, earthquakes and fires',
+      ),
       body,
     );
   }

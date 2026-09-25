@@ -11,7 +11,7 @@ The ops rail sits in its own lane under the top action bar:
 | Chip      | Key | What it does                                                                                                                   |
 | --------- | --- | ------------------------------------------------------------------------------------------------------------------------------ |
 | BRIEF     | B   | Situational brief across every loaded layer, with baseline deviations                                                          |
-| ALERTS    | A   | Alert triggers: contacts in a zone, speed in a zone                                                                            |
+| ALERTS    | A   | Alert triggers: contacts or speed in a zone, earthquakes M+ and satellite fire detections in a zone                            |
 | FILTER    | G   | Time window, region, altitude band, vessel class                                                                               |
 | HEALTH    | —   | Feeds down, stale or on fallback, degraded capabilities; pulses amber past one fault. Exports and imports the operator profile |
 | REWIND    | R   | Scrub the last ~45 min of held tracks: ghost positions with 5-min tails, play at 30×                                           |
