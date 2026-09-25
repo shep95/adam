@@ -2050,6 +2050,8 @@
       "src/ui/adam/mapLayers.js",
       "src/ui/adam/mapLayers.css",
       "src/maps/overlayCatalog.js",
+      "src/nations/telecomData.js",
+      "src/intel/telecomGraph.js",
       "src/ui/adam/watchStrip.js",
       "src/ui/adam/measureTool.js",
       "src/ui/adam/actionRunner.js",

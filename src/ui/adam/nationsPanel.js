@@ -22,6 +22,21 @@ import {
   loadNations,
 } from '../../nations/nationProfile.js';
 import { orderedSummits } from '../../nations/summits.js';
+import { telecomProfile } from '../../nations/telecomData.js';
+
+const OWNERSHIP_KINDS = ['ports', 'airports', 'power', 'dams', 'refineries'];
+const CONTROL_COLORS = {
+  state: '#00D4FF',
+  'foreign-state': '#FF5A5F',
+  foreign: '#FFB454',
+  private: '#9AA7AD',
+};
+const CONTROL_LABELS = {
+  state: 'state-owned (domestic)',
+  'foreign-state': 'foreign state',
+  foreign: 'foreign company',
+  private: 'private (domestic)',
+};
 
 function el(doc, tag, className, text) {
   const node = doc.createElement(tag);
@@ -91,8 +106,9 @@ export function installNationsPanel({
   const actions = el(doc, 'div', 'sky-row nat-actions');
   actions.hidden = true;
   const summitsBox = el(doc, 'div', 'nat-summits');
+  const detailBox = el(doc, 'div', 'nat-detail');
 
-  card.append(head, form, status, profile, actions, summitsBox);
+  card.append(head, form, status, profile, actions, detailBox, summitsBox);
   doc.body.append(card);
   cleanups.push(() => card.remove());
 
@@ -161,6 +177,8 @@ export function installNationsPanel({
       btn(doc, 'CAPITAL', () => void flyCapital()),
       btn(doc, 'GOVERNMENT DISTRICT', () => void mapGovernment()),
       btn(doc, 'NATIONAL INFRASTRUCTURE', () => void mapInfrastructure()),
+      btn(doc, 'telecom links', () => void mapTelecom()),
+      btn(doc, 'who owns it', () => void mapOwnership()),
       btn(doc, 'ASK SHEPHERD', () =>
         room?.ask(
           `national infrastructure and institutions profile of ${n.n}: seat of government, key ministries, energy, ports, airports, cables, borders and chokepoints. use the nation tools, mark what matters on the map, and give confidence.`,
@@ -179,6 +197,7 @@ export function installNationsPanel({
     }
     current = n;
     capitalPoint = null;
+    detailBox.replaceChildren();
     input.value = n.n;
     say('');
     renderProfile(n);
@@ -235,6 +254,134 @@ export function installNationsPanel({
       };
     } catch (error) {
       say(`institutions unavailable: ${error.message}`);
+      return { ok: false, error: error.message };
+    }
+  }
+
+  function detailRows(title, rows) {
+    detailBox.append(el(doc, 'div', 'sky-cell-title nat-detail-title', title));
+    const ul = el(doc, 'ul', 'nat-detail-list');
+    for (const r of rows) ul.append(el(doc, 'li', '', r));
+    detailBox.append(ul);
+  }
+
+  /** International connectivity: cables, landing stations, linked countries, exchanges. */
+  async function mapTelecom(n = current) {
+    if (!n) return null;
+    say('building the telecom graph…');
+    try {
+      const t = await telecomProfile(n.a2, { fetchImpl });
+      const here = t.centroid(n.a2) || n.ll;
+      const nodes = [
+        { id: n.a2, label: n.n, lat: here[0], lon: here[1], kind: 'country' },
+      ];
+      const links = [];
+      for (const nb of t.neighbours) {
+        const ll = t.centroid(nb.country);
+        if (!ll) continue;
+        nodes.push({
+          id: nb.country,
+          label: `${nb.name} · ${nb.cables} cable${nb.cables === 1 ? '' : 's'}`,
+          lat: ll[0],
+          lon: ll[1],
+          kind: 'linked country',
+        });
+        links.push({ from: n.a2, to: nb.country, label: `${nb.cables}` });
+      }
+      for (const st of t.stations)
+        nodes.push({
+          id: `ls-${st.id}`,
+          label: `${st.name} · ${st.cables} cable${st.cables === 1 ? '' : 's'}`,
+          lat: st.lat,
+          lon: st.lon,
+          kind: 'landing station',
+        });
+      for (const [i, ix] of t.exchanges.entries())
+        if (Number.isFinite(ix.lat))
+          nodes.push({
+            id: `ix-${i}`,
+            label: `${ix.name}${ix.networks ? ` · ${ix.networks} networks` : ''}`,
+            lat: ix.lat,
+            lon: ix.lon,
+            kind: 'internet exchange',
+          });
+      overlay.drawOverlay({
+        title: `${n.n} · telecom links`,
+        nodes,
+        links,
+        fly: true,
+      });
+      detailBox.replaceChildren();
+      const s = t.summary;
+      detailRows('telecom', [
+        `${s.cables} submarine cables · ${s.landingStations} landing stations`,
+        `direct cable links to ${s.directlyLinkedCountries} countries · ${s.internetExchanges} internet exchanges`,
+        ...t.neighbours
+          .slice(0, 12)
+          .map(
+            (x) => `${x.name} — ${x.cables} cable${x.cables === 1 ? '' : 's'}`,
+          ),
+      ]);
+      detailBox.append(el(doc, 'div', 'nat-detail-note', t.sources));
+      say(`${s.cables} cables · ${s.directlyLinkedCountries} linked countries`);
+      const { centroid: _c, ...plain } = t;
+      return { ok: true, ...plain, cables: t.cables.slice(0, 40) };
+    } catch (error) {
+      say(`telecom graph unavailable: ${error.message}`);
+      return { ok: false, error: error.message };
+    }
+  }
+
+  /** Who owns and operates a kind of infrastructure, from Wikidata. */
+  async function mapOwnership(n = current, kind = 'ports') {
+    if (!n) return null;
+    if (!OWNERSHIP_KINDS.includes(kind)) kind = 'ports';
+    say(`asking wikidata who owns ${kind} in ${n.n}…`);
+    detailBox.replaceChildren();
+    const kinds = el(doc, 'div', 'sky-row nat-kinds');
+    for (const k of OWNERSHIP_KINDS) {
+      const b = btn(doc, k, () => void mapOwnership(n, k), 'nat-chip');
+      b.classList.toggle('is-on', k === kind);
+      kinds.append(b);
+    }
+    detailBox.append(kinds);
+    try {
+      const res = await fetchImpl(
+        `/api/ownership?country=${n.a2}&kind=${kind}`,
+        { credentials: 'same-origin' },
+      );
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+      for (const f of body.features)
+        f.properties['marker-color'] = CONTROL_COLORS[f.properties.control];
+      const files = globalThis.__godsEyeView?.shepherd?.files;
+      if (files && body.features.length)
+        await files.load(
+          new File(
+            [JSON.stringify(body)],
+            `ownership-${n.a2}-${kind}.geojson`,
+            { type: 'application/geo+json' },
+          ),
+        );
+      const s = body.summary;
+      detailRows(
+        `${kind} · ${s.sites} sites with an owner or operator on record`,
+        [
+          ...Object.entries(s.byControl)
+            .filter(([, v]) => v)
+            .map(([k, v]) => `${CONTROL_LABELS[k]} — ${v}`),
+          ...Object.entries(s.byOwnerCountry).map(
+            ([c, v]) =>
+              `owned from ${nations.find((x) => x.a2 === c)?.n || c} — ${v}`,
+          ),
+          ...s.topParties.slice(0, 8).map((p) => `${p.name} — ${p.sites}`),
+        ],
+      );
+      detailBox.append(el(doc, 'div', 'nat-detail-note', body.source));
+      say(`${s.sites} ${kind} mapped by owner`);
+      return { ok: true, country: n.n, kind, summary: s, source: body.source };
+    } catch (error) {
+      say(`ownership unavailable: ${error.message}`);
       return { ok: false, error: error.message };
     }
   }
@@ -418,6 +565,18 @@ export function installNationsPanel({
       return out;
     },
     showSummits,
+    async telecom({ country } = {}) {
+      const n = await open(String(country || ''));
+      if (!n) return { ok: false, error: `no country matches "${country}"` };
+      setOpen(true);
+      return mapTelecom(n);
+    },
+    async ownership({ country, kind } = {}) {
+      const n = await open(String(country || ''));
+      if (!n) return { ok: false, error: `no country matches "${country}"` };
+      setOpen(true);
+      return mapOwnership(n, kind);
+    },
     destroy() {
       for (const fn of cleanups.splice(0).reverse()) {
         try {

@@ -130,3 +130,35 @@
     top: auto;
   }
 }
+
+.nat-detail-title {
+  margin-top: 10px;
+}
+
+.nat-detail-list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nat-detail-list li {
+  padding: 2px 0;
+}
+
+.nat-detail-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.nat-kinds {
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.nat-chip.is-on {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}

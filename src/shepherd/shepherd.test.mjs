@@ -187,6 +187,16 @@ test('executor helpers: circles, bounded results, extra tools', async () => {
   assert.equal(ring.length, 4);
   assert.ok(Math.abs(ring[0][0] - 1) < 1e-3);
   assert.match(compactResult({ big: 'x'.repeat(9000) }), /truncated/);
+  // Long results stay parseable: arrays and strings shrink, not the text.
+  const long = JSON.parse(
+    compactResult({
+      ok: true,
+      rows: Array.from({ length: 500 }, (_, i) => ({ i, s: 'y'.repeat(50) })),
+    }),
+  );
+  assert.equal(long.truncated, true);
+  assert.ok(long.rows.length < 500);
+  assert.match(String(long.rows.at(-1)), /more$/);
   const calls = [];
   const rules = [];
   const exec = createShepherdExecutor({

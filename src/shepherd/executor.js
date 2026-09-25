@@ -39,17 +39,53 @@ export function circleRing(lat, lon, radiusKm, steps = 48) {
   return ring;
 }
 
-/** Keep tool results bounded and serializable. */
+/** Shrink arrays and long strings so the result stays valid JSON. */
+function shrink(value, maxItems, maxChars, depth = 0) {
+  if (typeof value === 'string')
+    return value.length > maxChars ? `${value.slice(0, maxChars)}…` : value;
+  if (!value || typeof value !== 'object' || depth > 8) return value;
+  if (Array.isArray(value)) {
+    const kept = value
+      .slice(0, maxItems)
+      .map((v) => shrink(v, maxItems, maxChars, depth + 1));
+    if (value.length > maxItems) kept.push(`…${value.length - maxItems} more`);
+    return kept;
+  }
+  const out = {};
+  for (const [k, v] of Object.entries(value))
+    out[k] = shrink(v, maxItems, maxChars, depth + 1);
+  return out;
+}
+
+/** Keep tool results bounded, serializable and still valid JSON. */
 export function compactResult(value) {
   let text;
   try {
     text = JSON.stringify(value ?? { ok: true });
   } catch {
-    text = JSON.stringify({ ok: false, error: 'result not serializable' });
+    return JSON.stringify({ ok: false, error: 'result not serializable' });
   }
-  return text.length > RESULT_CHARS
-    ? `${text.slice(0, RESULT_CHARS)}…(truncated)`
-    : text;
+  if (text.length <= RESULT_CHARS) return text;
+  for (const [items, chars] of [
+    [40, 400],
+    [20, 240],
+    [10, 160],
+    [5, 100],
+    [3, 60],
+  ]) {
+    const parsed = JSON.parse(text);
+    const small =
+      parsed && typeof parsed === 'object'
+        ? { ...shrink(parsed, items, chars), truncated: true }
+        : parsed;
+    const t = JSON.stringify(small);
+    if (t.length <= RESULT_CHARS) return t;
+  }
+  return JSON.stringify({
+    ok: true,
+    truncated: true,
+    preview: text.slice(0, RESULT_CHARS - 80),
+  });
 }
 
 function slug(value) {
@@ -951,6 +987,18 @@ export function createShepherdExecutor({
       if (!res.ok)
         return { ok: false, error: body.error || `HTTP ${res.status}` };
       return { ok: true, ...body };
+    },
+    telecom_links: async ({ country } = {}) => {
+      const nations = getConsole().shepherd?.nations;
+      if (!nations)
+        return { ok: false, error: 'nations panel is still loading' };
+      return nations.telecom({ country });
+    },
+    infrastructure_ownership: async ({ country, kind } = {}) => {
+      const nations = getConsole().shepherd?.nations;
+      if (!nations)
+        return { ok: false, error: 'nations panel is still loading' };
+      return nations.ownership({ country, kind });
     },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;

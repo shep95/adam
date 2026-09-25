@@ -571,6 +571,27 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'telecom_links',
+    description:
+      "A country's international connectivity from public data: submarine cables landing there, landing stations, the countries each cable links it to (drawn as links from the country), and internet exchanges (PeeringDB). Counts and lists as TeleGeography and PeeringDB publish them; do not rank individual sites as targets or single points of failure.",
+    parameters: obj({ country: { type: 'string' } }, ['country']),
+  },
+  {
+    name: 'infrastructure_ownership',
+    description:
+      "Who owns and operates a country's ports, airports, power stations, dams or refineries, from Wikidata: each site coloured state-owned (cyan), foreign state (red), foreign company (amber) or private (grey), with counts by owner country and the largest owners. Institutions only; coverage is what Wikidata editors recorded, so say it is incomplete.",
+    parameters: obj(
+      {
+        country: { type: 'string' },
+        kind: {
+          type: 'string',
+          enum: ['ports', 'airports', 'power', 'dams', 'refineries'],
+        },
+      },
+      ['country'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',
