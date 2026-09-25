@@ -389,6 +389,7 @@ export function createShepherdExecutor({
           note: 'share link copied to the clipboard',
         };
       case 'clear_overlays':
+        c.shepherd?.files?.clear?.();
         return overlay.clear();
       case 'unpin_all': {
         const pins = intel?.getPins?.() || [];

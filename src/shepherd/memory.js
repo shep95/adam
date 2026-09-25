@@ -106,6 +106,8 @@ export function storableTurn(turn) {
     out.name = turn.name;
     out.result = String(turn.result || '').slice(0, 4000);
   }
+  if (turn.role === 'user' && turn.display)
+    out.display = String(turn.display).slice(0, 400);
   if (turn.at) out.at = turn.at;
   return out;
 }

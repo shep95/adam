@@ -2016,6 +2016,7 @@
       "src/shepherd/consoleState.js",
       "src/shepherd/localTime.js",
       "src/shepherd/install.js",
+      "src/shepherd/fileIntel.js",
       "src/ui/shepherd/chatRoom.js",
       "src/ui/shepherd/chatRoom.css",
       "src/ui/shepherd/renderText.js",

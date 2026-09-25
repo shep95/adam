@@ -91,7 +91,7 @@ export function createShepherdAgent({
 
   const persist = () => memory.saveThread(thread).catch(() => {});
 
-  async function send({ text, images = [], task = 'chat' }) {
+  async function send({ text, images = [], task = 'chat', display = null }) {
     await ready;
     controller?.abort();
     controller = new AbortController();
@@ -102,6 +102,7 @@ export function createShepherdAgent({
       images,
       at: Date.now(),
     };
+    if (display) userTurn.display = String(display).slice(0, 400);
     thread.push(userTurn);
     thread = trimThread(repairThread(thread), THREAD_LIMIT);
     onEvent({ type: 'user', turn: userTurn });

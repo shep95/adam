@@ -65,6 +65,11 @@ buildings, the live environment, and nation profiles.
   a provider and model in its settings.
 - **Images:** drop, paste or attach a photo; "locate" predicts where it was
   taken, drops ranked candidates on the globe and flies to the best one.
+- **Files:** drop a GeoJSON, KML or KMZ file to draw it on the globe as an
+  overlay; drop a text document (txt, md, csv, json, html, xml) and Shepherd
+  reads it, gives a BLUF summary and plots the places, facilities and routes
+  it names. Files are read in the browser; only the document text you send
+  goes to the AI provider.
 - **Memory:** the conversation, preferences, last viewport and learned focus
   stay on this device (IndexedDB), never on the server.
 - **Brain:** `server/shepherd/shepherd-brain.txt` is the system prompt, with an

@@ -7,6 +7,12 @@
  */
 import './chatRoom.css';
 import { renderReply } from './renderText.js';
+import {
+  classifyFile,
+  documentPrompt,
+  documentText,
+  isGeoJson,
+} from '../../shepherd/fileIntel.js';
 
 const OPEN_KEY = 'adam.shepherd.open';
 const SEND_LABEL = Object.freeze({ idle: 'send', busy: 'stop' });
@@ -82,6 +88,7 @@ export function installShepherdRoom({
   agent,
   client,
   overlay,
+  files = null,
   doc = document,
 }) {
   const cleanups = [];
@@ -137,17 +144,19 @@ export function installShepherdRoom({
   const attachments = el(doc, 'div', 'shp-attachments');
   const input = el(doc, 'textarea', 'shp-input');
   input.rows = 1;
-  input.placeholder = 'ask, direct, or drop an image to locate';
+  input.placeholder = 'ask, direct, or drop a photo, map file or document';
   input.setAttribute('aria-label', 'Message Shepherd');
   input.spellcheck = true;
   const fileInput = el(doc, 'input');
   fileInput.type = 'file';
-  fileInput.accept = 'image/png,image/jpeg,image/webp,image/gif';
+  fileInput.accept =
+    'image/png,image/jpeg,image/webp,image/gif,.geojson,.json,.kml,.kmz,.txt,.md,.csv,.tsv,.html,.htm,.xml,.log';
   fileInput.hidden = true;
   const row = el(doc, 'div', 'shp-row');
   const attachBtn = el(doc, 'button', 'shp-icon-btn', 'img');
   attachBtn.type = 'button';
-  attachBtn.title = 'Attach an image (or paste / drop)';
+  attachBtn.title =
+    'Attach a photo to locate, a GeoJSON/KML/KMZ map file, or a text document to read and plot (or paste / drop)';
   const sendBtn = el(doc, 'button', 'shp-send', 'send');
   sendBtn.type = 'submit';
   row.append(
@@ -212,7 +221,8 @@ export function installShepherdRoom({
         strip.append(el(doc, 'span', 'shp-meta', turn.imageNote));
       node.append(strip);
     }
-    if (turn.text) node.append(el(doc, 'div', 'shp-body', turn.text));
+    const shown = turn.display || turn.text;
+    if (shown) node.append(el(doc, 'div', 'shp-body', shown));
     log.append(node);
     scroll();
   }
@@ -296,12 +306,61 @@ export function installShepherdRoom({
     attachments.hidden = pending.length === 0;
   }
 
-  async function addFiles(files) {
-    for (const file of [...files].slice(0, 4 - pending.length)) {
-      try {
-        pending.push(await imagePayload(file, doc));
-      } catch (error) {
-        addNote(`image skipped: ${error.message}`, 'error');
+  async function addFiles(dropped) {
+    for (const file of [...dropped].slice(0, 8)) {
+      let kind = classifyFile(file);
+      let parsedJson = null;
+      if (kind === 'document' && /\.json$/i.test(file.name || '')) {
+        try {
+          parsedJson = JSON.parse(await file.text());
+          if (isGeoJson(parsedJson)) kind = 'geo';
+        } catch {
+          /* plain text then */
+        }
+      }
+      if (kind === 'image') {
+        if (pending.length >= 4) continue;
+        try {
+          pending.push(await imagePayload(file, doc));
+        } catch (error) {
+          addNote(`image skipped: ${error.message}`, 'error');
+        }
+      } else if (kind === 'geo') {
+        if (!files) continue;
+        try {
+          const r = await files.load(file);
+          addNote(
+            `${r.name}: ${r.features} features on the globe (${r.points} points, ${r.lines} lines, ${r.areas} areas)`,
+            'tool',
+          );
+        } catch (error) {
+          addNote(`${file.name}: could not draw — ${error.message}`, 'error');
+        }
+      } else if (kind === 'document') {
+        if (agent.busy()) {
+          addNote(`${file.name}: wait for the current answer first`, 'error');
+          continue;
+        }
+        const docText = documentText(await file.text(), file.name);
+        if (!docText.text) {
+          addNote(`${file.name}: no readable text`, 'error');
+          continue;
+        }
+        const ask = input.value.trim();
+        input.value = '';
+        autosize();
+        root.classList.add('is-busy');
+        sendBtn.textContent = SEND_LABEL.busy;
+        await agent.send({
+          text: documentPrompt({ name: file.name, ...docText }, ask),
+          display: `${ask || 'read and plot'} · ${file.name} (${Math.round(docText.chars / 1000)}k chars${docText.truncated ? ', truncated' : ''})`,
+          task: 'chat',
+        });
+      } else {
+        addNote(
+          `${file.name}: unsupported — drop a photo, GeoJSON/KML/KMZ, or a text document`,
+          'error',
+        );
       }
     }
     renderAttachments();

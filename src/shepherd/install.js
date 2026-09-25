@@ -6,6 +6,7 @@
 import { createShepherdClient } from './client.js';
 import { createShepherdMemory } from './memory.js';
 import { createShepherdOverlay } from './overlay.js';
+import { createFileOverlays } from './fileIntel.js';
 import { createBuildings3d } from './buildings3d.js';
 import { createShepherdExecutor } from './executor.js';
 import { createShepherdAgent } from './agent.js';
@@ -88,7 +89,8 @@ export function installShepherd({
     getConsoleBlock,
     onEvent: (event) => room?.onAgentEvent(event),
   });
-  room = installShepherdRoom({ agent, client, overlay });
+  const files = createFileOverlays({ viewer });
+  room = installShepherdRoom({ agent, client, overlay, files });
   nations = installNationsPanel({
     viewer,
     overlay,
@@ -119,6 +121,7 @@ export function installShepherd({
       return nations;
     },
     overlay,
+    files,
     buildings,
     executor,
     client,
@@ -132,6 +135,7 @@ export function installShepherd({
       room.destroy();
       buildings.destroy();
       overlay.destroy();
+      files.clear();
     },
   };
 }
