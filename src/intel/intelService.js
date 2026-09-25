@@ -22,7 +22,10 @@ import {
 } from './briefing.js';
 import { layerSnapshots } from '../data/layerSnapshot.js';
 import { createPatternWatch } from './patternWatch.js';
-import { assessExposure } from './exposure.js';
+import { assessExposure, assetRisk } from './exposure.js';
+import { recommendActions } from './recommend.js';
+import { etaToZone, predictTrack, predictionSentence } from './predict.js';
+import { pointInPolygon } from './geo.js';
 import { correlate } from './correlate.js';
 import { missionWords, triage as rankTriage } from './triage.js';
 
@@ -503,6 +506,70 @@ export function createIntelService({
       watchLog = [];
       writeJson(localStorage, WATCH_LOG_KEY, watchLog);
       emit('watch-logged', null);
+    },
+    /** Ranked next actions (decision support) from the watch items. */
+    recommend({ limit = 6 } = {}) {
+      return recommendActions(triageItems({ limit: 12 }), {
+        mission,
+        alertRings: alerts.list().map((r) => r.ring),
+        pointInPolygon,
+        limit,
+      });
+    },
+    /** Live hazard risk per infrastructure asset, with its factors. */
+    assetRisk: ({ limit = 10 } = {}) =>
+      assetRisk(getRecords, { now: now(), limit }),
+    /**
+     * Predict a contact's track (dead reckoning with an uncertainty band)
+     * and, given a zone id, when it would enter it.
+     */
+    predict({ layerKey, id, minutes = 240, zone = null } = {}) {
+      const records = getRecords(layerKey);
+      const key = String(id || '')
+        .trim()
+        .toLowerCase();
+      const r = records.find((x) =>
+        [x.mmsi, x.icao24, x.callsign, x.name, x.id].some(
+          (v) => v != null && String(v).trim().toLowerCase() === key,
+        ),
+      );
+      if (!r)
+        return { ok: false, error: `${id} is not in ${layerKey} right now` };
+      const vessel = layerKey === 'ais-live-vessels';
+      const track = predictTrack(
+        {
+          lat: r.lat,
+          lon: r.lon,
+          speedKts: vessel ? r.speedKts : (r.speedMps ?? NaN) * 1.943844,
+          headingDeg: vessel ? r.courseDeg : r.heading,
+          ageMs: Number.isFinite(r.lastSeenMs) ? now() - r.lastSeenMs : 0,
+          domain: vessel ? 'vessel' : 'aircraft',
+        },
+        {
+          horizonMin: Math.min(1440, Math.max(10, minutes)),
+          stepMin: vessel ? 10 : 2,
+        },
+      );
+      if (!track.length)
+        return {
+          ok: false,
+          error: `${id} is stationary or has no course/speed`,
+        };
+      const name = r.name || r.callsign || r.id || id;
+      const z = zone
+        ? zones.find((q) => q.id === zone || q.name === zone)
+        : null;
+      const eta = z ? etaToZone(track, z.ring) : null;
+      return {
+        ok: true,
+        name,
+        layerKey,
+        track,
+        eta,
+        sentence: z
+          ? predictionSentence(name, eta, z.name)
+          : `If ${name} holds course and speed it is ${Math.round(track.at(-1).min / 60)} h out at ${track.at(-1).lat.toFixed(3)}, ${track.at(-1).lon.toFixed(3)} (±${track.at(-1).radiusKm.toFixed(0)} km).`,
+      };
     },
     /** Cross-layer correlations between behaviour findings and live contacts. */
     correlations,

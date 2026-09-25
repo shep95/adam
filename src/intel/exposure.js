@@ -129,3 +129,60 @@ export function assessExposure(
   }
   return out.sort((a, b) => b.score - a.score).slice(0, limit);
 }
+
+/**
+ * Live hazard risk per asset (0–100) with the factors behind it. Resilience
+ * screening from natural hazards on the globe right now (shaking reach,
+ * nearby strong fires, clustered fire activity); it does not rank assets by
+ * importance or consequence.
+ * @returns {Array<{layerKey:string, name:string, lat:number, lon:number, score:number, factors:string[]}>}
+ */
+export function assetRisk(getRecords, { now = Date.now(), limit = 10 } = {}) {
+  const assets = [];
+  for (const layerKey of EXPOSURE_ASSET_LAYERS)
+    for (const r of getRecords(layerKey) || [])
+      if (Number.isFinite(r?.lat) && Number.isFinite(r?.lon))
+        assets.push({ ...r, layerKey });
+  if (!assets.length) return [];
+  const grid = bucket(assets);
+  const risk = new Map();
+  const bump = (rec, pts, factor) => {
+    const key = `${rec.layerKey}:${rec.lat},${rec.lon}`;
+    const cur = risk.get(key) || { rec, score: 0, factors: [] };
+    cur.score += pts;
+    cur.factors.push(factor);
+    risk.set(key, cur);
+  };
+  for (const q of getRecords('earthquakes') || []) {
+    const reach = quakeReachKm(q.magnitude);
+    if (!reach) continue;
+    if (Number.isFinite(q.timeMs) && now - q.timeMs > QUAKE_WINDOW_MS) continue;
+    for (const { record, distanceKm: d } of near(grid, q.lat, q.lon, reach))
+      bump(
+        record,
+        Math.round(Math.min(60, (q.magnitude - 4) * 15) * (1 - d / reach)),
+        `M${q.magnitude.toFixed(1)} quake ${Math.round(d)} km`,
+      );
+  }
+  const fires = (getRecords('local-firms') || []).filter((f) => f.frp >= 20);
+  for (const f of fires)
+    for (const { record, distanceKm: d } of near(grid, f.lat, f.lon, 15))
+      bump(
+        record,
+        Math.round(Math.min(40, 8 + 12 * Math.log10(f.frp)) * (1 - d / 15)),
+        `fire ${Math.round(f.frp)} MW at ${d.toFixed(1)} km`,
+      );
+  return [...risk.values()]
+    .map(({ rec, score, factors }) => ({
+      layerKey: rec.layerKey,
+      name: rec.name || ASSET_LABEL[rec.layerKey],
+      kind: ASSET_LABEL[rec.layerKey] || rec.layerKey,
+      lat: rec.lat,
+      lon: rec.lon,
+      score: Math.min(100, score),
+      factors: [...new Set(factors)].slice(0, 6),
+    }))
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}

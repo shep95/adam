@@ -85,6 +85,16 @@ you are watching for and matching items rise. Shepherd sees the ranking in
 every turn and reads it with `get_watch`; brief it in plain words and it
 calls `set_mission`, then configures layers, zones and alerts.
 
+**Decision support, prediction, risk.** BRIEF lists NEXT ACTIONS — arm a
+watch on an uncovered finding, look through the nearest camera, track an
+orbiting aircraft, arm your mission areas, check a degraded feed — each with
+its reason and a DO button (Shepherd: `recommend_actions`,
+`run_recommendation`). `predict_track` dead-reckons a vessel or aircraft at
+its current course and speed with an uncertainty band that grows with time
+and report age, draws it, and says when it would enter a zone ("enters the
+exclusion zone in 4 h 12 m, ±6 km"). `asset_risk` scores mapped datacentres
+and dams 0–100 from live quakes and fires, listing the factors.
+
 ## Shepherd
 
 A streaming chat analyst on the right edge. It reads a `[console]` block with

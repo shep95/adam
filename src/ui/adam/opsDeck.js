@@ -297,6 +297,27 @@ export function installOpsDeck({
       );
       body.append(row);
     }
+    // Decision support: what to do next, with the reason.
+    const recs = intel.recommend?.({ limit: 4 }) || [];
+    if (recs.length) {
+      body.append(el(doc, 'h3', 'adam-meta adam-ops-section', 'NEXT ACTIONS'));
+      for (const r of recs) {
+        const row = el(doc, 'div', 'adam-brief-action');
+        const text = el(doc, 'div', 'adam-brief-action-text');
+        text.append(
+          el(doc, 'span', 'adam-meta adam-tier-primary', r.title.toUpperCase()),
+          el(doc, 'span', 'adam-meta adam-brief-facts', r.why),
+        );
+        const go = button(doc, 'DO', 'adam-chip', async () => {
+          go.disabled = true;
+          const res = await globalThis.__godsEyeView?.actions?.run?.(r.action);
+          go.textContent = res?.ok ? 'DONE' : 'FAILED';
+          go.title = res?.error || res?.did || '';
+        });
+        row.append(text, go);
+        body.append(row);
+      }
+    }
     body.append(el(doc, 'p', 'adam-value adam-brief-headline', brief.headline));
     const list = el(doc, 'ul', 'adam-brief-sections');
     for (const section of brief.sections) {

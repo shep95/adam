@@ -703,3 +703,19 @@ body.ui-clean-view .adam-ops-root {
 .adam-brief-pattern:hover .adam-meta:first-child {
   color: var(--accent-primary);
 }
+
+.adam-brief-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.adam-brief-action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}

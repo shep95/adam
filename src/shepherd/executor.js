@@ -445,6 +445,7 @@ export function createShepherdExecutor({
     }
   }
 
+  let lastRecommendations = [];
   const EXTRA = {
     console_command: consoleCommand,
     get_traffic_snapshot: ({ limit } = {}) => {
@@ -555,6 +556,63 @@ export function createShepherdExecutor({
         strongest,
         newest,
       };
+    },
+    recommend_actions: ({ limit } = {}) => {
+      if (!intel?.recommend)
+        return { ok: false, error: 'intel service is not running' };
+      lastRecommendations = intel.recommend({ limit: limit || 6 });
+      return {
+        ok: true,
+        actions: lastRecommendations.map((r, i) => ({
+          n: i + 1,
+          title: r.title,
+          why: r.why,
+          action: r.action.type,
+        })),
+      };
+    },
+    run_recommendation: async ({ index } = {}) => {
+      const r = lastRecommendations[(Number(index) || 0) - 1];
+      if (!r)
+        return {
+          ok: false,
+          error: 'call recommend_actions first; index out of range',
+        };
+      const runner = getConsole().actions;
+      if (!runner)
+        return { ok: false, error: 'action runner is still loading' };
+      return { title: r.title, ...(await runner.run(r.action)) };
+    },
+    predict_track: ({ layer, id, minutes, zone } = {}) => {
+      if (!intel?.predict)
+        return { ok: false, error: 'intel service is not running' };
+      const res = intel.predict({
+        layerKey: layer,
+        id,
+        minutes: minutes || 240,
+        zone,
+      });
+      if (res.ok) getConsole().actions?.showPrediction?.(res);
+      if (!res.ok) return res;
+      const last = res.track.at(-1);
+      return {
+        ok: true,
+        name: res.name,
+        sentence: res.sentence,
+        eta: res.eta,
+        horizon: {
+          minutes: last.min,
+          lat: last.lat,
+          lon: last.lon,
+          radiusKm: Math.round(last.radiusKm),
+        },
+        note: 'dead reckoning at current course and speed; the band is a screening radius',
+      };
+    },
+    asset_risk: ({ limit } = {}) => {
+      if (!intel?.assetRisk)
+        return { ok: false, error: 'intel service is not running' };
+      return { ok: true, assets: intel.assetRisk({ limit: limit || 10 }) };
     },
     measure: ({ points = [], rhumb = false, unit = 'km' } = {}) => {
       const pts = points.filter(

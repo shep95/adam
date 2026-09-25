@@ -315,6 +315,19 @@ export function createApplicationTools({
     );
   defer(() => measureTool?.destroy());
 
+  // Decision support actions + predicted-track drawing.
+  let actionRunner = null;
+  import('../ui/adam/actionRunner.js')
+    .then(({ createActionRunner }) => {
+      if (signal?.aborted) return;
+      actionRunner = createActionRunner({ viewer, dataManager, intel });
+      debug.actions = actionRunner;
+    })
+    .catch((error) =>
+      console.warn('[adam] action runner failed to load:', error),
+    );
+  defer(() => actionRunner?.destroy());
+
   // WATCH: persistent ranked picture, globe marks, ambient Shepherd lines.
   let watchStrip = null;
   import('../ui/adam/watchStrip.js')

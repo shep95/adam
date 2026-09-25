@@ -385,7 +385,7 @@ export function installCctvDirectory({
     close: () => setOpen(false),
     connect,
     /** Catalog search for Shepherd: query, or nearest to the view. */
-    async find({ query: q = '', limit = 10 } = {}) {
+    async find({ query: q = '', limit = 10, near = null } = {}) {
       const cams = await loadCatalog();
       if (q.trim())
         return searchCameras(cams, q, limit).map((c) => ({
@@ -395,7 +395,7 @@ export function installCctvDirectory({
           country: countryName(countryFor(c)),
           feed: feedBadge(c.feedType),
         }));
-      const center = viewCenter();
+      const center = near && Number.isFinite(near.lat) ? near : viewCenter();
       return nearestCameras(cams, center.lat, center.lon, limit).map((n) => ({
         id: n.camera.id,
         name: n.camera.name,

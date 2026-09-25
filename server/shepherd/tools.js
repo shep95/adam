@@ -275,6 +275,41 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'recommend_actions',
+    description:
+      'Decision support: ranked next actions for what is on the globe now (arm a watch on an uncovered finding, look through the nearest camera, track an orbiting aircraft, go there, check a degraded feed, arm the mission areas), each with its reasoning. Present them as recommendations; run one with run_recommendation when the operator agrees or asked you to act.',
+    parameters: obj({ limit: { type: 'integer', minimum: 1, maximum: 10 } }),
+  },
+  {
+    name: 'run_recommendation',
+    description:
+      'Run recommendation number `index` (1-based) from the latest recommend_actions list.',
+    parameters: obj({ index: { type: 'integer', minimum: 1 } }, ['index']),
+  },
+  {
+    name: 'predict_track',
+    description:
+      'Where a vessel or aircraft is going if it holds course and speed: dead-reckoned track with an uncertainty band that grows with time and report age, drawn on the globe; with zone (id or name from list_zones) it gives the time it would enter it, e.g. "enters the exclusion zone in 4 h 12 m (±6 km)". layer: ais-live-vessels, flights or military; id: MMSI, ICAO24, callsign or name.',
+    parameters: obj(
+      {
+        layer: {
+          type: 'string',
+          enum: ['ais-live-vessels', 'flights', 'military'],
+        },
+        id: { type: 'string' },
+        minutes: { type: 'integer', minimum: 10, maximum: 1440 },
+        zone: { type: 'string' },
+      },
+      ['layer', 'id'],
+    ),
+  },
+  {
+    name: 'asset_risk',
+    description:
+      'Live natural-hazard risk (0-100) for mapped datacentres and dams, with the factors (quake shaking reach, nearby strong fires). A resilience screen, not a damage estimate. Needs those layers and earthquakes/FIRMS on.',
+    parameters: obj({ limit: { type: 'integer', minimum: 1, maximum: 30 } }),
+  },
+  {
     name: 'measure',
     description:
       'Measure range and bearing along points [{lat, lon}] (2+), great circle by default or rhumb=true; draws it on the globe with per-leg labels. unit km|nm|mi.',

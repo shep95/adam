@@ -54,3 +54,23 @@ test('no assets on means nothing to assess', () => {
     [],
   );
 });
+
+test('asset risk rises with nearby hazards and lists its factors', async () => {
+  const { assetRisk } = await import('./exposure.js');
+  const now = Date.UTC(2026, 8, 25);
+  const layers = {
+    'local-datacenters': [
+      { name: 'DC-near', lat: 35.05, lon: 139.0 },
+      { name: 'DC-far', lat: 45, lon: 139 },
+    ],
+    earthquakes: [
+      { magnitude: 6.5, lat: 35, lon: 139, timeMs: now - 3600_000 },
+    ],
+    'local-firms': [{ frp: 300, lat: 35.06, lon: 139.01 }],
+  };
+  const r = assetRisk((k) => layers[k] || [], { now });
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, 'DC-near');
+  assert.ok(r[0].score > 50);
+  assert.equal(r[0].factors.length, 2);
+});
