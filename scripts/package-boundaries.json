@@ -2061,6 +2061,8 @@
       "src/ui/adam/spectrumPanel.js",
       "src/ui/adam/liveSession.js",
       "src/ui/adam/panelPopout.js",
+      "src/ui/adam/crimePanel.js",
+      "src/intel/crime.js",
       "src/ui/adam/liveSession.css",
       "src/intel/spectrum.js",
       "src/intel/trackArchive.js",

@@ -1127,6 +1127,16 @@ export function createShepherdExecutor({
           return { ok: true, ...s.state() };
       }
     },
+    crime: async ({ action, lat, lon, country, days } = {}) => {
+      const c = getConsole().crime;
+      if (!c) return { ok: false, error: 'crime panel is still loading' };
+      c.open();
+      if (action === 'near') return c.near({ lat, lon });
+      if (action === 'homicide_rates') return c.homicideRates(true);
+      if (action === 'organized')
+        return c.organized(country, { days: days || 365 });
+      return { ok: true };
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };

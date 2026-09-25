@@ -36,6 +36,7 @@ import { keyedFeedsProxy } from './keyedFeeds.js';
 import { ownershipProxy } from './ownership.js';
 import { earthSpaceProxy } from './earthSpace.js';
 import { sessionsProxy } from './sessions.js';
+import { crimeProxy } from './crime.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -78,6 +79,7 @@ function localProviderPlugins() {
     ownershipProxy(),
     earthSpaceProxy(),
     sessionsProxy(),
+    crimeProxy(),
     keySetupEndpoint(),
   ];
 }

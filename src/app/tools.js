@@ -490,6 +490,19 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] pop-out failed to load:', error));
   defer(() => popout?.destroy());
 
+  // CRIME: open incident heat maps, homicide rates, organized-crime activity.
+  let crime = null;
+  import('../ui/adam/crimePanel.js')
+    .then(({ installCrimePanel }) => {
+      if (signal?.aborted) return;
+      crime = installCrimePanel({ viewer });
+      debug.crime = crime;
+    })
+    .catch((error) =>
+      console.warn('[adam] crime panel failed to load:', error),
+    );
+  defer(() => crime?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

@@ -691,6 +691,24 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'crime',
+    description:
+      'Crime from open data. action: near (street-level incidents around lat/lon or the view centre as a heat map with categories and the hottest spots — covered: England, Wales, Northern Ireland, Chicago, New York, Los Angeles, San Francisco), homicide_rates (intentional homicides per 100,000 by country, World Bank/UNODC, on the globe), organized (armed groups ACLED reports active in a country, by region, with the outline of their reported events; needs the ACLED account; it is reported activity, not territory — say so, and never name or speculate about individuals).',
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: ['near', 'homicide_rates', 'organized', 'open'],
+        },
+        lat: { type: 'number' },
+        lon: { type: 'number' },
+        country: { type: 'string' },
+        days: { type: 'integer', minimum: 7, maximum: 730 },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',
