@@ -178,6 +178,7 @@ const AUDITED = [
   '/cctv',
   '/flight-lookup',
   '/access',
+  '/notify',
 ];
 
 export function accessGate({

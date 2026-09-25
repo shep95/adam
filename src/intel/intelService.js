@@ -42,6 +42,8 @@ const LAST_TRACKED_KEY = 'adam.intel.lastTracked.v1';
 const PINS_KEY = 'adam.intel.pins.v1';
 const LAST_BRIEF_KEY = 'adam.intel.lastBrief.v1';
 export const MISSION_KEY = 'adam.intel.mission.v1';
+export const WATCH_LOG_KEY = 'adam.intel.watchlog.v1';
+const WATCH_LOG_MAX = 500;
 /** Fine baselines apply below this camera altitude, around the view. */
 export const FINE_BASELINE_MAX_ALT_M = 200_000;
 const FINE_CELL_DEG = 1;
@@ -121,6 +123,7 @@ export function createIntelService({
   localStorage = safeStorage('localStorage'),
   sessionStorage = safeStorage('sessionStorage'),
   timers = globalThis,
+  fetchImpl = (...a) => globalThis.fetch?.(...a),
 } = {}) {
   const listeners = new Set();
   const emit = (type, detail) => {
@@ -133,6 +136,59 @@ export function createIntelService({
     }
     events?.dispatchEvent?.(new CustomEvent(`adam:${type}`, { detail }));
   };
+
+  // ── Watch log: every trip and high-ranked watch item, timestamped ──────
+  let watchLog = (readJson(localStorage, WATCH_LOG_KEY, []) || []).slice(
+    -WATCH_LOG_MAX,
+  );
+  let notifyConfigured = null;
+  async function notify(entry) {
+    try {
+      if (notifyConfigured === null) {
+        const res = await fetchImpl('/api/notify', {
+          credentials: 'same-origin',
+        });
+        notifyConfigured = res?.ok ? (await res.json()).configured > 0 : false;
+      }
+      if (!notifyConfigured) return false;
+      const res = await fetchImpl('/api/notify', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: entry.title,
+          text: entry.detail,
+          severity: entry.severity,
+          lat: entry.lat,
+          lon: entry.lon,
+          at: new Date(entry.at).toISOString(),
+        }),
+      });
+      return Boolean(res?.ok);
+    } catch {
+      return false;
+    }
+  }
+  function logEvent(raw) {
+    const entry = {
+      at: now(),
+      kind: String(raw.kind || 'note').slice(0, 30),
+      severity: ['info', 'watch', 'alert', 'critical'].includes(raw.severity)
+        ? raw.severity
+        : 'watch',
+      title: String(raw.title || '').slice(0, 140),
+      detail: String(raw.detail || '').slice(0, 400),
+      lat: Number.isFinite(raw.lat) ? raw.lat : null,
+      lon: Number.isFinite(raw.lon) ? raw.lon : null,
+      ref: raw.ref ? String(raw.ref).slice(0, 80) : null,
+      score: Number.isFinite(raw.score) ? raw.score : null,
+    };
+    watchLog = [...watchLog, entry].slice(-WATCH_LOG_MAX);
+    writeJson(localStorage, WATCH_LOG_KEY, watchLog);
+    emit('watch-logged', entry);
+    if (['alert', 'critical'].includes(entry.severity)) void notify(entry);
+    return entry;
+  }
 
   const baselines = createBaselineStore({ storage: localStorage, now });
   // Fine 1° cells, sampled only around the operator's focus when zoomed in:
@@ -153,7 +209,23 @@ export function createIntelService({
     Boolean(focus && focus.altM < FINE_BASELINE_MAX_ALT_M);
   const alerts = createAlertMonitor({
     storage: localStorage,
-    onTrip: (rule, result) => emit('alert-tripped', { rule, result }),
+    onTrip: (rule, result) => {
+      const ring = rule.ring || [];
+      logEvent({
+        kind: 'alert',
+        severity: 'alert',
+        title: rule.label,
+        detail: result.detail,
+        lat: ring.length
+          ? ring.reduce((s, p) => s + p[1], 0) / ring.length
+          : null,
+        lon: ring.length
+          ? ring.reduce((s, p) => s + p[0], 0) / ring.length
+          : null,
+        ref: rule.id,
+      });
+      emit('alert-tripped', { rule, result });
+    },
     onChange: () => emit('alerts-changed', null),
   });
 
@@ -363,6 +435,20 @@ export function createIntelService({
     /** Behaviour patterns over the last ~45 min (orbits, AIS dark, meetings, jumps). */
     patterns: (options) => patterns.findings(options),
 
+    /** Append to the watch log (and notify for alert/critical). */
+    logEvent,
+    /** Watch log, newest first; filter by kind or since (ms epoch). */
+    watchLog({ kind = null, since = 0, limit = 100 } = {}) {
+      return watchLog
+        .filter((e) => (!kind || e.kind === kind) && e.at >= since)
+        .slice(-limit)
+        .reverse();
+    },
+    clearWatchLog() {
+      watchLog = [];
+      writeJson(localStorage, WATCH_LOG_KEY, watchLog);
+      emit('watch-logged', null);
+    },
     /** Cross-layer correlations between behaviour findings and live contacts. */
     correlations,
     /** Everything worth attention, ranked 0–100 with a reason each. */

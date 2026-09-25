@@ -2003,6 +2003,7 @@
       "src/ui/adam/opsDeck.js",
       "src/frameBudget.js",
       "src/ui/adam/systemHealth.js",
+      "src/ui/adam/scenarios.js",
       "src/ui/adam/operatorProfile.js",
       "src/voice/actions/context.js",
       "src/layers/contextOverlay/chokepoints.js",

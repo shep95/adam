@@ -509,3 +509,47 @@ test('operator profile signing: HMAC by the admin token, any signed-in role', as
   });
   assert.equal(bad.status, 400);
 });
+
+test('notify: env-only https destinations, fan-out, no client-chosen URL', async () => {
+  const { notifyProxy, parseWebhookList, notificationPayload } =
+    await import('../../server/providers/notify.js');
+  assert.deepEqual(
+    parseWebhookList(
+      'https://hooks.slack.com/x, http://insecure/y, notaurl, https://u:p@h/z',
+    ),
+    ['https://hooks.slack.com/x'],
+  );
+  const p = notificationPayload({
+    title: 'Zone',
+    text: 'x\u0000y',
+    lat: 1,
+    lon: 2,
+    severity: 'critical',
+  });
+  assert.match(p.text, /^\[ADAM · CRITICAL\] Zone · 1\.0000, 2\.0000/);
+  assert.ok(!p.text.includes('\u0000'));
+  const posted = [];
+  const plugin = notifyProxy({
+    env: { ADAM_ALERT_WEBHOOKS: 'https://a.example/h,https://b.example/h' },
+    fetchImpl: async (url, init) => {
+      posted.push([url, JSON.parse(init.body)]);
+      return { ok: true };
+    },
+  });
+  const status = await serve([plugin], '/api/notify');
+  assert.equal(JSON.parse(status.text).configured, 2);
+  const r = await serve([plugin], '/api/notify', {
+    method: 'POST',
+    body: JSON.stringify({ title: 'T', text: 'hi', url: 'https://evil/' }),
+  });
+  assert.equal(JSON.parse(r.text).delivered, 2);
+  assert.deepEqual(
+    posted.map((x) => x[0]),
+    ['https://a.example/h', 'https://b.example/h'],
+  );
+  const off = await serve([notifyProxy({ env: {} })], '/api/notify', {
+    method: 'POST',
+    body: '{}',
+  });
+  assert.equal(off.status, 404);
+});

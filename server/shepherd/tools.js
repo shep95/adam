@@ -216,7 +216,7 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
   {
     name: 'console_command',
     description:
-      'Command-centre control over every ADAM surface. open_panel/close_panel: brief, alerts, filter, health, sky, nations, shepherd, display, keys, data_layers. scope: on|off. snapshot: save a PNG of the view. record_start / record_stop: capture the view. ui_scale: 0.8-1.4. share_view: copy a share link of the current view. clear_overlays: remove Shepherd overlays and pins. unpin_all: clear the pinned-contact rail. system_status: layer health (on, count, feed state), faults (down, stale, on fallback, degraded capabilities) plus AI, recording and scale state. rewind: value = minutes ago (1-45) to show where tracked aircraft and vessels were, or live to return. profile_export: download the operator profile (alert rules, baselines, pins, layers, scene, prefs) as a signed JSON file; importing needs the operator to pick the file in HEALTH.',
+      'Command-centre control over every ADAM surface. open_panel/close_panel: brief, alerts, filter, health, scenario, sky, nations, shepherd, display, keys, data_layers. scope: on|off. snapshot: save a PNG of the view. record_start / record_stop: capture the view. ui_scale: 0.8-1.4. share_view: copy a share link of the current view. clear_overlays: remove Shepherd overlays and pins. unpin_all: clear the pinned-contact rail. system_status: layer health (on, count, feed state), faults (down, stale, on fallback, degraded capabilities) plus AI, recording and scale state. rewind: value = minutes ago (1-45) to show where tracked aircraft and vessels were, or live to return. profile_export: download the operator profile (alert rules, baselines, pins, layers, scene, prefs) as a signed JSON file; importing needs the operator to pick the file in HEALTH.',
     parameters: obj(
       {
         command: {
@@ -244,6 +244,7 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
             'alerts',
             'filter',
             'health',
+            'scenario',
             'sky',
             'nations',
             'shepherd',
@@ -270,6 +271,40 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     parameters: obj({
       format: { type: 'string', enum: ['csv', 'json'] },
       inViewOnly: { type: 'boolean' },
+    }),
+  },
+  {
+    name: 'apply_scenario',
+    description:
+      'Set the console up for a kind of watch in one action (layers on, the rest off unless replace=false, and a matching mission line): port-watch, airspace, chokepoints, storm, fire, quake, infrastructure, space.',
+    parameters: obj(
+      {
+        id: {
+          type: 'string',
+          enum: [
+            'port-watch',
+            'airspace',
+            'chokepoints',
+            'storm',
+            'fire',
+            'quake',
+            'infrastructure',
+            'space',
+          ],
+        },
+        replace: { type: 'boolean' },
+      },
+      ['id'],
+    ),
+  },
+  {
+    name: 'get_watch_log',
+    description:
+      'The timestamped watch log: every alert trip and every high-ranked watch item since it was cleared (newest first). Filter by kind; since is an ISO time.',
+    parameters: obj({
+      kind: { type: 'string' },
+      since: { type: 'string' },
+      limit: { type: 'integer', minimum: 1, maximum: 200 },
     }),
   },
   {

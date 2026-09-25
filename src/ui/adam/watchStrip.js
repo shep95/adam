@@ -144,8 +144,18 @@ export function installWatchStrip({
       if (item.score < ANNOUNCE_AT || announced.has(item.id)) continue;
       announced.add(item.id);
       // Items present at start-up are the standing picture, not news.
-      if (!firstPass && room?.notice)
-        room.notice(`WATCH ${item.score} · ${item.title} — ${item.label}`);
+      if (firstPass) continue;
+      room?.notice?.(`WATCH ${item.score} · ${item.title} — ${item.label}`);
+      intel.logEvent?.({
+        kind: item.kind,
+        severity: item.score >= 80 ? 'critical' : 'watch',
+        title: item.title,
+        detail: `${item.label} · ${item.why}`,
+        lat: item.lat,
+        lon: item.lon,
+        ref: item.id,
+        score: item.score,
+      });
     }
     firstPass = false;
   }

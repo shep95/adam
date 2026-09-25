@@ -327,6 +327,7 @@ export function createShepherdExecutor({
       case 'alerts':
       case 'filter':
       case 'health':
+      case 'scenario':
         c.opsDeck?.toggleView?.(panel === 'filter' ? 'filters' : panel, open);
         return true;
       case 'keys':
@@ -546,6 +547,25 @@ export function createShepherdExecutor({
         bySatellite: bySat,
         strongest,
         newest,
+      };
+    },
+    apply_scenario: async ({ id, replace = true } = {}) => {
+      const { applyScenario } = await import('../ui/adam/scenarios.js');
+      return applyScenario(dataManager, id, { replace, intel });
+    },
+    get_watch_log: ({ kind, since, limit } = {}) => {
+      if (!intel?.watchLog)
+        return { ok: false, error: 'intel service is not running' };
+      const t = since ? Date.parse(since) : 0;
+      return {
+        ok: true,
+        entries: intel
+          .watchLog({
+            kind: kind || null,
+            since: Number.isFinite(t) ? t : 0,
+            limit: limit || 50,
+          })
+          .map((e) => ({ ...e, at: new Date(e.at).toISOString() })),
       };
     },
     get_watch: ({ limit } = {}) => {

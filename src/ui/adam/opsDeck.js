@@ -15,6 +15,7 @@ import * as Cesium from 'cesium';
 import './opsDeck.css';
 import { setOdometer } from './odometer.js';
 import { assessHealth } from './systemHealth.js';
+import { SCENARIOS, applyScenario } from './scenarios.js';
 import { isEffectsReduced } from '../../frameBudget.js';
 import {
   applyProfile,
@@ -168,6 +169,7 @@ export function installOpsDeck({
     alerts: { label: 'ALERTS', key: 'A', render: renderAlerts },
     filters: { label: 'FILTER', key: 'G', render: renderFilters },
     health: { label: 'HEALTH', key: '', render: renderHealth },
+    scenario: { label: 'SCENARIO', key: '', render: renderScenarios },
   };
   for (const [id, view] of Object.entries(VIEWS)) {
     const btn = button(
@@ -519,6 +521,32 @@ export function installOpsDeck({
         ),
       );
     body.append(list);
+
+    // Watch log: every trip and high-ranked watch item, timestamped.
+    const log = intel.watchLog?.({ limit: 12 }) || [];
+    body.append(el(doc, 'h3', 'adam-meta adam-ops-section', 'WATCH LOG'));
+    if (!log.length)
+      body.append(
+        el(doc, 'p', 'adam-meta adam-ops-note', 'Nothing logged yet.'),
+      );
+    for (const e of log)
+      body.append(
+        el(
+          doc,
+          'p',
+          `adam-meta ${e.severity === 'critical' || e.severity === 'alert' ? 'adam-tier-alert' : ''}`,
+          `${new Date(e.at).toISOString().slice(5, 19).replace('T', ' ')}Z · ${e.title}${e.detail ? ` — ${e.detail}` : ''}`,
+        ),
+      );
+    const logActions = el(doc, 'div', 'adam-chip-row');
+    logActions.append(
+      button(doc, 'EXPORT CSV', 'adam-chip', () => exportWatchLog()),
+      button(doc, 'CLEAR', 'adam-chip', () => {
+        intel.clearWatchLog?.();
+        renderAlerts();
+      }),
+    );
+    body.append(logActions);
 
     body.append(el(doc, 'h3', 'adam-meta adam-ops-section', 'NEW TRIGGER'));
     const form = el(doc, 'form', 'adam-alert-form');
@@ -953,6 +981,76 @@ export function installOpsDeck({
     void refreshShepherdStatus();
   }
 
+  function exportWatchLog() {
+    const rows = [
+      ['utc', 'kind', 'severity', 'score', 'title', 'detail', 'lat', 'lon'],
+      ...(intel.watchLog?.({ limit: 500 }) || [])
+        .slice()
+        .reverse()
+        .map((e) => [
+          new Date(e.at).toISOString(),
+          e.kind,
+          e.severity,
+          e.score ?? '',
+          e.title,
+          e.detail,
+          e.lat ?? '',
+          e.lon ?? '',
+        ]),
+    ];
+    const csv = rows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = doc.createElement('a');
+    a.href = url;
+    a.download = `adam-watch-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    doc.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
+
+  // ── SCENARIO ──────────────────────────────────────────────────────────────
+  let scenarioNote = '';
+  function renderScenarios() {
+    const body = el(doc, 'div', 'adam-ops-body');
+    for (const s of SCENARIOS) {
+      const on = s.layers.every((l) => dataManager?.isEnabled?.(l));
+      const row = button(
+        doc,
+        '',
+        `adam-brief-pattern${on ? ' is-on' : ''}`,
+        async () => {
+          scenarioNote = `Setting up ${s.label}…`;
+          renderScenarios();
+          const r = await applyScenario(dataManager, s.id, { intel });
+          scenarioNote = r.ok
+            ? `${s.label}: ${r.on.length} layers on${r.off.length ? `, ${r.off.length} off` : ''}. Mission set.`
+            : `${s.label}: ${r.failed?.length || 0} layers failed (${(r.failed || []).join(', ')}).`;
+          renderScenarios();
+        },
+        { title: 'Replaces the current layers; the mission line follows it' },
+      );
+      row.append(
+        el(
+          doc,
+          'span',
+          `adam-meta ${on ? 'adam-tier-primary' : ''}`,
+          `${s.label}${on ? ' · ACTIVE' : ''}`,
+        ),
+        el(doc, 'span', 'adam-meta adam-brief-facts', s.summary),
+      );
+      body.append(row);
+    }
+    if (scenarioNote)
+      body.append(el(doc, 'p', 'adam-meta adam-ops-note', scenarioNote));
+    flyout.replaceChildren(
+      flyoutHeader('SCENARIOS', 'One action: layers, focus and mission'),
+      body,
+    );
+  }
+
   // ── Operator profile ───────────────────────────────────────────────────
   let profileNote = '';
   const signer = serverSigner();
@@ -1385,6 +1483,8 @@ export function installOpsDeck({
         renderLastTracked();
       } else if (type === 'pins-changed') {
         renderPins();
+      } else if (type === 'watch-logged') {
+        if (activeView === 'alerts') renderAlerts();
       } else if (type === 'patterns-changed') {
         updateBadges();
         if (activeView === 'brief') renderBrief();

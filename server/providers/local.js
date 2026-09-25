@@ -29,6 +29,7 @@ import { infraContextProxy } from './infraContext.js';
 import { accessGate } from './accessGate.js';
 import { flightLookupProxy } from './flightLookup.js';
 import { shepherdProxy } from '../shepherd/router.js';
+import { notifyProxy } from './notify.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -64,6 +65,7 @@ function localProviderPlugins() {
     infraContextProxy(),
     flightLookupProxy(),
     shepherdProxy(),
+    notifyProxy(),
     keySetupEndpoint(),
   ];
 }

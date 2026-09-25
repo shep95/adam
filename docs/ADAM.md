@@ -14,6 +14,7 @@ The ops rail sits in its own lane under the top action bar:
 | ALERTS    | A   | Alert triggers: contacts or speed in a zone, earthquakes M+ and satellite fire detections in a zone                                                   |
 | FILTER    | G   | Time window, region, altitude band, vessel class                                                                                                      |
 | HEALTH    | —   | Feeds down, stale or on fallback, degraded capabilities; pulses amber past one fault. Exports and imports the operator profile                        |
+| SCENARIO  | —   | One action per watch type (port, airspace, chokepoints, storm, fire, quake, infrastructure, space): layers, and a mission line                        |
 | REWIND    | R   | Scrub the last ~45 min of held tracks: ghost positions with 5-min tails, play at 30×                                                                  |
 | SKY       | L   | Live environment at the view centre (see below)                                                                                                       |
 | NATIONS   | N   | State institutions, national infrastructure, summit venues                                                                                            |
@@ -62,6 +63,8 @@ datacentres or dams, BRIEF lists assets inside each hazard's screening reach
 (M4.5+ quakes in the last 48 h: 40–500 km by magnitude; fires ≥ 50 MW: 5 km).
 It is a screening distance, not a damage estimate. Shepherd reads it with
 `get_exposure`.
+
+**Watch log.** Every alert trip and high-ranked watch item is logged with its time, location and reason (ALERTS → WATCH LOG, EXPORT CSV); Shepherd reads it with `get_watch_log`.
 
 **WATCH and triage.** One ranked list (0–100, each with its reason) across
 tripped alerts, cross-layer correlations (a vessel going AIS-dark near
