@@ -163,3 +163,46 @@
     grid-template-columns: 1fr;
   }
 }
+
+.sky-dial {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 12px;
+  overflow: visible;
+}
+
+.sky-dial-below {
+  fill: rgba(40, 60, 120, 0.18);
+}
+
+.sky-dial-horizon {
+  stroke: var(--glass-border);
+  stroke-width: 1;
+}
+
+.sky-dial-track {
+  fill: none;
+  stroke: rgba(255, 210, 122, 0.45);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.sky-dial-sun {
+  fill: #ffd27a;
+  filter: drop-shadow(0 0 6px rgba(255, 210, 122, 0.9));
+}
+
+.sky-dial-moon {
+  fill: #dfe8f5;
+}
+
+.sky-dial-label {
+  fill: var(--text-dim);
+  font-size: 9px;
+  font-family: var(--font-mono);
+}
+
+.sky-card[data-phase='night'] .sky-dial-below {
+  fill: rgba(40, 60, 120, 0.32);
+}

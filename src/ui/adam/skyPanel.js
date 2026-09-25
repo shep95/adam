@@ -8,7 +8,11 @@
  * Opens from the ops rail (L). All dynamic text goes through textContent.
  */
 import './skyPanel.css';
-import { skyReading, compassPoint } from '../../environment/astronomy.js';
+import {
+  skyReading,
+  compassPoint,
+  sunPosition,
+} from '../../environment/astronomy.js';
 import { PLAY_SPEEDS } from '../../environment/liveEnvironment.js';
 import {
   loadTzLookup,
@@ -56,6 +60,8 @@ export function installSkyPanel({
   viewer,
   environment,
   dataManager,
+  globeSky = null,
+  weatherFx = null,
   doc = document,
   fetchImpl = (...a) => fetch(...a),
 }) {
@@ -87,6 +93,85 @@ export function installSkyPanel({
   const wxBox = el(doc, 'div', 'sky-cell');
   grid.append(sunBox, moonBox, shadowBox, wxBox);
   const starsLine = el(doc, 'div', 'sky-stars', '');
+
+  // Sun-path dial: today's track across the sky (azimuth → x, altitude → y),
+  // the horizon, and where the sun and moon are right now.
+  const SVG = 'http://www.w3.org/2000/svg';
+  const DIAL_W = 420;
+  const DIAL_H = 96;
+  const svgEl = (tag, attrs = {}) => {
+    const node = doc.createElementNS(SVG, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
+    return node;
+  };
+  const dial = svgEl('svg', {
+    class: 'sky-dial',
+    viewBox: `0 0 ${DIAL_W} ${DIAL_H}`,
+    role: 'img',
+  });
+  dial.setAttribute('aria-label', 'Sun path today');
+  const yFor = (alt) =>
+    DIAL_H -
+    14 -
+    ((Math.max(-30, Math.min(90, alt)) + 30) / 120) * (DIAL_H - 22);
+  const xFor = (az) => (az / 360) * DIAL_W;
+  const nightBand = svgEl('rect', {
+    x: 0,
+    y: yFor(0),
+    width: DIAL_W,
+    height: DIAL_H - yFor(0),
+    class: 'sky-dial-below',
+  });
+  const horizon = svgEl('line', {
+    x1: 0,
+    x2: DIAL_W,
+    y1: yFor(0),
+    y2: yFor(0),
+    class: 'sky-dial-horizon',
+  });
+  const track = svgEl('polyline', { class: 'sky-dial-track', points: '' });
+  const sunDot = svgEl('circle', { r: 5, class: 'sky-dial-sun' });
+  const moonDot = svgEl('circle', { r: 4, class: 'sky-dial-moon' });
+  dial.append(nightBand, horizon, track);
+  for (const [az, label] of [
+    [0, 'n'],
+    [90, 'e'],
+    [180, 's'],
+    [270, 'w'],
+  ]) {
+    const t = svgEl('text', {
+      x: xFor(az) + 3,
+      y: DIAL_H - 3,
+      class: 'sky-dial-label',
+    });
+    t.textContent = label;
+    dial.append(t);
+  }
+  dial.append(moonDot, sunDot);
+
+  function renderDial(date, r) {
+    const pts = [];
+    const start = date.valueOf() - 12 * HOUR;
+    let prevX = null;
+    for (let t = start; t <= start + 24 * HOUR; t += 15 * 60_000) {
+      const p = sunPosition(new Date(t), center.lat, center.lon);
+      const x = xFor(p.azimuth);
+      if (prevX !== null && Math.abs(x - prevX) > DIAL_W / 2) pts.push('M');
+      pts.push(`${x.toFixed(1)},${yFor(p.altitude).toFixed(1)}`);
+      prevX = x;
+    }
+    // polyline cannot jump; keep the longest continuous run.
+    const runs = pts.join(' ').split(' M ');
+    track.setAttribute(
+      'points',
+      runs.sort((a, b) => b.length - a.length)[0] || '',
+    );
+    sunDot.setAttribute('cx', xFor(r.sun.azimuth).toFixed(1));
+    sunDot.setAttribute('cy', yFor(r.sun.altitude).toFixed(1));
+    moonDot.setAttribute('cx', xFor(r.moon.azimuth).toFixed(1));
+    moonDot.setAttribute('cy', yFor(r.moon.altitude).toFixed(1));
+    moonDot.style.opacity = String(0.35 + 0.65 * r.moon.fraction);
+  }
 
   // Time controls.
   const time = el(doc, 'div', 'sky-time');
@@ -181,9 +266,33 @@ export function installSkyPanel({
         ?.setEnabled?.('weather-radar', v, { origin: 'sky' })
         ?.then?.(renderToggles),
   );
-  toggles.append(tLight, tShadow, tSky, tRadar);
+  const tLines = toggle(
+    'DAY / NIGHT LINES',
+    () => Boolean(globeSky?.state().terminator),
+    (v) => {
+      globeSky?.set({ terminator: v, markers: v });
+      renderToggles();
+    },
+  );
+  const tGrade = toggle(
+    'TIME-OF-DAY COLOUR',
+    () => Boolean(globeSky?.state().grade),
+    (v) => {
+      globeSky?.set({ grade: v });
+      renderToggles();
+    },
+  );
+  const tPrecip = toggle(
+    'RAIN · SNOW',
+    () => Boolean(weatherFx?.state().enabled),
+    (v) => {
+      weatherFx?.setEnabled(v);
+      renderToggles();
+    },
+  );
+  toggles.append(tLight, tShadow, tSky, tLines, tGrade, tPrecip, tRadar);
 
-  card.append(head, grid, starsLine, time, toggles);
+  card.append(head, dial, grid, starsLine, time, toggles);
   doc.body.append(card);
   cleanups.push(() => card.remove());
 
@@ -205,6 +314,7 @@ export function installSkyPanel({
     const hit = wxCache.get(key);
     if (hit && Date.now() - hit.at < 10 * 60_000) {
       wx = hit.weather;
+      applyWeather(wx);
       return render();
     }
     wx = { loading: true };
@@ -217,11 +327,20 @@ export function installSkyPanel({
       if (!r.ok || !body?.weather)
         throw new Error(body?.error || `HTTP ${r.status}`);
       wxCache.set(key, { at: Date.now(), weather: body.weather });
-      if (wxKey === key) wx = body.weather;
+      if (wxKey === key) {
+        wx = body.weather;
+        applyWeather(wx);
+      }
     } catch (error) {
       if (wxKey === key) wx = { error: error.message };
     }
     render();
+  }
+
+  // The observation drives what is drawn on the globe, not only the card.
+  function applyWeather(weather) {
+    globeSky?.setWeather(weather);
+    weatherFx?.setWeather(weather);
   }
 
   function renderToggles() {
@@ -229,6 +348,13 @@ export function installSkyPanel({
     tLight.setAttribute('aria-pressed', String(s.lighting));
     tShadow.setAttribute('aria-pressed', String(s.shadows));
     tSky.setAttribute('aria-pressed', String(s.sky));
+    const g = globeSky?.state();
+    if (g) {
+      tLines.setAttribute('aria-pressed', String(g.terminator));
+      tGrade.setAttribute('aria-pressed', String(g.grade));
+    }
+    if (weatherFx)
+      tPrecip.setAttribute('aria-pressed', String(weatherFx.state().enabled));
     tRadar.setAttribute(
       'aria-pressed',
       String(Boolean(dataManager?.isEnabled?.('weather-radar'))),
@@ -267,6 +393,7 @@ export function installSkyPanel({
     if (!reading) computeReading();
     const r = reading;
     phaseLine.textContent = r.phase.toUpperCase();
+    renderDial(date, r);
     card.dataset.phase = r.isDay
       ? 'day'
       : r.sun.altitude > -12
@@ -361,7 +488,8 @@ export function installSkyPanel({
       center = viewCenter(viewer);
       computeReading();
       render();
-      if (!card.hidden) void loadWeather();
+      if (!card.hidden || viewer.camera.positionCartographic.height < 300_000)
+        void loadWeather();
     }, 400);
   });
   cleanups.push(() => {

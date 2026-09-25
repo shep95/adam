@@ -286,3 +286,87 @@ export function skyReading(date, lat, lon) {
     stars: sun.altitude < -6 ? visibleStars(date, lat, lon) : [],
   };
 }
+
+/** Greenwich sidereal angle in degrees. */
+export function gmstDeg(date) {
+  return norm360(siderealTime(toDays(date), 0) / RAD);
+}
+
+const wrapLon = (deg) => ((((deg + 180) % 360) + 360) % 360) - 180;
+
+/** The point on Earth with the sun directly overhead. */
+export function subsolarPoint(date) {
+  const c = sunCoords(toDays(date));
+  return { lat: c.dec / RAD, lon: wrapLon(c.ra / RAD - gmstDeg(date)) };
+}
+
+/** The point on Earth with the moon directly overhead. */
+export function sublunarPoint(date) {
+  const c = moonCoords(toDays(date));
+  return { lat: c.dec / RAD, lon: wrapLon(c.ra / RAD - gmstDeg(date)) };
+}
+
+/**
+ * Closed ring of [lon, lat] where the sun stands at `altitudeDeg`
+ * (0 = the terminator, −6/−12/−18 = civil/nautical/astronomical dusk lines).
+ * It is a small circle at angular distance 90° − altitude from the subsolar
+ * point.
+ */
+export function sunAltitudeRing(date, altitudeDeg = 0, steps = 180) {
+  const { lat, lon } = subsolarPoint(date);
+  const d = (90 - altitudeDeg) * RAD;
+  const phi1 = lat * RAD;
+  const lambda1 = lon * RAD;
+  const ring = [];
+  for (let i = 0; i <= steps; i += 1) {
+    const bearing = (i / steps) * 2 * Math.PI;
+    const phi2 = Math.asin(
+      Math.sin(phi1) * Math.cos(d) +
+        Math.cos(phi1) * Math.sin(d) * Math.cos(bearing),
+    );
+    const lambda2 =
+      lambda1 +
+      Math.atan2(
+        Math.sin(bearing) * Math.sin(d) * Math.cos(phi1),
+        Math.cos(d) - Math.sin(phi1) * Math.sin(phi2),
+      );
+    ring.push([wrapLon(lambda2 / RAD), phi2 / RAD]);
+  }
+  return ring;
+}
+
+/**
+ * Ambient colour grade for a sun altitude: how bright the scene reads and
+ * what it is tinted toward. Continuous, so time-lapse fades smoothly.
+ * @returns {{exposure: number, tint: [number, number, number], tintAmount: number}}
+ */
+export function ambientGrade(sunAltitude) {
+  const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
+  const stops = [
+    { alt: -18, exposure: 0.46, tint: [0.35, 0.45, 0.85], amount: 0.45 },
+    { alt: -6, exposure: 0.6, tint: [0.4, 0.5, 0.95], amount: 0.35 },
+    { alt: -0.8, exposure: 0.78, tint: [1.0, 0.55, 0.35], amount: 0.28 },
+    { alt: 6, exposure: 0.95, tint: [1.0, 0.78, 0.5], amount: 0.14 },
+    { alt: 20, exposure: 1.0, tint: [1, 1, 1], amount: 0 },
+  ];
+  if (sunAltitude <= stops[0].alt)
+    return {
+      exposure: stops[0].exposure,
+      tint: stops[0].tint,
+      tintAmount: stops[0].amount,
+    };
+  for (let i = 1; i < stops.length; i += 1) {
+    const a = stops[i - 1];
+    const b = stops[i];
+    if (sunAltitude <= b.alt) {
+      const t = (sunAltitude - a.alt) / (b.alt - a.alt);
+      return {
+        exposure: lerp(a.exposure, b.exposure, t),
+        tint: a.tint.map((v, k) => lerp(v, b.tint[k], t)),
+        tintAmount: lerp(a.amount, b.amount, t),
+      };
+    }
+  }
+  const last = stops.at(-1);
+  return { exposure: last.exposure, tint: last.tint, tintAmount: last.amount };
+}

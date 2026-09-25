@@ -74,3 +74,39 @@ test('day phase, shadows and stars', () => {
   assert.equal(r.phase, 'night');
   assert.ok(r.stars.length > 0);
 });
+
+test('terminator, subsolar point and ambient grade', async () => {
+  const { subsolarPoint, sunAltitudeRing, ambientGrade } =
+    await import('./astronomy.js');
+  const d = new Date('2026-06-21T12:00:00Z');
+  const ss = subsolarPoint(d);
+  near(ss.lat, 23.44, 0.1, 'subsolar lat');
+  near(ss.lon, 0.5, 0.5, 'subsolar lon');
+  for (const [lon, lat] of sunAltitudeRing(d, -6, 24))
+    near(sunPosition(d, lat, lon).altitude, -6, 0.05, 'ring altitude');
+  assert.equal(ambientGrade(40).tintAmount, 0);
+  assert.ok(ambientGrade(-30).exposure < ambientGrade(-3).exposure);
+});
+
+test('globe sky helpers and precipitation mapping', async () => {
+  const { splitAtAntimeridian, destination, gradeStrengthForAltitude } =
+    await import('./globeSky.js');
+  const { precipitationFor } = await import('./weatherFx.js');
+  assert.equal(
+    splitAtAntimeridian([
+      [170, 0],
+      [179, 0],
+      [-179, 0],
+      [-170, 0],
+    ]).length,
+    2,
+  );
+  const p = destination(0, 0, 90, 111_195);
+  near(p.lon, 1, 0.01, 'east 1 degree');
+  assert.equal(gradeStrengthForAltitude(1000), 1);
+  assert.equal(gradeStrengthForAltitude(2e7), 0);
+  assert.equal(precipitationFor({ weatherCode: 75 }).kind, 'snow');
+  assert.equal(precipitationFor({ weatherCode: 95 }).thunder, true);
+  assert.equal(precipitationFor({ weatherCode: 0 }).kind, 'none');
+  assert.equal(precipitationFor({ weatherCode: 45 }).kind, 'fog');
+});

@@ -18,6 +18,7 @@ import {
 } from '../../shepherd/localTime.js';
 
 const RAD = 180 / Math.PI;
+const COPIED = 'copied';
 
 function el(doc, tag, className, text) {
   const node = doc.createElement(tag);
@@ -154,7 +155,7 @@ export function installMapInteraction({
     const head = el(doc, 'div', 'adam-ctx-head', coords);
     const items = [
       item('copy coordinates', 'lat, lon', async () => {
-        head.textContent = (await copy(coords)) ? 'copied' : coords;
+        head.textContent = (await copy(coords)) ? COPIED : coords;
       }),
       item('drop pin', '', () => overlay.dropPin({ lat, lon, fly: false })),
       item('fly here', '', () => overlay.flyToPoint(lat, lon, 1200)),

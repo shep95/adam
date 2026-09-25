@@ -242,22 +242,49 @@ export function createApplicationTools({
 
   // Live environment: real sun, moon, stars and shadows for the moment on
   // the clock, with the SKY panel's time controls and local weather.
+  let globeSky = null;
+  let weatherFx = null;
   Promise.all([
     import('../environment/liveEnvironment.js'),
     import('../ui/adam/skyPanel.js'),
+    import('../environment/globeSky.js'),
+    import('../environment/weatherFx.js'),
   ])
-    .then(([{ createLiveEnvironment }, { installSkyPanel }]) => {
-      if (signal?.aborted) return;
-      environment = createLiveEnvironment({ viewer });
-      skyPanel = installSkyPanel({ viewer, environment, dataManager });
-      debug.environment = environment;
-      debug.skyPanel = skyPanel;
-    })
+    .then(
+      ([
+        { createLiveEnvironment },
+        { installSkyPanel, viewCenter },
+        { createGlobeSky },
+        { createWeatherFx },
+      ]) => {
+        if (signal?.aborted) return;
+        environment = createLiveEnvironment({ viewer });
+        globeSky = createGlobeSky({
+          viewer,
+          environment,
+          getCenter: () => viewCenter(viewer),
+        });
+        weatherFx = createWeatherFx({ viewer });
+        skyPanel = installSkyPanel({
+          viewer,
+          environment,
+          dataManager,
+          globeSky,
+          weatherFx,
+        });
+        debug.globeSky = globeSky;
+        debug.weatherFx = weatherFx;
+        debug.environment = environment;
+        debug.skyPanel = skyPanel;
+      },
+    )
     .catch((error) =>
       console.warn('[adam] live environment failed to load:', error),
     );
   defer(() => {
     skyPanel?.destroy();
+    weatherFx?.destroy();
+    globeSky?.destroy();
     environment?.destroy();
   });
   return { sceneDirector, annotations, voiceCommands, intel };

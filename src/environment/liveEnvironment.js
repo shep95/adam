@@ -87,6 +87,12 @@ export function createLiveEnvironment({ viewer }) {
     globe.enableLighting = state.lighting;
     globe.dynamicAtmosphereLighting = state.lighting;
     globe.dynamicAtmosphereLightingFromSun = state.lighting;
+    // Cesium fades sun lighting out as the camera nears the ground, so a city
+    // at midnight would still read as noon up close. Light at every range.
+    globe.lightingFadeOutDistance = state.lighting ? 1 : 1.0e7;
+    globe.lightingFadeInDistance = state.lighting ? 2 : 2.0e7;
+    globe.nightFadeOutDistance = state.lighting ? 1 : 1.0e7;
+    globe.nightFadeInDistance = state.lighting ? 2 : 5.0e7;
     if (!(scene.light instanceof Cesium.SunLight))
       scene.light = new Cesium.SunLight();
     if (scene.sun) scene.sun.show = state.sky;

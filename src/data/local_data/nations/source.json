@@ -1,0 +1,8 @@
+{
+  "name": "world-countries",
+  "version": "5.1.0",
+  "url": "https://github.com/mledoze/countries",
+  "license": "ODbL-1.0",
+  "attribution": "Country data: mledoze/countries (world-countries), Open Database License",
+  "fields": "common/official name, ISO alpha-3/alpha-2, capital(s), region, subregion, centroid lat/lng, land borders, area km², independence, UN membership, flag emoji, landlocked"
+}
