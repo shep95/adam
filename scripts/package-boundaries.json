@@ -2074,6 +2074,8 @@
       "src/intel/resources.js",
       "src/ui/adam/infraPanel.js",
       "src/intel/datacenters.js",
+      "src/ui/adam/astroPanel.js",
+      "src/astro/astrocartography.js",
       "src/ui/adam/leadershipPanel.js",
       "src/intel/leadership.js",
       "src/ui/adam/liveSession.css",

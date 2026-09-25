@@ -553,6 +553,19 @@ export function createApplicationTools({
     );
   defer(() => infra?.destroy());
 
+  // ASTRO: astrocartography lines over Earth for a date, time and time zone.
+  let astro = null;
+  import('../ui/adam/astroPanel.js')
+    .then(({ installAstroPanel }) => {
+      if (signal?.aborted) return;
+      astro = installAstroPanel({ viewer });
+      debug.astro = astro;
+    })
+    .catch((error) =>
+      console.warn('[adam] astro panel failed to load:', error),
+    );
+  defer(() => astro?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

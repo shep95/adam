@@ -1177,6 +1177,15 @@ export function createShepherdExecutor({
       if (action === 'links') return g.links(true);
       return { ok: true };
     },
+    astro: ({ action, date, time, offset, body, on } = {}) => {
+      const a = getConsole().astro;
+      if (!a) return { ok: false, error: 'astro panel is still loading' };
+      if (action === 'place')
+        return { ok: true, ...a.place({ date, time, offset }) };
+      if (action === 'toggle') return a.toggle(body, on);
+      a.open();
+      return { ok: true };
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };
