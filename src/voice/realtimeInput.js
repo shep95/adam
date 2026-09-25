@@ -244,6 +244,7 @@ export class RealtimeInput {
         }
         signal.analyser.getByteFrequencyData(signal.data);
         const binCount = signal.data.length;
+        let levelSum = 0;
         bars.forEach((bar, index) => {
           const start = Math.floor((index / bars.length) * binCount);
           const end = Math.max(
@@ -269,7 +270,14 @@ export class RealtimeInput {
             '--audio-opacity',
             `${(0.5 + shaped * 0.5).toFixed(2)}`,
           );
+          levelSum += shaped;
         });
+        // One combined 0–1 level for surfaces outside the voice panel (the
+        // scope waveform reads it).
+        this.ui.root?.style?.setProperty?.(
+          '--gev-voice-level',
+          (levelSum / Math.max(1, bars.length)).toFixed(3),
+        );
         this.visualizerFrame = requestAnimationFrame(render);
       };
       render();
@@ -316,6 +324,7 @@ export class RealtimeInput {
    */
   stopVoiceVisualizer() {
     this.visualizerGeneration++;
+    this.ui.root?.style?.setProperty?.('--gev-voice-level', '0');
     if (this.visualizerFrame) cancelAnimationFrame(this.visualizerFrame);
     this.visualizerFrame = null;
     try {

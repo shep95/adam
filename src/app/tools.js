@@ -239,6 +239,18 @@ export function createApplicationTools({
   const displayPolicy = applyDisplayPolicy({ styleManager });
   defer(() => displayPolicy.destroy());
 
+  // Motion language: scan-line, acquisition, trail trace, phosphor bloom,
+  // scope waveform, panel drift, NVG/FLIR ignition.
+  let motion = null;
+  import('../ui/adam/motion.js')
+    .then(({ installMotion }) => {
+      if (signal?.aborted) return;
+      motion = installMotion({ viewer, dataManager });
+      debug.motion = motion;
+    })
+    .catch((error) => console.warn('[adam] motion failed to load:', error));
+  defer(() => motion?.destroy());
+
   // Snapshot, record and interface scale on the top action bar.
   let captureTools = null;
   import('../ui/adam/captureTools.js')

@@ -1,0 +1,281 @@
+/* ADAM motion language — see motion.js. */
+
+/* Scan-line: one sweep when a layer comes online. */
+.adam-scan {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.adam-scan::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-primary) 20%,
+    var(--accent-primary) 80%,
+    transparent
+  );
+  box-shadow:
+    0 0 12px 2px rgba(0, 212, 255, 0.45),
+    0 -40px 60px -20px rgba(0, 212, 255, 0.12);
+}
+
+.adam-scan-label {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  translate: -50% 0;
+  font: 500 var(--type-meta) / 1 var(--font-mono);
+  letter-spacing: 2.4px;
+  color: var(--accent-primary);
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+  white-space: nowrap;
+}
+
+.adam-scan.is-on {
+  animation: adam-scan-sweep 760ms cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+
+.adam-scan.is-on::before,
+.adam-scan.is-on .adam-scan-label {
+  animation: adam-scan-move 760ms cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+
+@keyframes adam-scan-sweep {
+  0% {
+    opacity: 0;
+  }
+  8%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes adam-scan-move {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100vh);
+  }
+}
+
+/* Acquisition ring: closes onto a newly tracked contact and locks. */
+.adam-acquire {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 96;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.adam-acquire::before {
+  content: '';
+  position: absolute;
+  left: -70px;
+  top: -70px;
+  width: 140px;
+  height: 140px;
+  border: 1.5px solid var(--accent-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.45);
+}
+
+.adam-acquire-tick {
+  position: absolute;
+  width: 10px;
+  height: 2px;
+  background: var(--accent-primary);
+  left: -5px;
+  top: -1px;
+}
+
+.adam-acquire-tick.t0 {
+  transform: rotate(0deg) translateX(-30px);
+}
+.adam-acquire-tick.t1 {
+  transform: rotate(90deg) translateX(-30px);
+}
+.adam-acquire-tick.t2 {
+  transform: rotate(180deg) translateX(-30px);
+}
+.adam-acquire-tick.t3 {
+  transform: rotate(270deg) translateX(-30px);
+}
+
+.adam-acquire.is-on {
+  animation: adam-acquire-life 1100ms ease-out both;
+}
+
+.adam-acquire.is-on::before {
+  animation: adam-acquire-close 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes adam-acquire-life {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes adam-acquire-close {
+  from {
+    transform: scale(1) rotate(0deg);
+    border-style: dashed;
+  }
+  to {
+    transform: scale(0.26) rotate(90deg);
+    border-style: solid;
+  }
+}
+
+/* Phosphor bloom: a chip that switches on glows and decays. */
+.adam-phosphor {
+  animation: adam-phosphor 900ms ease-out;
+}
+
+@keyframes adam-phosphor {
+  0% {
+    box-shadow:
+      0 0 0 1px var(--accent-primary),
+      0 0 22px 4px rgba(0, 212, 255, 0.55);
+    filter: brightness(1.6);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    filter: none;
+  }
+}
+
+/* Scope waveform canvas. */
+.adam-scope-wave {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 94;
+  pointer-events: none;
+}
+
+/* Panel drift during a fly-to: side panels ease back, then settle. */
+#left-panel-stack,
+#right-context-rail,
+.adam-last-tracked {
+  transition:
+    opacity 320ms var(--ease-brake, ease-out),
+    translate 320ms var(--ease-brake, ease-out);
+}
+
+body.adam-in-flight #left-panel-stack {
+  opacity: 0.72;
+  translate: -6px 0;
+}
+
+body.adam-in-flight #right-context-rail,
+body.adam-in-flight .adam-last-tracked {
+  opacity: 0.72;
+  translate: 6px 0;
+}
+
+/* NVG / FLIR ignition: tube warm-up. */
+.adam-ignition {
+  position: fixed;
+  inset: 0;
+  z-index: 97;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.adam-ignition[data-mode='nvg'] {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(170, 255, 170, 0.9),
+    rgba(40, 120, 40, 0.6) 45%,
+    rgba(0, 20, 0, 0.95) 80%
+  );
+}
+
+.adam-ignition[data-mode='flir'] {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.95),
+    rgba(180, 180, 180, 0.55) 40%,
+    rgba(0, 0, 0, 0.95) 80%
+  );
+}
+
+.adam-ignition.is-on {
+  animation:
+    adam-ignite 900ms steps(1, end) forwards,
+    adam-ignite-fade 900ms ease-out forwards;
+}
+
+@keyframes adam-ignite {
+  0% {
+    filter: brightness(0.2);
+  }
+  12% {
+    filter: brightness(1.6);
+  }
+  18% {
+    filter: brightness(0.4);
+  }
+  26% {
+    filter: brightness(1.2);
+  }
+  34% {
+    filter: brightness(1);
+  }
+}
+
+@keyframes adam-ignite-fade {
+  0% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adam-scan,
+  .adam-acquire,
+  .adam-ignition,
+  .adam-scope-wave {
+    display: none;
+  }
+
+  .adam-phosphor {
+    animation: none;
+  }
+
+  body.adam-in-flight #left-panel-stack,
+  body.adam-in-flight #right-context-rail,
+  body.adam-in-flight .adam-last-tracked {
+    opacity: 1;
+    translate: none;
+  }
+}

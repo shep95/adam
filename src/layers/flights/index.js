@@ -51,6 +51,8 @@ export function createCivilFlightLayer({
     },
     applyPendingTrackingRestore: () =>
       parts.tracking._applyPendingTrackingRestore(),
+    /** Copy of the tracked aircraft's accumulated trail (for the trace animation). */
+    getTrackedTrailPositions: () => (flightState._trailPositions || []).slice(),
   });
 
   Object.assign(
