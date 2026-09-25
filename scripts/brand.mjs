@@ -36,12 +36,29 @@ export function patchIndexHtml(html) {
 /** Point a logo template at the raster logo (logoGaze falls back to <img>). */
 export function patchLogoTemplate(html) {
   return html
-    .replaceAll('data-logo-src="/logo.svg"', 'data-logo-src="/brand/logo.png"')
-    .replaceAll('<img src="/logo.svg"', '<img src="/brand/logo.png"');
+    .replace(
+      /data-logo-src="\/(logo\.svg|brand\/sheep-(?:mark|favicon)\.svg)"/g,
+      'data-logo-src="/brand/logo.png"',
+    )
+    .replace(
+      /<img src="\/(logo\.svg|brand\/sheep-(?:mark|favicon)\.svg)"/g,
+      '<img src="/brand/logo.png"',
+    );
+}
+
+/** The committed brand photo, if any (brand/sheep.* or public/brand/source.*). */
+export function findBrandSource(exists = existsSync) {
+  for (const dir of ['brand', 'public/brand'])
+    for (const name of ['sheep', 'source'])
+      for (const ext of ['jpg', 'jpeg', 'png', 'webp'])
+        if (exists(`${dir}/${name}.${ext}`)) return `${dir}/${name}.${ext}`;
+  return null;
 }
 
 async function main() {
-  const input = process.argv[2];
+  const auto = process.argv[2] === '--auto';
+  const input = auto ? findBrandSource() : process.argv[2];
+  if (auto && !input) return; // no photo committed: keep the vector mark
   if (!input || !existsSync(input)) {
     console.error('usage: npm run brand -- path/to/image.(jpg|png|webp)');
     process.exit(1);

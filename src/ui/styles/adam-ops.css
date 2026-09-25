@@ -334,3 +334,13 @@ body.cockpit-mode.adam-cockpit-compact
     letter-spacing: 0;
   }
 }
+
+/* ── Brand mark: the sheep keeps its own colours in every theme ────────── */
+:root .brand-logo.is-brand img {
+  filter: none;
+  border-radius: 22%;
+}
+
+#title-bar .title-logo.is-brand {
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.28));
+}

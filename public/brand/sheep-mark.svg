@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t">
+  <title id="t">ADAM — the sheep on the cliff</title>
+  <defs>
+    <linearGradient id="haze" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#c9d3c2"/>
+      <stop offset="0.45" stop-color="#7d8f72"/>
+      <stop offset="1" stop-color="#34432f"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.78" cy="0.08" r="0.75">
+      <stop offset="0" stop-color="#f4f6ec" stop-opacity="0.85"/>
+      <stop offset="0.5" stop-color="#e3e9dc" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#e3e9dc" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cliff" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d4d2c"/>
+      <stop offset="0.35" stop-color="#26301c"/>
+      <stop offset="1" stop-color="#151b10"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9fb46e"/>
+      <stop offset="0.6" stop-color="#b9cf7a"/>
+      <stop offset="1" stop-color="#7e9a4c"/>
+    </linearGradient>
+    <linearGradient id="wool" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f3ead8"/>
+      <stop offset="1" stop-color="#cdbb98"/>
+    </linearGradient>
+    <clipPath id="tile"><rect width="64" height="64" rx="12"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="64" height="64" fill="url(#haze)"/>
+    <path d="M0 30 C12 26 20 34 34 30 S58 22 64 24 V64 H0Z" fill="#5d6f52" opacity="0.35"/>
+    <rect width="64" height="64" fill="url(#sun)"/>
+    <!-- far ridge on the right -->
+    <path d="M50 64 C52 44 58 30 64 26 V64Z" fill="#46573a" opacity="0.75"/>
+    <!-- the cliff -->
+    <path d="M19 64 C18 56 19.5 48 21 42.5 C22 40 25 38.6 29 38.2 L40 38.4 C48 38.6 56 39.8 64 38.8 V64Z" fill="url(#cliff)"/>
+    <path d="M21 42.4 C22.5 39.6 25.5 38.4 29.5 38 L40 38.2 C48 38.5 56 39.5 64 38.6 V41 C56 42 48 41.2 40 41 L29 40.9 C25.8 41.1 23 42 21.3 43.6Z" fill="url(#grass)"/>
+    <path d="M23 47 L25 45.5 M27 52 L30 50.5 M22 56 L24 55" stroke="#141a0f" stroke-width="0.7" opacity="0.6"/>
+    <!-- the sheep, facing you -->
+    <g>
+      <rect x="30.2" y="34.2" width="1.1" height="4.4" rx="0.4" fill="#8a7a5c"/>
+      <rect x="32.7" y="34.2" width="1.1" height="4.4" rx="0.4" fill="#8a7a5c"/>
+      <ellipse cx="32" cy="31.2" rx="3.9" ry="4.4" fill="url(#wool)"/>
+      <ellipse cx="29.4" cy="24.1" rx="1.3" ry="0.6" transform="rotate(-25 29.4 24.1)" fill="#d8b89a"/>
+      <ellipse cx="34.6" cy="24.1" rx="1.3" ry="0.6" transform="rotate(25 34.6 24.1)" fill="#d8b89a"/>
+      <ellipse cx="32" cy="25.4" rx="2.1" ry="2.5" fill="#f1e9dc"/>
+      <circle cx="31.2" cy="25" r="0.28" fill="#3a3024"/>
+      <circle cx="32.8" cy="25" r="0.28" fill="#3a3024"/>
+      <ellipse cx="32" cy="26.9" rx="0.7" ry="0.35" fill="#c7a58c"/>
+    </g>
+    <rect width="64" height="64" fill="#e6ece0" opacity="0.08"/>
+  </g>
+</svg>

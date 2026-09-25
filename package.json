@@ -2,7 +2,7 @@
   "name": "adam",
   "private": true,
   "version": "0.1.1",
-  "description": "A real-time intelligence console for planet Earth — photorealistic 3D globe, live aircraft/ships/satellites/earthquakes/CCTV, and hands-free voice control. Runs in a browser.",
+  "description": "A real-time intelligence console for planet Earth \u2014 photorealistic 3D globe, live aircraft/ships/satellites/earthquakes/CCTV, and hands-free voice control. Runs in a browser.",
   "type": "module",
   "license": "MIT",
   "author": "House of Asher (#houseofasher)",
@@ -46,7 +46,8 @@
     "check:boundaries": "node scripts/check-import-directions.mjs && node scripts/check-package-boundaries.mjs",
     "qa:transit": "node scripts/qa-transit.mjs",
     "validate:env": "node scripts/validate-env.mjs",
-    "brand": "node scripts/brand.mjs"
+    "brand": "node scripts/brand.mjs",
+    "prebuild": "node scripts/brand.mjs --auto"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
