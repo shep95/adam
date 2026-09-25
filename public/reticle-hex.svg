@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="hxr" viewBox="0 0 100 100" width="256" height="256" role="img"><title>ADAM hexagonal tracking reticle</title><style>
+.hxr { overflow: visible; }
+.hxr * { vector-effect: non-scaling-stroke; }
+.hxr-frame { fill: none; stroke: #00d4ff; stroke-width: 1.5; stroke-linejoin: miter; }
+.hxr-spin { transform-origin: 50px 50px; animation: hxr-spin 14s linear infinite; }
+.hxr-facet { stroke: #00d4ff; stroke-width: 1.5; stroke-opacity: 0.4; fill: none;
+  animation: hxr-shimmer 3.2s ease-in-out infinite; }
+.hxr-facet:nth-child(2) { animation-delay: -0.64s; }
+.hxr-facet:nth-child(3) { animation-delay: -1.28s; }
+.hxr-facet:nth-child(4) { animation-delay: -1.92s; }
+.hxr-facet:nth-child(5) { animation-delay: -2.56s; }
+.hxr-trace { fill: none; stroke: #00d4ff; stroke-width: 1.5; stroke-linecap: square;
+  stroke-dasharray: 22 242; animation: hxr-trace 2.6s linear infinite; }
+.hxr-pip { fill: #00d4ff; transform-origin: 50px 50px; animation: hxr-pip 1.6s ease-in-out infinite; }
+@keyframes hxr-spin { to { transform: rotate(360deg); } }
+@keyframes hxr-shimmer { 0%, 100% { stroke-opacity: 0.4; } 50% { stroke-opacity: 0.12; } }
+@keyframes hxr-trace { to { stroke-dashoffset: -264; } }
+@keyframes hxr-pip { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.6); } }
+@media (prefers-reduced-motion: reduce) {
+  .hxr-spin, .hxr-facet, .hxr-trace, .hxr-pip { animation: none; }
+}</style><rect x="-50" y="-50" width="200" height="200" fill="#0a0c0f"/><g class="hxr-spin"><g class="hxr-facets"><line class="hxr-facet" x1="50" y1="6" x2="88.11" y2="72"/><line class="hxr-facet" x1="50" y1="6" x2="11.89" y2="72"/><line class="hxr-facet" x1="88.11" y1="28" x2="50" y2="94"/><line class="hxr-facet" x1="50" y1="94" x2="11.89" y2="28"/><line class="hxr-facet" x1="88.11" y1="28" x2="11.89" y2="72"/></g><polygon class="hxr-frame" points="50,6 88.11,28 88.11,72 50,94 11.89,72 11.89,28"/><polygon class="hxr-trace" points="50,6 88.11,28 88.11,72 50,94 11.89,72 11.89,28" pathLength="264"/></g><circle class="hxr-pip" cx="50" cy="50" r="1.6"/></svg>

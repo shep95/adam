@@ -3,7 +3,9 @@
  * happened, each short, each tied to a real event:
  *
  *   scan-line       a layer comes online: one sweep with its name riding it
- *   acquisition     a contact is tracked: a ring closes onto it and locks
+ *   acquisition     a contact is tracked: the hexagonal reticle closes onto
+ *                   it, locks, and rides the contact for as long as it is
+ *                   tracked
  *   trail trace     a tracked aircraft's trail lights from tail to head
  *   phosphor bloom  a chip that turns on glows and decays like a CRT phosphor
  *   scope waveform  while the voice analyst listens or speaks, the scope edge
@@ -17,6 +19,7 @@ import './motion.css';
 import * as Cesium from 'cesium';
 import { getKeyholeGeometry } from '../../celestialRing.js';
 import { newlyEnabled, thinPositions } from './motionMath.js';
+import { hexReticleSvg } from './hexReticle.js';
 import { isScopeMaskEnabled } from '../../scopeMask.js';
 import {
   holdContinuousRender,
@@ -89,8 +92,8 @@ export function installMotion({
   // ── Acquisition ring + trail trace on tracking ───────────────────────────
   const ring = el(doc, 'div', 'adam-acquire');
   ring.setAttribute('aria-hidden', 'true');
-  for (let i = 0; i < 4; i += 1)
-    ring.append(el(doc, 'span', `adam-acquire-tick t${i}`));
+  // Static, module-built markup (no data), so innerHTML is safe here.
+  ring.innerHTML = hexReticleSvg({ size: 64 });
   doc.body.append(ring);
   cleanups.push(() => ring.remove());
 
@@ -107,22 +110,30 @@ export function installMotion({
   }
 
   let ringFrame = 0;
+  let ringEntity = null;
+  // Tracking already holds continuous render, so riding the contact each
+  // frame costs one projection, not extra frames.
+  const follow = () => {
+    if (!ringEntity) return;
+    const p = screenPoint(ringEntity);
+    ring.classList.toggle('is-offscreen', !p);
+    if (p) ring.style.transform = `translate(${p.x}px, ${p.y}px)`;
+    ringFrame = requestAnimationFrame(follow);
+  };
   function acquire(entity) {
-    if (reduced()) return;
-    const start = performance.now();
+    cancelAnimationFrame(ringFrame);
+    ringEntity = entity;
     ring.classList.remove('is-on');
     void ring.offsetWidth;
     ring.classList.add('is-on');
-    cancelAnimationFrame(ringFrame);
-    // Follow the contact while the ring closes (the camera is moving too).
-    const follow = () => {
-      const p = screenPoint(entity);
-      if (p) ring.style.transform = `translate(${p.x}px, ${p.y}px)`;
-      if (performance.now() - start < 1100)
-        ringFrame = requestAnimationFrame(follow);
-    };
     follow();
   }
+  function releaseReticle() {
+    cancelAnimationFrame(ringFrame);
+    ringEntity = null;
+    ring.classList.remove('is-on');
+  }
+  cleanups.push(releaseReticle);
 
   const traceSource = new Cesium.CustomDataSource('adam-trace');
   viewer.dataSources.add(traceSource);
@@ -173,6 +184,7 @@ export function installMotion({
   const removeTracked = viewer.trackedEntityChanged.addEventListener(
     (entity) => {
       if (!entity) {
+        releaseReticle();
         traceToken += 1;
         traceSource.entities.removeAll();
         return;

@@ -71,7 +71,8 @@
   }
 }
 
-/* Acquisition ring: closes onto a newly tracked contact and locks. */
+/* Hexagonal tracking reticle: closes onto a tracked contact, locks, and
+   rides it while tracked. Its own loops live in the SVG (hexReticle.js). */
 .adam-acquire {
   position: fixed;
   left: 0;
@@ -83,69 +84,36 @@
   opacity: 0;
 }
 
-.adam-acquire::before {
-  content: '';
+.adam-acquire .hxr {
   position: absolute;
-  left: -70px;
-  top: -70px;
-  width: 140px;
-  height: 140px;
-  border: 1.5px solid var(--accent-primary);
-  border-radius: 50%;
-  box-shadow: 0 0 14px rgba(0, 188, 212, 0.45);
-}
-
-.adam-acquire-tick {
-  position: absolute;
-  width: 10px;
-  height: 2px;
-  background: var(--accent-primary);
-  left: -5px;
-  top: -1px;
-}
-
-.adam-acquire-tick.t0 {
-  transform: rotate(0deg) translateX(-30px);
-}
-.adam-acquire-tick.t1 {
-  transform: rotate(90deg) translateX(-30px);
-}
-.adam-acquire-tick.t2 {
-  transform: rotate(180deg) translateX(-30px);
-}
-.adam-acquire-tick.t3 {
-  transform: rotate(270deg) translateX(-30px);
+  left: -32px;
+  top: -32px;
+  filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.45));
 }
 
 .adam-acquire.is-on {
-  animation: adam-acquire-life 1100ms ease-out both;
+  opacity: 1;
 }
 
-.adam-acquire.is-on::before {
-  animation: adam-acquire-close 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+.adam-acquire.is-on .hxr {
+  animation: adam-acquire-close 560ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
-@keyframes adam-acquire-life {
-  0% {
-    opacity: 0;
-  }
-  10%,
-  70% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+.adam-acquire.is-offscreen {
+  opacity: 0;
 }
 
 @keyframes adam-acquire-close {
   from {
-    transform: scale(1) rotate(0deg);
-    border-style: dashed;
+    opacity: 0;
+    transform: scale(3.2) rotate(-30deg);
+  }
+  60% {
+    opacity: 1;
   }
   to {
-    transform: scale(0.26) rotate(90deg);
-    border-style: solid;
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
   }
 }
 
@@ -261,8 +229,11 @@ body.adam-in-flight .adam-last-tracked {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .adam-acquire.is-on .hxr {
+    animation: none;
+  }
+
   .adam-scan,
-  .adam-acquire,
   .adam-ignition,
   .adam-scope-wave {
     display: none;

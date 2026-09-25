@@ -2041,6 +2041,7 @@
       "src/ui/adam/rewind.css",
       "src/ui/adam/captureMath.js",
       "src/ui/adam/motion.js",
+      "src/ui/adam/hexReticle.js",
       "src/ui/adam/motionMath.js",
       "src/ui/adam/motion.css",
       "src/ui/adam/nationsPanel.js",
