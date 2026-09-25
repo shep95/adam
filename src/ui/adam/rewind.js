@@ -1,5 +1,6 @@
 /**
- * REWIND (R): scrub back through the last ~45 minutes of held tracks.
+ * REWIND (R): scrub back through the last ~45 minutes of held tracks, or
+ * the last 24 hours from the browser's track archive.
  *
  * Past-position markers show where every tracked aircraft and vessel was at the
  * chosen moment, with a short tail of the five minutes before it. Live
@@ -27,6 +28,8 @@ const COLORS = {
 const LABEL_LIVE = 'LIVE';
 const LABEL_PLAY = 'PLAY';
 const LABEL_PAUSE = 'PAUSE';
+const LABEL_SHORT = '45 min';
+const LABEL_LONG = '24 h';
 
 function el(doc, tag, className, text) {
   const node = doc.createElement(tag);
@@ -39,7 +42,12 @@ function clock(ms) {
   return new Date(ms).toISOString().slice(11, 19) + 'Z';
 }
 
-export function installRewind({ viewer, intel, doc = document }) {
+export function installRewind({
+  viewer,
+  intel,
+  archive = null,
+  doc = document,
+}) {
   const api = intel?.rewind;
   if (!api) return { destroy() {} };
   const cleanups = [];
@@ -74,27 +82,38 @@ export function installRewind({ viewer, intel, doc = document }) {
     'adam-meta adam-rewind-note',
     'reconstructed from ~30 s samples',
   );
-  bar.append(title, play, slider, readout, live, note);
+  // Range: the ~45 min held in memory, or the 24 h archive in this browser.
+  const span = el(doc, 'button', 'adam-chip adam-rewind-span', LABEL_SHORT);
+  span.type = 'button';
+  span.title = 'Switch between the last 45 minutes and the 24-hour archive';
+  span.hidden = !archive;
+  bar.append(title, span, play, slider, readout, live, note);
   doc.body.append(bar);
   cleanups.push(() => bar.remove());
 
   let at = null; // null = live
+  let longRange = false;
+  let drawToken = 0;
   let playing = false;
   let lastFrame = 0;
   let raf = null;
 
   function range() {
-    return api.range();
+    return longRange ? archive.range() : api.range();
   }
 
-  function draw() {
-    points.removeAll();
-    tails.removeAll();
+  async function draw() {
+    const my = ++drawToken;
     if (at == null) {
+      points.removeAll();
+      tails.removeAll();
       governorRequestRender('adam-rewind');
       return;
     }
-    const past = api.snapshotAt(at);
+    const past = longRange ? await archive.snapshotAt(at) : api.snapshotAt(at);
+    if (my !== drawToken) return;
+    points.removeAll();
+    tails.removeAll();
     for (const g of past) {
       const color = Cesium.Color.fromCssColorString(
         COLORS[g.layerKey] || '#B0BEC5',
@@ -112,9 +131,11 @@ export function installRewind({ viewer, intel, doc = document }) {
         outlineWidth: 1,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       });
-      const track = api
-        .trackOf(g.layerKey, g.id)
-        .filter((p) => p.t <= at && p.t >= at - TAIL_MS);
+      const track = longRange
+        ? []
+        : api
+            .trackOf(g.layerKey, g.id)
+            .filter((p) => p.t <= at && p.t >= at - TAIL_MS);
       if (track.length) {
         const coords = [];
         for (const p of track) coords.push(p.lon, p.lat);
@@ -129,7 +150,8 @@ export function installRewind({ viewer, intel, doc = document }) {
           });
       }
     }
-    readout.textContent = `${clock(at)} · −${Math.round((Date.now() - at) / 60_000)} min · ${past.length}`;
+    const ago = Math.round((Date.now() - at) / 60_000);
+    readout.textContent = `${clock(at)} · −${ago >= 120 ? `${(ago / 60).toFixed(1)} h` : `${ago} min`} · ${past.length}`;
     governorRequestRender('adam-rewind');
   }
 
@@ -198,6 +220,24 @@ export function installRewind({ viewer, intel, doc = document }) {
     stopPlay();
     setAt(null);
   });
+  span.addEventListener('click', () => setLongRange(!longRange));
+
+  function setLongRange(on) {
+    longRange = Boolean(on) && Boolean(archive);
+    stopPlay();
+    span.textContent = longRange ? LABEL_LONG : LABEL_SHORT;
+    span.classList.toggle('is-on', longRange);
+    note.textContent = longRange
+      ? 'archive · one sample every 3 min, recorded while ADAM is open in this browser'
+      : 'reconstructed from ~30 s samples';
+    const r = range();
+    setAt(null);
+    readout.textContent = r
+      ? `${LABEL_LIVE} · ${longRange ? `${((r.to - r.from) / 3_600_000).toFixed(1)} h` : `${Math.round((r.to - r.from) / 60_000)} min`} held`
+      : longRange
+        ? 'archive is empty — it fills every 3 min while ADAM is open'
+        : 'no history yet — keep layers on a few minutes';
+  }
 
   function setOpen(open) {
     bar.hidden = !open;
@@ -216,7 +256,7 @@ export function installRewind({ viewer, intel, doc = document }) {
   // Rail chip, docked before KEYS like SKY.
   const chip = el(doc, 'button', 'adam-chip adam-ops-rail-btn');
   chip.type = 'button';
-  chip.title = 'Rewind the last 45 minutes (R)';
+  chip.title = 'Rewind the last 45 minutes or 24 hours (R)';
   chip.setAttribute('aria-pressed', 'false');
   chip.append(
     el(doc, 'span', 'adam-ops-rail-label', 'REWIND'),
@@ -264,10 +304,11 @@ export function installRewind({ viewer, intel, doc = document }) {
   return {
     open: () => setOpen(true),
     close: () => setOpen(false),
-    /** Jump to `minutesAgo` (null = live). */
+    /** Jump to `minutesAgo` (null = live); beyond 45 min uses the 24 h archive. */
     seek(minutesAgo) {
       if (bar.hidden) setOpen(true);
       stopPlay();
+      if (archive && minutesAgo != null) setLongRange(minutesAgo > 45);
       setAt(minutesAgo == null ? null : Date.now() - minutesAgo * 60_000);
       return { at, range: range() };
     },

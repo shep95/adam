@@ -292,16 +292,27 @@ export function createApplicationTools({
     );
   defer(() => captureTools?.destroy());
 
-  // REWIND: scrub the pattern watcher's held track history.
+  // REWIND: scrub the pattern watcher's held track history (~45 min) or the
+  // 24-hour archive this browser keeps in IndexedDB.
   let rewind = null;
-  import('../ui/adam/rewind.js')
-    .then(({ installRewind }) => {
+  let trackArchive = null;
+  Promise.all([
+    import('../ui/adam/rewind.js'),
+    import('../intel/trackArchive.js'),
+  ])
+    .then(([{ installRewind }, { createTrackArchive }]) => {
       if (signal?.aborted) return;
-      rewind = installRewind({ viewer, intel });
+      trackArchive = createTrackArchive({ intel });
+      trackArchive.start();
+      debug.trackArchive = trackArchive;
+      rewind = installRewind({ viewer, intel, archive: trackArchive });
       debug.rewind = rewind;
     })
     .catch((error) => console.warn('[adam] rewind failed to load:', error));
-  defer(() => rewind?.destroy());
+  defer(() => {
+    rewind?.destroy();
+    trackArchive?.stop();
+  });
 
   // MEASURE: range, bearing, area, rings, corridors; zones.
   let measureTool = null;

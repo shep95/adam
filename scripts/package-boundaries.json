@@ -2060,6 +2060,7 @@
       "src/ui/adam/spacePanel.js",
       "src/ui/adam/spectrumPanel.js",
       "src/intel/spectrum.js",
+      "src/intel/trackArchive.js",
       "src/ui/adam/spacePanel.css",
       "src/intel/volcanoes.js",
       "src/space/solarSystem.js",
