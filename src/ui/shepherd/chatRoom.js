@@ -85,6 +85,7 @@ function toolLabel(name) {
 }
 
 const AUDIT_LABEL = 'log';
+const LABEL_SSO = 'sign in with single sign-on';
 const AUDIT_EXPORT = 'json';
 const AUDIT_CLEAR = 'clr';
 const CHALLENGE_LABEL = '2nd';
@@ -531,6 +532,16 @@ export function installShepherdRoom({
     const go = el(doc, 'button', 'shp-send', 'unlock');
     go.type = 'submit';
     box.append(field, go);
+    // Deployments with single sign-on offer it beside the token.
+    void client
+      .access()
+      .then((a) => {
+        if (!a?.sso) return;
+        const sso = el(doc, 'a', 'shp-send shp-sso', LABEL_SSO);
+        sso.href = '/api/sso/login';
+        box.append(sso);
+      })
+      .catch(() => {});
     box.addEventListener('submit', async (event) => {
       event.preventDefault();
       try {

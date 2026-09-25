@@ -7,13 +7,16 @@
  * token rather than the token itself, is HttpOnly and SameSite=Strict, and is
  * compared in constant time.
  *
- *   GET  /api/access  → {required, granted}
+ *   GET  /api/access  → {required, granted, sso}
  *   POST /api/access  {token} → sets the cookie
  *   DELETE /api/access → clears it
+ *   /api/sso/*        single sign-on (OpenID Connect), see ./sso.js — a
+ *                     verified SSO session is an identity with ADAM_SSO_ROLE
  */
 import crypto from 'node:crypto';
 import { readRequestBody } from './common/request.js';
 import { makeRateLimiter, clientKey } from './common/rate-limit.js';
+import { handleSso, ssoConfig, ssoIdentity } from './sso.js';
 
 const COOKIE = 'adam_access';
 /** Routes that spend the operator's provider credit. */
@@ -186,6 +189,7 @@ const AUDITED = [
 export function accessGate({
   env = process.env,
   audit = (entry) => console.log(JSON.stringify(entry)),
+  fetchImpl = (...a) => fetch(...a),
 } = {}) {
   const attempts = makeRateLimiter({
     windowMs: 15 * 60_000,
@@ -226,14 +230,46 @@ export function accessGate({
       const path = String(req.url || '/').split('?')[0];
       const secret = token();
       const roleMap = roles();
-      const gated = Boolean(secret) || roleMap.size > 0;
+      const sso = ssoConfig(env);
+      const gated = Boolean(secret) || roleMap.size > 0 || Boolean(sso);
+      // Single sign-on routes answer before any session exists.
+      if (path.startsWith('/sso/')) {
+        try {
+          const handled = await handleSso(req, res, path, {
+            cfg: sso,
+            readCookie,
+            fetchImpl,
+            log: (outcome) => log(req, '/access', null, `sso-${outcome}`),
+          });
+          if (handled) return;
+        } catch (error) {
+          return send(res, 502, {
+            error: `single sign-on failed (${error.message})`,
+          });
+        }
+        return send(res, 404, { error: 'no such sign-on route' });
+      }
+      // A verified SSO session counts as an identity with the configured role.
+      const ssoWho = ssoIdentity(req, sso, readCookie);
+      const identityOf = () => {
+        const id = identifyRequest(req, secret, roleMap);
+        if (id) return id;
+        if (!ssoWho) return null;
+        return ssoWho.role === 'admin'
+          ? 'admin'
+          : roleMap.has(ssoWho.role)
+            ? ssoWho.role
+            : null;
+      };
       if (path === '/access' || path === '/access/') {
-        const identity = identifyRequest(req, secret, roleMap);
+        const identity = identityOf();
         if (req.method === 'GET')
           return send(res, 200, {
             required: gated,
             granted: !gated || Boolean(identity),
             identity: identity || null,
+            sso: Boolean(sso),
+            email: ssoWho?.email || null,
             allow:
               identity === 'admin' ? ['*'] : roleMap.get(identity)?.allow || [],
           });
@@ -315,11 +351,17 @@ export function accessGate({
         log(req, path, 'ingest-token', 'forwarded');
         return next();
       }
-      const identity = identifyRequest(req, secret, roleMap);
+      const identity = identityOf();
       if (!identity) {
         log(req, path, null, 'denied-no-session');
-        return send(res, 401, { error: 'access token required', access: true });
+        return send(res, 401, {
+          error: 'access token required',
+          access: true,
+          sso: Boolean(sso),
+        });
       }
+      if (ssoWho && (identity === 'admin' || roleMap.has(identity)))
+        req.headers['x-adam-operator'] = ssoWho.email;
       if (path === '/access/sign' || path === '/access/verify') {
         if (req.method !== 'POST')
           return send(res, 405, { error: 'method not allowed' });
@@ -359,7 +401,12 @@ export function accessGate({
           error: `role ${identity} may not use /api${path}`,
         });
       }
-      log(req, path, identity, 'allowed');
+      log(
+        req,
+        path,
+        ssoWho ? `${identity} (${ssoWho.email})` : identity,
+        'allowed',
+      );
       return next();
     });
   }
