@@ -45,6 +45,15 @@ function json(res, status, payload) {
 }
 
 /** Validate and normalize an untrusted conversation. Throws on bad input. */
+/** Claude's server-side web search for Shepherd; ADAM_SHEPHERD_WEB_SEARCH=off disables. */
+export function webSearchEnabled(env = process.env) {
+  return (
+    String(env.ADAM_SHEPHERD_WEB_SEARCH || 'on')
+      .trim()
+      .toLowerCase() !== 'off'
+  );
+}
+
 export function sanitizeConversation(body) {
   const messages = Array.isArray(body?.messages) ? body.messages : null;
   if (!messages || !messages.length || messages.length > MAX_MESSAGES)
@@ -250,6 +259,7 @@ export function shepherdProxy({
           system: shepherdSystemPrompt({ mode: PROVIDERS[id].promptMode }),
           messages: conversation.messages,
           tools: SHEPHERD_TOOLS,
+          webSearch: webSearchEnabled(env),
           signal: controller.signal,
           fetchImpl,
           clientFactory,

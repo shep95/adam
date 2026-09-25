@@ -557,6 +557,103 @@ export function createShepherdExecutor({
         newest,
       };
     },
+    space_weather: async () => {
+      const res = await fetch('/api/spaceweather', {
+        credentials: 'same-origin',
+      });
+      const body = await res.json().catch(() => ({}));
+      return res.ok
+        ? { ok: true, ...body }
+        : { ok: false, error: body.error || `HTTP ${res.status}` };
+    },
+    news_events: async ({ query, timespan = '24h' } = {}) => {
+      const res = await fetch(
+        `/api/events?query=${encodeURIComponent(query || '')}&timespan=${encodeURIComponent(timespan)}`,
+        { credentials: 'same-origin' },
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok)
+        return { ok: false, error: body.error || `HTTP ${res.status}` };
+      const feats = (body.features || []).slice(0, 150);
+      if (feats.length)
+        overlay.drawOverlay({
+          title: `news: ${query}`,
+          nodes: feats.map((f, i) => ({
+            id: `news-${i}`,
+            label: `${f.properties.name} (${f.properties.count})`,
+            lat: f.geometry.coordinates[1],
+            lon: f.geometry.coordinates[0],
+            confidence: 0.4,
+            note: f.properties.url || '',
+          })),
+        });
+      return {
+        ok: true,
+        source: body.source,
+        places: feats.length,
+        top: feats
+          .slice()
+          .sort((a, b) => b.properties.count - a.properties.count)
+          .slice(0, 12)
+          .map((f) => ({
+            name: f.properties.name,
+            count: f.properties.count,
+            url: f.properties.url,
+          })),
+        note: 'news-reported locations (GDELT): density of reporting, not verified events',
+      };
+    },
+    list_feeds: async () => {
+      const res = await fetch('/api/ingest', { credentials: 'same-origin' });
+      const body = await res.json().catch(() => ({}));
+      return res.ok
+        ? { ok: true, ...body }
+        : { ok: false, error: body.error || `HTTP ${res.status}` };
+    },
+    load_feed: async ({ name } = {}) => {
+      const res = await fetch(`/api/ingest/${encodeURIComponent(name || '')}`, {
+        credentials: 'same-origin',
+      });
+      if (!res.ok) return { ok: false, error: `no feed ${name}` };
+      const files = getConsole().shepherd?.files;
+      if (!files)
+        return { ok: false, error: 'overlay loader is still loading' };
+      const text = await res.text();
+      return {
+        ok: true,
+        ...(await files.load(
+          new File([text], `${name}.geojson`, { type: 'application/geo+json' }),
+        )),
+      };
+    },
+    load_url: async ({ url } = {}) => {
+      const res = await fetch(
+        `/api/fetch-geo?url=${encodeURIComponent(url || '')}`,
+        { credentials: 'same-origin' },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { ok: false, error: body.error || `HTTP ${res.status}` };
+      }
+      const type = res.headers.get('content-type') || '';
+      let text = await res.text();
+      let name =
+        (String(url).split('/').pop() || 'overlay')
+          .split('?')[0]
+          .slice(0, 60) || 'overlay';
+      if (/csv|text\/plain/.test(type) || /\.csv$/i.test(name)) {
+        const { csvToGeoJson } = await import('./fileIntel.js');
+        const gj = csvToGeoJson(text);
+        if (!gj) return { ok: false, error: 'CSV needs lat and lon columns' };
+        text = JSON.stringify(gj);
+        name = name.replace(/\.csv$/i, '') + '.geojson';
+      } else if (/kml/.test(type) && !/\.km[lz]$/i.test(name)) name += '.kml';
+      else if (!/\.(geo)?json$|\.km[lz]$/i.test(name)) name += '.geojson';
+      const files = getConsole().shepherd?.files;
+      if (!files)
+        return { ok: false, error: 'overlay loader is still loading' };
+      return { ok: true, ...(await files.load(new File([text], name))) };
+    },
     record_finding: (args = {}) => {
       if (!intel?.addFinding)
         return { ok: false, error: 'intel service is not running' };

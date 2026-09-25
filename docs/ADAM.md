@@ -105,6 +105,14 @@ confidence key. Shepherd's own action log is under `log` in its header;
 `2nd` asks it to challenge its last answer (alternatives, what was assumed,
 what would change its confidence). Its pins and overlays survive reloads.
 
+**Reach.** Shepherd can search the web (Claude provider, cited), plot
+news-reported locations for any query from GDELT (`news_events`), draw any
+public GeoJSON/KML/CSV URL (`load_url` — https, public hosts, no redirects,
+5 MB), read feeds your own systems push to `/api/ingest/<feed>`
+(`list_feeds`, `load_feed`) and read NOAA space weather — Kp, solar flux,
+R/S/G scales and what they do to HF and GNSS (`space_weather`). Ingested
+feeds live in server memory; use the standalone server for long-lived ones.
+
 ## Shepherd
 
 A streaming chat analyst on the right edge. It reads a `[console]` block with

@@ -136,3 +136,38 @@ export function createFileOverlays({ viewer }) {
     },
   };
 }
+
+/** CSV with lat/lon (or latitude/longitude) columns → GeoJSON points. */
+export function csvToGeoJson(text, { max = 5000 } = {}) {
+  const rows = String(text || '')
+    .split(/\r?\n/)
+    .filter((l) => l.trim());
+  if (rows.length < 2) return null;
+  const split = (line) =>
+    (line.match(/("([^"]|"")*"|[^,]*)(,|$)/g) || [])
+      .map((c) => c.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '"'))
+      .slice(0, -1);
+  const head = split(rows[0]).map((h) => h.trim().toLowerCase());
+  const iLat = head.findIndex((h) => ['lat', 'latitude', 'y'].includes(h));
+  const iLon = head.findIndex((h) =>
+    ['lon', 'lng', 'long', 'longitude', 'x'].includes(h),
+  );
+  if (iLat < 0 || iLon < 0) return null;
+  const features = [];
+  for (const line of rows.slice(1, max + 1)) {
+    const cells = split(line);
+    const lat = Number(cells[iLat]);
+    const lon = Number(cells[iLon]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const properties = {};
+    head.forEach((h, i) => {
+      if (i !== iLat && i !== iLon) properties[h] = cells[i];
+    });
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lon, lat] },
+      properties,
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}

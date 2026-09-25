@@ -553,3 +553,166 @@ test('notify: env-only https destinations, fan-out, no client-chosen URL', async
   });
   assert.equal(off.status, 404);
 });
+
+test('claude gets server-side web search unless switched off', async () => {
+  const { streamProvider, ANTHROPIC_WEB_SEARCH } =
+    await import('../../server/shepherd/providers.js');
+  const { webSearchEnabled } = await import('../../server/shepherd/router.js');
+  const seen = [];
+  const clientFactory = () => ({
+    messages: {
+      stream(params) {
+        seen.push(params);
+        return {
+          async *[Symbol.asyncIterator]() {
+            yield {
+              type: 'content_block_delta',
+              delta: { type: 'text_delta', text: 'hi' },
+            };
+          },
+          finalMessage: async () => ({
+            stop_reason: 'end_turn',
+            content: [],
+            usage: {},
+          }),
+        };
+      },
+    },
+  });
+  const run = async (webSearch) => {
+    for await (const _ of streamProvider('anthropic', {
+      key: 'k',
+      model: 'm',
+      system: 's',
+      messages: [{ role: 'user', text: 'x' }],
+      tools: [{ name: 't', description: 'd', parameters: { type: 'object' } }],
+      webSearch,
+      clientFactory,
+    }));
+  };
+  await run(true);
+  await run(false);
+  assert.deepEqual(seen[0].tools.at(-1), ANTHROPIC_WEB_SEARCH);
+  assert.equal(seen[1].tools.length, 1);
+  assert.equal(webSearchEnabled({}), true);
+  assert.equal(webSearchEnabled({ ADAM_SHEPHERD_WEB_SEARCH: 'off' }), false);
+});
+
+test('open feeds: space weather, GDELT, ingest auth, URL guard', async () => {
+  const m = await import('../../server/providers/openFeeds.js');
+  const kp = m.parseKp([
+    ['time_tag', 'Kp', 'a_running', 'station_count'],
+    ['2026-09-25 06:00:00.000', '6.33', '80', '8'],
+  ]);
+  assert.equal(kp.kp, 6.33);
+  const sw = m.spaceWeatherSummary({
+    kp,
+    flux: { flux: 180 },
+    scales: { R: 1, S: 0, G: 2 },
+  });
+  assert.equal(sw.quiet, false);
+  assert.ok(
+    sw.effects.some((e) => /G2/.test(e)) &&
+      sw.effects.some((e) => /R1/.test(e)),
+  );
+  const g = m.normalizeGdelt({
+    features: [
+      {
+        geometry: { coordinates: [56.3, 26.5] },
+        properties: {
+          name: 'Hormuz',
+          count: 4,
+          html: '<a href="https://news.example/a">x</a>',
+        },
+      },
+      { geometry: { coordinates: [] }, properties: {} },
+    ],
+  });
+  assert.equal(g.features.length, 1);
+  assert.equal(g.features[0].properties.url, 'https://news.example/a');
+  assert.match(m.gdeltUrl('port strike', '72h'), /timespan=72h/);
+  assert.match(m.gdeltUrl('x', 'forever'), /timespan=24h/);
+  assert.equal(m.validateIngest({ type: 'Nope' }).error.length > 0, true);
+  assert.equal(
+    m.validateIngest({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [1, 2] },
+    }).collection.features.length,
+    1,
+  );
+  for (const bad of [
+    'http://x.com/a',
+    'https://127.0.0.1/a',
+    'https://[::1]/a',
+    'https://u:p@x.com/',
+    'https://x.com:8443/',
+  ])
+    assert.ok(
+      (await m.checkFetchUrl(bad, async () => [{ address: '93.184.216.34' }]))
+        .error,
+      bad,
+    );
+  assert.ok(
+    (
+      await m.checkFetchUrl('https://internal.example/', async () => [
+        { address: '10.0.0.5' },
+      ])
+    ).error,
+  );
+  assert.ok(
+    (
+      await m.checkFetchUrl('https://data.example/x.geojson', async () => [
+        { address: '93.184.216.34' },
+      ])
+    ).url,
+  );
+
+  const plugin = m.openFeedsProxy({
+    env: { ADAM_INGEST_TOKEN: 'ingest-token-123456' },
+  });
+  const denied = await serve([plugin], '/api/ingest/sensors', {
+    method: 'POST',
+    body: '{}',
+  });
+  assert.equal(denied.status, 401);
+  const ok = await serve([plugin], '/api/ingest/sensors', {
+    method: 'POST',
+    headers: { authorization: 'Bearer ingest-token-123456' },
+    body: JSON.stringify({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [1, 2] },
+          properties: { v: 3 },
+        },
+      ],
+    }),
+  });
+  assert.equal(JSON.parse(ok.text).accepted, 1);
+  const read = JSON.parse((await serve([plugin], '/api/ingest/sensors')).text);
+  assert.equal(read.features[0].properties.v, 3);
+
+  const gate = accessGate({
+    env: { ADAM_ACCESS_TOKEN: 'admin-token-000' },
+    audit: () => {},
+  });
+  const through = await serve([gate, plugin], '/api/ingest/sensors', {
+    method: 'POST',
+    headers: { authorization: 'Bearer ingest-token-123456' },
+    body: JSON.stringify({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [3, 4] },
+    }),
+  });
+  assert.equal(
+    through.status,
+    200,
+    'bearer senders pass the cookie gate to the ingest check',
+  );
+  assert.equal(
+    (await serve([gate, plugin], '/api/ingest/sensors')).status,
+    401,
+    'reading still needs a session',
+  );
+});

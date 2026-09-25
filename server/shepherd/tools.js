@@ -275,6 +275,41 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'space_weather',
+    description:
+      'Current space weather from NOAA SWPC: planetary Kp, F10.7 solar flux and the NOAA R/S/G scales, with what they mean for HF radio, GNSS accuracy and satellite operations.',
+    parameters: obj({}),
+  },
+  {
+    name: 'news_events',
+    description:
+      'News-reported locations for a query from GDELT (global news, geocoded) over a timespan such as 24h, 72h or 7d, plotted on the globe with counts and a source link. Reporting density, not verified events; say so.',
+    parameters: obj(
+      {
+        query: { type: 'string' },
+        timespan: { type: 'string' },
+      },
+      ['query'],
+    ),
+  },
+  {
+    name: 'list_feeds',
+    description:
+      "External data feeds pushed into ADAM at /api/ingest/<name> (GeoJSON from operators' own systems): names, feature counts, last update.",
+    parameters: obj({}),
+  },
+  {
+    name: 'load_feed',
+    description: 'Draw an ingested feed on the globe.',
+    parameters: obj({ name: { type: 'string' } }, ['name']),
+  },
+  {
+    name: 'load_url',
+    description:
+      'Pull a public GeoJSON, KML or CSV (lat/lon columns) URL and draw it on the globe. https and public hosts only.',
+    parameters: obj({ url: { type: 'string' } }, ['url']),
+  },
+  {
     name: 'record_finding',
     description:
       'Record a structured finding for the session product: subject, place (name) and lat/lon, time (ISO or plain), confidence 0-1, source (which layers/feeds/documents), assessment, and the strongest alternative reading. Record each distinct assessment you make; findings accumulate and export with export_product.',

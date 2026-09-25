@@ -179,6 +179,8 @@ const AUDITED = [
   '/flight-lookup',
   '/access',
   '/notify',
+  '/ingest',
+  '/fetch-geo',
 ];
 
 export function accessGate({
@@ -301,6 +303,16 @@ export function accessGate({
               'set ADAM_ACCESS_TOKEN on this deployment to enable AI features',
             access: false,
           });
+        return next();
+      }
+      // External senders push to /api/ingest with their own bearer token
+      // (checked by the ingest route itself); they hold no session cookie.
+      if (
+        req.method === 'POST' &&
+        path.startsWith('/ingest/') &&
+        String(req.headers?.authorization || '').startsWith('Bearer ')
+      ) {
+        log(req, path, 'ingest-token', 'forwarded');
         return next();
       }
       const identity = identifyRequest(req, secret, roleMap);

@@ -451,12 +451,21 @@ export function anthropicMessages(messages) {
   return out;
 }
 
+/** Anthropic's server-side web search (runs on Anthropic's side; results
+ * arrive as cited text in the reply). */
+export const ANTHROPIC_WEB_SEARCH = Object.freeze({
+  type: 'web_search_20260209',
+  name: 'web_search',
+  max_uses: 5,
+});
+
 async function* streamAnthropic({
   key,
   model,
   system,
   messages,
   tools,
+  webSearch = false,
   signal,
   clientFactory,
 }) {
@@ -471,13 +480,16 @@ async function* streamAnthropic({
         { type: 'text', text: system, cache_control: { type: 'ephemeral' } },
       ],
       messages: anthropicMessages(messages),
-      ...(tools.length
+      ...(tools.length || webSearch
         ? {
-            tools: tools.map((tool) => ({
-              name: tool.name,
-              description: tool.description,
-              input_schema: tool.parameters,
-            })),
+            tools: [
+              ...tools.map((tool) => ({
+                name: tool.name,
+                description: tool.description,
+                input_schema: tool.parameters,
+              })),
+              ...(webSearch ? [ANTHROPIC_WEB_SEARCH] : []),
+            ],
           }
         : {}),
     },
@@ -493,6 +505,11 @@ async function* streamAnthropic({
   const final = await stream.finalMessage();
   if (final.stop_reason === 'refusal')
     yield { type: 'text', delta: '\n(the model declined this request.)' };
+  if (final.stop_reason === 'pause_turn')
+    yield {
+      type: 'text',
+      delta: '\n(web search paused mid-turn; ask me to continue.)',
+    };
   for (const block of final.content) {
     if (block.type === 'tool_use')
       yield {
