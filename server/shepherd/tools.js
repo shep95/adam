@@ -709,6 +709,20 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'war_history',
+    description:
+      'The war-history timeline (present back to antiquity, colour-coded by era). action: year (jump to a year, negative for BC; returns the wars being fought with sides, strategies and battles, and shows them on the globe with Wikidata battles of those years), war (find a war by name and jump to it), play (animate back into the past with direction -1, or forward with 1), open. Ongoing wars are as of 2025 — say so.',
+    parameters: obj(
+      {
+        action: { type: 'string', enum: ['year', 'war', 'play', 'open'] },
+        year: { type: 'integer', minimum: -3000, maximum: 2100 },
+        name: { type: 'string' },
+        direction: { type: 'integer', enum: [-1, 1] },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

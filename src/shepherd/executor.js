@@ -1137,6 +1137,15 @@ export function createShepherdExecutor({
         return c.organized(country, { days: days || 365 });
       return { ok: true };
     },
+    war_history: ({ action, year, name, direction } = {}) => {
+      const h = getConsole().history;
+      if (!h) return { ok: false, error: 'history timeline is still loading' };
+      if (action === 'year') return { ok: true, ...h.goTo(year) };
+      if (action === 'war') return h.find(name);
+      if (action === 'play') return { ok: true, ...h.play(direction || -1) };
+      h.open();
+      return { ok: true };
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };

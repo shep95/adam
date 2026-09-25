@@ -37,6 +37,7 @@ import { ownershipProxy } from './ownership.js';
 import { earthSpaceProxy } from './earthSpace.js';
 import { sessionsProxy } from './sessions.js';
 import { crimeProxy } from './crime.js';
+import { historyProxy } from './history.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -80,6 +81,7 @@ function localProviderPlugins() {
     earthSpaceProxy(),
     sessionsProxy(),
     crimeProxy(),
+    historyProxy(),
     keySetupEndpoint(),
   ];
 }

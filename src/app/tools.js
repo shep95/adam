@@ -503,6 +503,17 @@ export function createApplicationTools({
     );
   defer(() => crime?.destroy());
 
+  // HISTORY: wars on a timeline, present to antiquity.
+  let historyTimeline = null;
+  import('../ui/adam/historyTimeline.js')
+    .then(({ installHistoryTimeline }) => {
+      if (signal?.aborted) return;
+      historyTimeline = installHistoryTimeline({ viewer });
+      debug.history = historyTimeline;
+    })
+    .catch((error) => console.warn('[adam] history failed to load:', error));
+  defer(() => historyTimeline?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')
