@@ -514,6 +514,19 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] history failed to load:', error));
   defer(() => historyTimeline?.destroy());
 
+  // RESOURCES: richest countries by resource, and the sites that produce it.
+  let resources = null;
+  import('../ui/adam/resourcesPanel.js')
+    .then(({ installResourcesPanel }) => {
+      if (signal?.aborted) return;
+      resources = installResourcesPanel({ viewer });
+      debug.resources = resources;
+    })
+    .catch((error) =>
+      console.warn('[adam] resources panel failed to load:', error),
+    );
+  defer(() => resources?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

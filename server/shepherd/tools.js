@@ -723,6 +723,32 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'resources',
+    description:
+      'Natural wealth (RESOURCES panel). action: rank (countries ranked by a resource type, drawn on the globe: total, oil, gas, coal, minerals, forest — World Bank rents in dollars; gold — value of gold reserves; fx — foreign exchange reserves; water — renewable freshwater km³/yr; arable — arable land), sites (mines, wells, refineries, LNG terminals, fuel storage and power plants in the current view from OpenStreetMap; the view must be about 300 km across or less), open. Rents are value above extraction cost, not reserves in the ground — say so.',
+    parameters: obj(
+      {
+        action: { type: 'string', enum: ['rank', 'sites', 'open'] },
+        type: {
+          type: 'string',
+          enum: [
+            'total',
+            'oil',
+            'gas',
+            'coal',
+            'minerals',
+            'forest',
+            'gold',
+            'fx',
+            'water',
+            'arable',
+          ],
+        },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

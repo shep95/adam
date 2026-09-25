@@ -1146,6 +1146,14 @@ export function createShepherdExecutor({
       h.open();
       return { ok: true };
     },
+    resources: async ({ action, type } = {}) => {
+      const r = getConsole().resources;
+      if (!r) return { ok: false, error: 'resources panel is still loading' };
+      r.open();
+      if (action === 'rank') return r.rank(type || 'total');
+      if (action === 'sites') return r.sitesInView();
+      return { ok: true, types: r.types() };
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };
