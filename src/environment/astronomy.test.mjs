@@ -112,8 +112,10 @@ test('globe sky helpers and precipitation mapping', async () => {
 });
 
 test('night lights: factor, bounded street query, parsing', async () => {
-  const { nightFactor, streetBox, streetLightQuery, parseStreetLights } = await import('./nightLights.js');
-  const { sanitizeOverpassBody } = await import('../../server/providers/overpass/query.js');
+  const { nightFactor, streetBox, streetLightQuery, parseStreetLights } =
+    await import('./nightLights.js');
+  const { sanitizeOverpassBody } =
+    await import('../../server/providers/overpass/query.js');
   assert.equal(nightFactor(10), 0);
   assert.equal(nightFactor(-10), 1);
   assert.ok(nightFactor(-5) > 0.3 && nightFactor(-5) < 0.6);
@@ -122,7 +124,13 @@ test('night lights: factor, bounded street query, parsing', async () => {
   const parsed = parseStreetLights({
     elements: [
       { type: 'node', lat: 30.27, lon: -97.74 },
-      { type: 'way', geometry: [{ lat: 30.27, lon: -97.74 }, { lat: 30.271, lon: -97.741 }] },
+      {
+        type: 'way',
+        geometry: [
+          { lat: 30.27, lon: -97.74 },
+          { lat: 30.271, lon: -97.741 },
+        ],
+      },
       { type: 'way', geometry: [{ lat: 30.27, lon: -97.74 }] },
     ],
   });

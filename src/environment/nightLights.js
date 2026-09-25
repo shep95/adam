@@ -15,6 +15,13 @@ import { sunPosition } from './astronomy.js';
 
 export const BLACK_MARBLE_URL =
   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png';
+/** Same night-lights product family, the long-standing 2012 composite; used
+ * if the Black Marble tiles fail to load. */
+export const CITY_LIGHTS_2012_URL =
+  'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_CityLights_2012/default/2012-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg';
+/** Cesium lights the night side at ~0.3 of day (both shading paths); the
+ * lights layer is brightened by the inverse so city light reads as light. */
+export const NIGHT_SIDE_GAIN = 3.2;
 const STREET_MAX_ALT_M = 9000;
 const MAX_LAMPS = 1500;
 const MAX_LIT_WAYS = 2500;
@@ -70,20 +77,45 @@ export function createNightLights({
   getTileset = () => null,
   fetchImpl = (...a) => fetch(...a),
 }) {
-  const provider = () =>
-    new Cesium.UrlTemplateImageryProvider({
-      url: BLACK_MARBLE_URL,
+  let lightsUrl = BLACK_MARBLE_URL;
+  const provider = () => {
+    const p = new Cesium.UrlTemplateImageryProvider({
+      url: lightsUrl,
       maximumLevel: 8,
       credit: new Cesium.Credit(
         'Night lights: NASA Black Marble (VIIRS), GIBS',
       ),
     });
+    // Fall back to the 2012 city-lights composite if tiles keep failing.
+    let errors = 0;
+    p.errorEvent.addEventListener(() => {
+      errors += 1;
+      if (errors === 8 && lightsUrl === BLACK_MARBLE_URL) {
+        lightsUrl = CITY_LIGHTS_2012_URL;
+        rebuildGlobeLayer();
+      }
+    });
+    return p;
+  };
 
-  // Globe: per-pixel day/night via Cesium's night alpha.
-  const globeLayer = viewer.imageryLayers.addImageryProvider(provider());
-  globeLayer.dayAlpha = 0;
-  globeLayer.nightAlpha = 1;
-  globeLayer.brightness = 1.4;
+  // Globe: per-pixel day/night via Cesium's night alpha where the shader
+  // supports it (terrain without vertex normals); with normal-lit terrain
+  // Cesium skips day/night alpha, so the layer fades by the sun at the view
+  // centre instead (the terminator is rarely inside a regional view).
+  let globeLayer = null;
+  function rebuildGlobeLayer() {
+    if (globeLayer) viewer.imageryLayers.remove(globeLayer, true);
+    globeLayer = viewer.imageryLayers.addImageryProvider(provider());
+    globeLayer.dayAlpha = 0;
+    globeLayer.nightAlpha = 1;
+    globeLayer.brightness = NIGHT_SIDE_GAIN;
+    globeLayer.contrast = 1.15;
+    globeLayer.gamma = 0.9;
+  }
+  rebuildGlobeLayer();
+  const perPixelNight = () =>
+    !viewer.terrainProvider?.hasVertexNormals &&
+    viewer.scene.globe.enableLighting;
 
   // 3D tiles: draped, faded by the sun at the view centre.
   let tileLayer = null;
@@ -192,6 +224,11 @@ export function createNightLights({
     const sun = sunPosition(environment.currentDate(), center.lat, center.lon);
     factor = nightFactor(sun.altitude);
     syncTileLayer(factor);
+    if (globeLayer) {
+      const perPixel = perPixelNight();
+      globeLayer.alpha = perPixel ? 1 : factor;
+      globeLayer.show = perPixel || factor > 0.02;
+    }
     const altM = viewer.camera.positionCartographic.height;
     const wantStreets = factor > 0.15 && altM < STREET_MAX_ALT_M;
     lamps.show = wantStreets;

@@ -25,6 +25,8 @@ import {
   sublunarPoint,
   sunAltitudeRing,
   sunPosition,
+  moonPosition,
+  moonIllumination,
 } from './astronomy.js';
 
 const RAD = 180 / Math.PI;
@@ -40,7 +42,10 @@ void main() {
   // Light sources stay lit: bright pixels (city lights, lamps, beacons) are
   // spared the night exposure and the tint, so they glow instead of dimming.
   float srcLuma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
-  float keep = smoothstep(0.5, 0.85, srcLuma);
+  // Warm light (sodium, LED city glow) is kept from a lower level so city
+  // lights survive the night exposure even after the globe's night shading.
+  float warm = clamp((c.r - c.b) * 3.0, 0.0, 1.0);
+  float keep = max(smoothstep(0.5, 0.85, srcLuma), smoothstep(0.16, 0.45, srcLuma) * warm);
   vec3 graded = c.rgb * exposure;
   float luma = dot(graded, vec3(0.299, 0.587, 0.114));
   graded = mix(graded, luma * tint * 1.35, tintAmount);
@@ -96,6 +101,22 @@ const LINES = [
   { alt: -12, color: '#7fa7ff', alpha: 0.35, width: 1 },
   { alt: -18, color: '#5a6fd0', alpha: 0.25, width: 1 },
 ];
+
+/**
+ * Moonlight 0–1 at a place: illuminated fraction × how high the moon is,
+ * only while the sun is down. A high full moon lights a landscape enough to
+ * read terrain, roads and coastlines.
+ */
+export function moonlight(date, center) {
+  const moon = moonPosition(date, center.lat, center.lon);
+  const alt = moon.altitude;
+  if (!(alt > 0)) return 0;
+  const illum = moonIllumination(date).fraction ?? 0;
+  return Math.max(
+    0,
+    Math.min(1, illum * Math.min(1, Math.sin((alt * Math.PI) / 180) * 1.6)),
+  );
+}
 
 export function createGlobeSky({ viewer, environment, getCenter }) {
   const scene = viewer.scene;
@@ -241,7 +262,7 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
     }
 
     if (stage) {
-      const g = ambientGrade(sun.altitude);
+      const g = ambientGrade(sun.altitude, moonlight(date, center));
       const lit = environment.snapshot().lighting;
       // Time of day is local: full grade near the ground, none at globe scale
       // (where the terminator and globe lighting already tell the story).

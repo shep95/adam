@@ -104,3 +104,19 @@ test('sampler reads radar pixels inside coverage and skips outside', async () =>
   assert.equal(outside.radarCovered, false);
   assert.ok(loaded.length > 0);
 });
+
+test('moonlight lifts and silvers the night grade; no moon, no change', async () => {
+  const { ambientGrade } = await import('./astronomy.js');
+  const dark = ambientGrade(-40);
+  const moonlit = ambientGrade(-40, 1);
+  assert.ok(moonlit.exposure > dark.exposure + 0.2);
+  assert.ok(moonlit.tint[2] >= dark.tint[2]);
+  assert.deepEqual(ambientGrade(-40, 0), dark);
+  assert.deepEqual(ambientGrade(30, 1), ambientGrade(30), 'daytime unaffected');
+});
+
+test('night-lights gain offsets the night-side shading', async () => {
+  const m = await import('./nightLights.js');
+  assert.ok(m.NIGHT_SIDE_GAIN * 0.3 >= 0.9);
+  assert.match(m.CITY_LIGHTS_2012_URL, /VIIRS_CityLights_2012/);
+});

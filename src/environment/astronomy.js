@@ -340,7 +340,22 @@ export function sunAltitudeRing(date, altitudeDeg = 0, steps = 180) {
  * what it is tinted toward. Continuous, so time-lapse fades smoothly.
  * @returns {{exposure: number, tint: [number, number, number], tintAmount: number}}
  */
-export function ambientGrade(sunAltitude) {
+export function ambientGrade(sunAltitude, moonlight = 0) {
+  const base = ambientGradeSun(sunAltitude);
+  // Moonlight lifts the night (up to +0.24 exposure under a high full moon)
+  // and cools it to silver, only when the sun is well down.
+  const night = Math.max(0, Math.min(1, (-sunAltitude - 4) / 8));
+  const m = Math.max(0, Math.min(1, moonlight)) * night;
+  if (m <= 0) return base;
+  const silver = [0.72, 0.8, 1.0];
+  return {
+    exposure: Math.min(1, base.exposure + 0.24 * m),
+    tint: base.tint.map((v, k) => v + (silver[k] - v) * m * 0.7),
+    tintAmount: base.tintAmount * (1 - 0.35 * m),
+  };
+}
+
+function ambientGradeSun(sunAltitude) {
   const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
   const stops = [
     { alt: -18, exposure: 0.46, tint: [0.35, 0.45, 0.85], amount: 0.45 },
