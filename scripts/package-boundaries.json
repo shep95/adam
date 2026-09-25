@@ -2053,6 +2053,8 @@
       "src/ui/adam/symbolsPanel.js",
       "src/ui/adam/symbolsPanel.css",
       "src/intel/symbolScan.js",
+      "src/i18n/i18n.js",
+      "src/i18n/dictionary.js",
       "src/ui/adam/volcanoPanel.js",
       "src/ui/adam/volcanoPanel.css",
       "src/ui/adam/spacePanel.js",

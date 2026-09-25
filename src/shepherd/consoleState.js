@@ -75,6 +75,7 @@ export function readConsoleState({
     overlay: overlay?.summary?.() || null,
     buildings3d: buildings?.state?.() || null,
     mission: intel?.getMission?.()?.text || null,
+    language: globalThis.__godsEyeView?.i18n?.describe?.() || null,
     zones: (intel?.listZones?.() || []).map(
       (z) => `${z.name} (${z.kind}, ${z.id})`,
     ),
@@ -125,6 +126,10 @@ export function formatConsoleBlock(state) {
   if (state.alertRules) lines.push(`alert rules: ${state.alertRules}`);
   if (state.overlay) lines.push(`overlay: ${state.overlay}`);
   if (state.buildings3d) lines.push(`3d buildings: ${state.buildings3d}`);
+  if (state.language)
+    lines.push(
+      `operator language: ${state.language} — write every reply in this language`,
+    );
   if (state.mission) lines.push(`mission: ${state.mission}`);
   if (state.zones?.length) lines.push(`zones: ${state.zones.join(', ')}`);
   if (state.watch?.length)

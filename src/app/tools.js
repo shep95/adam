@@ -381,6 +381,16 @@ export function createApplicationTools({
     );
   defer(() => placeDossier?.destroy());
 
+  // Interface language (settings → language; browser default otherwise).
+  import('../i18n/i18n.js')
+    .then(({ createI18n }) => {
+      if (signal?.aborted) return;
+      debug.i18n = createI18n({});
+      debug.settings?.applyLanguage?.();
+    })
+    .catch((error) => console.warn('[adam] languages failed to load:', error));
+  defer(() => debug.i18n?.destroy());
+
   // SETTINGS: fonts, size, lettering, panel sizes, night view, language, logo.
   let uiSettings = null;
   import('../ui/adam/uiSettings.js')

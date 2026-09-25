@@ -288,3 +288,36 @@ html:not([data-resize='off'])
   font-size: 11px;
   color: rgba(200, 212, 218, 0.7);
 }
+
+/* ── Right-to-left scripts: panel text reads right to left; the globe,
+   rails and positions stay where they are. */
+:root[data-rtl]
+  :is(
+    .adam-panel,
+    .adam-place,
+    .adam-hint,
+    .adam-ctx-menu,
+    .adam-shepherd-room
+  ) {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Longer labels in other languages: chips keep one line, the rail wraps. */
+.adam-ops-rail-btn,
+.adam-ops-rail-label {
+  white-space: nowrap;
+}
+
+#adam-ops-rail {
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 5px;
+  max-width: min(1100px, calc(100vw - 520px));
+}
+
+@media (max-width: 1100px) {
+  #adam-ops-rail {
+    max-width: calc(100vw - 32px);
+  }
+}
