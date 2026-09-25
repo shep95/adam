@@ -525,6 +525,15 @@ export function createShepherdExecutor({
         newest,
       };
     },
+    get_patterns: ({ kind, limit } = {}) => {
+      const findings = intel?.patterns?.({
+        kind: kind || null,
+        limit: limit || 12,
+      });
+      if (!findings)
+        return { ok: false, error: 'intel service is not running' };
+      return { ok: true, findings };
+    },
     list_alerts: () => ({ ok: true, rules: intel?.alerts?.list?.() || [] }),
     remove_alert: ({ id, enabled }) => {
       if (typeof enabled === 'boolean')

@@ -262,6 +262,15 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'get_patterns',
+    description:
+      'Behaviour patterns seen over the last ~45 minutes of live data: orbit (aircraft circling ≥2 turns in 30 km), ais-dark (vessel under way stopped reporting 20+ min), meeting (two slow vessels ≤500 m apart 20+ min in open water), jump (impossible position change). Each has a confidence and an alternative reading; report both. Needs flights/military/vessels layers on for a while.',
+    parameters: obj({
+      kind: { type: 'string', enum: ['orbit', 'ais-dark', 'meeting', 'jump'] },
+      limit: { type: 'integer', minimum: 1, maximum: 50 },
+    }),
+  },
+  {
     name: 'list_alerts',
     description:
       'List the operator alert rules with their state (armed, tripped, last result).',

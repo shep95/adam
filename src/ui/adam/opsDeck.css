@@ -685,3 +685,21 @@ body.ui-clean-view .adam-ops-root {
     animation: none;
   }
 }
+
+/* ── Behaviour patterns in BRIEF ───────────────────────────────────────── */
+.adam-brief-pattern {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 5px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.adam-brief-pattern:hover .adam-meta:first-child {
+  color: var(--accent-primary);
+}

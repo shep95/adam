@@ -301,6 +301,44 @@ export function installOpsDeck({
         ),
       );
     }
+    const watched = intel.patterns?.({ limit: 6 }) || [];
+    if (watched.length) {
+      body.append(
+        el(doc, 'h3', 'adam-meta adam-ops-section', 'BEHAVIOUR · LAST 45 MIN'),
+      );
+      for (const f of watched) {
+        const row = button(
+          doc,
+          '',
+          'adam-brief-pattern',
+          () =>
+            viewer.camera.flyTo({
+              destination: Cesium.Cartesian3.fromDegrees(
+                f.lon,
+                f.lat,
+                f.layerKey === 'ais-live-vessels' ? 12_000 : 90_000,
+              ),
+              duration: 1.6,
+            }),
+          { title: `Fly to · or: ${f.alternative}` },
+        );
+        row.append(
+          el(
+            doc,
+            'span',
+            `adam-meta ${f.confidence >= 0.6 ? 'adam-tier-alert' : 'adam-tier-primary'}`,
+            `${f.title} · ${f.label}`,
+          ),
+          el(
+            doc,
+            'span',
+            'adam-meta adam-brief-facts',
+            `${f.detail} · conf ${f.confidence.toFixed(2)}`,
+          ),
+        );
+        body.append(row);
+      }
+    }
     if (brief.alerts.length) {
       body.append(
         el(doc, 'h3', 'adam-meta adam-ops-section', 'TRIPPED ALERTS'),
@@ -901,9 +939,13 @@ export function installOpsDeck({
     const anomalies = intel
       .anomalies({ limit: 3 })
       .filter((a) => a.level !== 'quiet');
-    railButtons.brief.badge.hidden = anomalies.length === 0;
-    railButtons.brief.badge.textContent = String(anomalies.length);
-    railButtons.brief.btn.classList.toggle('is-alert', anomalies.length > 0);
+    const behaviour = (intel.patterns?.({ limit: 99 }) || []).filter(
+      (f) => f.confidence >= 0.5,
+    ).length;
+    const briefFlags = anomalies.length + behaviour;
+    railButtons.brief.badge.hidden = briefFlags === 0;
+    railButtons.brief.badge.textContent = String(briefFlags);
+    railButtons.brief.btn.classList.toggle('is-alert', briefFlags > 0);
   }
 
   // ── Last tracked ─────────────────────────────────────────────────────────
@@ -1219,6 +1261,9 @@ export function installOpsDeck({
         renderLastTracked();
       } else if (type === 'pins-changed') {
         renderPins();
+      } else if (type === 'patterns-changed') {
+        updateBadges();
+        if (activeView === 'brief') renderBrief();
       } else if (type === 'baselines-sampled') {
         updateBadges();
       }

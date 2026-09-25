@@ -21,6 +21,7 @@ import {
   formatBriefMarkdown,
 } from './briefing.js';
 import { layerSnapshots } from '../data/layerSnapshot.js';
+import { createPatternWatch } from './patternWatch.js';
 
 export const BASELINE_LAYERS = Object.freeze([
   'flights',
@@ -210,8 +211,23 @@ export function createIntelService({
     emit('baselines-sampled', { size: baselines.size() });
   }
 
+  const patterns = createPatternWatch();
+  let patternCount = 0;
+
   function evaluateAlerts() {
-    alerts.evaluate(getRecords, now());
+    const t = now();
+    alerts.evaluate(getRecords, t);
+    try {
+      if (patterns.sample(getRecords, t)) {
+        const n = patterns.findings({ limit: 99 }).length;
+        if (n !== patternCount) {
+          patternCount = n;
+          emit('patterns-changed', { count: n });
+        }
+      }
+    } catch (error) {
+      console.warn('[intel] pattern watch failed:', error);
+    }
   }
 
   function rememberTracked(layerKey, id, label) {
@@ -302,6 +318,9 @@ export function createIntelService({
 
     sampleBaselines,
     evaluateAlerts,
+
+    /** Behaviour patterns over the last ~45 min (orbits, AIS dark, meetings, jumps). */
+    patterns: (options) => patterns.findings(options),
 
     /** Anomalous regions for every sampled layer, strongest first. */
     anomalies({ limit = 6 } = {}) {

@@ -42,6 +42,13 @@ ever enter the file.
 each other silently: the other window's newer version is kept as a backup and
 a toast says who saved and when.
 
+**Behaviour patterns.** While flights, military and vessel layers are on,
+ADAM keeps ~45 minutes of track history and watches for aircraft orbits
+(≥ 2 turns inside 30 km), vessels going AIS-dark after reporting under way,
+two slow vessels meeting in open water, and impossible position jumps. Each
+finding shows in BRIEF (click to fly there) with a confidence and the plainest
+alternative reading; Shepherd reads them with `get_patterns`.
+
 ## Shepherd
 
 A streaming chat analyst on the right edge. It reads a `[console]` block with
