@@ -412,6 +412,14 @@ export function installUiSettings({
     applyLogo();
   }
 
+  const hintsOff = () => {
+    try {
+      return storage?.getItem('adam.hints.off') === '1';
+    } catch {
+      return false;
+    }
+  };
+
   // ── Panel ──────────────────────────────────────────────────────────────
   const card = el(doc, 'section', 'adam-panel adam-settings');
   card.id = 'adam-settings';
@@ -521,6 +529,13 @@ export function installUiSettings({
         toggle(settings.resizable, (on) => update({ resizable: on })),
       ),
       reset,
+    );
+
+    body.append(
+      row(
+        'helpful popups when something becomes useful',
+        toggle(!hintsOff(), (on) => getConsole().hints?.setEnabled?.(on)),
+      ),
     );
 
     body.append(el(doc, 'h3', 'adam-meta adam-ops-section', 'globe'));

@@ -183,6 +183,13 @@ export function installMapInteraction({
           `what is at ${coords}? give me the osint picture for this spot — infrastructure, activity, anything notable — and mark it on the map.`,
         ),
       ),
+      item('street view here', 'google', () =>
+        globalThis.open(
+          `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}`,
+          '_blank',
+          'noopener',
+        ),
+      ),
       item("what's here · photos & pages", '', () =>
         globalThis.__godsEyeView?.placeDossier?.open(lat, lon),
       ),

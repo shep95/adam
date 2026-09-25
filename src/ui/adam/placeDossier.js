@@ -241,6 +241,18 @@ export function installPlaceDossier({
       ),
     );
     actions.append(
+      link(
+        doc,
+        `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}`,
+        'street view',
+        'adam-chip',
+      ),
+      link(
+        doc,
+        `https://www.mapillary.com/app/?lat=${lat.toFixed(6)}&lng=${lon.toFixed(6)}&z=17`,
+        'mapillary',
+        'adam-chip',
+      ),
       web,
       link(
         doc,

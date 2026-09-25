@@ -392,6 +392,17 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] settings failed to load:', error));
   defer(() => uiSettings?.destroy());
 
+  // Hints that fade in when something becomes useful (not a tour).
+  let hints = null;
+  import('../ui/adam/contextHints.js')
+    .then(({ installContextHints }) => {
+      if (signal?.aborted) return;
+      hints = installContextHints({ viewer, intel });
+      debug.hints = hints;
+    })
+    .catch((error) => console.warn('[adam] hints failed to load:', error));
+  defer(() => hints?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

@@ -1,0 +1,77 @@
+/* ── Hints that fade in when something becomes useful ─────────────────── */
+.adam-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+  z-index: 640;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 36px 10px 14px;
+  color: var(--text-primary, #e6f4f6);
+  background: rgba(8, 16, 20, 0.92);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  translate: -50% 10px;
+  transition:
+    opacity 320ms ease,
+    translate 320ms ease;
+  pointer-events: auto;
+}
+
+.adam-hint.is-shown {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+.adam-hint[hidden] {
+  display: none;
+}
+
+.adam-hint-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.adam-hint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adam-hint-btn {
+  padding: 5px 11px;
+  font: 500 12px var(--adam-font-sans);
+  color: #061015;
+  background: var(--accent-primary, #00d4ff);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.adam-hint-btn + .adam-hint-btn {
+  color: var(--accent-primary, #00d4ff);
+  background: transparent;
+  border: 1px solid rgba(0, 212, 255, 0.45);
+}
+
+.adam-hint-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--text-dim);
+  background: none;
+  border: 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adam-hint {
+    transition: none;
+  }
+}

@@ -14,6 +14,7 @@
 import * as Cesium from 'cesium';
 import './opsDeck.css';
 import { setOdometer } from './odometer.js';
+import { aheadPlan, formatDuration } from './contactAheadModel.js';
 import { assessHealth } from './systemHealth.js';
 import { SCENARIOS, applyScenario } from './scenarios.js';
 import { isEffectsReduced } from '../../frameBudget.js';
@@ -85,6 +86,7 @@ function writeLocal(key, value) {
   }
 }
 
+const AHEAD_KEY = 'adam.ops.ahead.v1';
 const SANCTION_LAYERS = new Set(['ais-live-vessels', 'flights', 'military']);
 
 export function formatAltitude(m) {
@@ -1245,7 +1247,11 @@ export function installOpsDeck({
   lastCard.setAttribute('aria-label', 'Last tracked contact');
   let lastCollapsed = readLocal(COLLAPSE_KEY) === '1';
 
-  function contactCard(card, ref, { title, onClose, extraActions = [] }) {
+  function contactCard(
+    card,
+    ref,
+    { title, onClose, extraActions = [], extraRows = [] },
+  ) {
     const record = ref.record;
     const stale = describeStaleness(ref.layerKey, record?.lastSeenMs);
     card.classList.toggle('is-stale', Boolean(record && stale.stale));
@@ -1280,7 +1286,9 @@ export function installOpsDeck({
     if (labelNode.textContent !== (ref.label || ref.value))
       labelNode.textContent = ref.label || ref.value;
     const dl = card.querySelector('.adam-card-telemetry');
-    const rows = record ? telemetryRows(ref.layerKey, record) : [];
+    const rows = record
+      ? [...telemetryRows(ref.layerKey, record), ...extraRows]
+      : [];
     const existing = [...dl.querySelectorAll('dd')];
     if (existing.length !== rows.length) {
       dl.replaceChildren();
@@ -1324,15 +1332,163 @@ export function installOpsDeck({
     return false;
   }
 
+  // ── Ahead: where the tracked contact is going ──────────────────────────
+  const AIRCRAFT_LAYERS = new Set(['flights', 'military']);
+  const ahead = new Cesium.CustomDataSource('adam-ahead');
+  viewer.dataSources.add(ahead);
+  cleanups.push(() => viewer.dataSources.remove(ahead, true));
+  let aheadOn = readLocal(AHEAD_KEY) !== '0';
+  let aheadKey = '';
+
+  function routeFor(ref) {
+    if (!AIRCRAFT_LAYERS.has(ref.layerKey)) return null;
+    try {
+      const info = dataManager?.layers
+        ?.get(ref.layerKey)
+        ?.module?.getTrackedInfo?.();
+      if (!info?.route) return null;
+      const id = String(info.icao24 || info.id || '').toLowerCase();
+      return !id || id === String(ref.value).toLowerCase() ? info.route : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function aheadRows(ref) {
+    const plan = ref.record ? aheadPlan(ref.record, routeFor(ref)) : null;
+    if (!plan) return { plan: null, rows: [] };
+    const rows = [];
+    if (plan.from || plan.to)
+      rows.push(['ROUTE', `${plan.from || '?'} → ${plan.to || '?'}`]);
+    if (plan.mode === 'route')
+      rows.push([
+        'ETA',
+        plan.etaMin == null
+          ? `${plan.distanceKm.toLocaleString('en-US')} km to go`
+          : `${formatDuration(plan.etaMin)} · ${plan.etaUtc}z · ${plan.distanceKm.toLocaleString('en-US')} km`,
+      ]);
+    return { plan, rows };
+  }
+
+  function drawAhead(ref, plan) {
+    const key =
+      ref && aheadOn
+        ? `${ref.layerKey}:${ref.value}:${plan?.mode}:${plan?.to}`
+        : '';
+    if (!ref || !aheadOn || !ref.record) {
+      if (aheadKey) {
+        ahead.entities.removeAll();
+        aheadKey = '';
+        requestRender();
+      }
+      return;
+    }
+    // Redraw at most every ~20 s for the same contact: position moves slowly.
+    const stamp = Math.floor(Date.now() / 20_000);
+    if (key + stamp === aheadKey) return;
+    aheadKey = key + stamp;
+    ahead.entities.removeAll();
+    const cyan = Cesium.Color.fromCssColorString('#00D4FF');
+    let points = null;
+    let label = '';
+    if (plan?.mode === 'route' && plan.path.length > 1) {
+      points = plan.path;
+      label = `${plan.to}${plan.etaMin != null ? ` · ${formatDuration(plan.etaMin)}` : ''}`;
+    } else {
+      const res = intel.predict?.({
+        layerKey: ref.layerKey,
+        id: ref.value,
+        minutes: AIRCRAFT_LAYERS.has(ref.layerKey) ? 60 : 360,
+      });
+      if (res?.ok && res.track?.length > 1) {
+        points = res.track;
+        label = AIRCRAFT_LAYERS.has(ref.layerKey)
+          ? '+60 min on course'
+          : '+6 h on course';
+      }
+    }
+    if (!points) return;
+    ahead.entities.add({
+      polyline: {
+        positions: Cesium.Cartesian3.fromDegreesArray(
+          points.flatMap((p) => [p.lon, p.lat]),
+        ),
+        width: 2.5,
+        material: new Cesium.PolylineDashMaterialProperty({
+          color: cyan,
+          dashLength: 16,
+        }),
+        clampToGround: true,
+      },
+    });
+    const end = points.at(-1);
+    ahead.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(end.lon, end.lat),
+      point: {
+        pixelSize: 7,
+        color: cyan,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 1,
+      },
+      label: {
+        text: label,
+        font: '500 12px "ADAM Mono", monospace',
+        fillColor: cyan,
+        showBackground: true,
+        backgroundColor:
+          Cesium.Color.fromCssColorString('#061015').withAlpha(0.8),
+        pixelOffset: new Cesium.Cartesian2(10, -10),
+        horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    });
+    requestRender();
+  }
+
+  function enterCockpit(ref) {
+    trackRef(ref);
+    const exec = globalThis.__godsEyeView?.shepherd?.executor;
+    return exec?.run?.('control_cockpit', {
+      action: 'enter',
+      targetLayer: ref.layerKey,
+    });
+  }
+
   function renderLastTracked() {
     const ref = intel.getLastTracked();
     lastCard.hidden = !ref;
+    const { plan, rows: routeRows } = ref
+      ? aheadRows(ref)
+      : { plan: null, rows: [] };
+    drawAhead(ref, plan);
     if (!ref) return;
     lastCard.classList.toggle('is-collapsed', lastCollapsed);
     contactCard(lastCard, ref, {
       title: 'LAST TRACKED',
       onClose: () => intel.clearLastTracked(),
+      extraRows: routeRows,
       extraActions: [
+        ...(AIRCRAFT_LAYERS.has(ref.layerKey)
+          ? [
+              button(
+                doc,
+                'COCKPIT',
+                'adam-chip adam-latch adam-primary-btn',
+                () => void enterCockpit(ref),
+              ),
+            ]
+          : []),
+        button(
+          doc,
+          aheadOn ? 'AHEAD · ON' : 'AHEAD',
+          'adam-chip adam-latch',
+          () => {
+            aheadOn = !aheadOn;
+            writeLocal(AHEAD_KEY, aheadOn ? '1' : '0');
+            aheadKey = '';
+            renderLastTracked();
+          },
+        ),
         button(
           doc,
           lastCollapsed ? 'EXPAND' : 'COLLAPSE',
@@ -1612,6 +1768,13 @@ export function installOpsDeck({
 
   return {
     toggleView,
+    /** Draw the path ahead for the tracked contact. */
+    showAhead() {
+      aheadOn = true;
+      writeLocal(AHEAD_KEY, '1');
+      aheadKey = '';
+      renderLastTracked();
+    },
     readHealth,
     exportProfile,
     importProfile,
