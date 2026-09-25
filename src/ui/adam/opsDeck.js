@@ -297,6 +297,23 @@ export function installOpsDeck({
       );
       body.append(row);
     }
+    const productRow = el(doc, 'div', 'adam-chip-row');
+    productRow.append(
+      button(
+        doc,
+        'EXPORT PRODUCT',
+        'adam-chip',
+        async () => {
+          const { downloadProduct } = await import('./productExport.js');
+          await downloadProduct({ title: 'ADAM situation brief' }, doc);
+        },
+        {
+          title:
+            'Cover, BLUF, map extract, findings, watch, contacts, event and action logs, sources — as a printable document',
+        },
+      ),
+    );
+    body.append(productRow);
     // Decision support: what to do next, with the reason.
     const recs = intel.recommend?.({ limit: 4 }) || [];
     if (recs.length) {

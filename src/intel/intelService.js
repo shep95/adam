@@ -47,6 +47,8 @@ const LAST_BRIEF_KEY = 'adam.intel.lastBrief.v1';
 export const MISSION_KEY = 'adam.intel.mission.v1';
 export const WATCH_LOG_KEY = 'adam.intel.watchlog.v1';
 export const ZONES_KEY = 'adam.intel.zones.v1';
+export const FINDINGS_KEY = 'adam.intel.findings.v1';
+const FINDINGS_MAX = 200;
 const ZONES_MAX = 40;
 const WATCH_LOG_MAX = 500;
 /** Fine baselines apply below this camera altitude, around the view. */
@@ -313,6 +315,15 @@ export function createIntelService({
     emit('zones-changed', zones);
   };
 
+  // ── Findings: structured assessments that accumulate over a session ────
+  let findings = (readJson(localStorage, FINDINGS_KEY, []) || []).slice(
+    -FINDINGS_MAX,
+  );
+  const txt = (v, n) =>
+    String(v ?? '')
+      .replace(/[\u0000-\u0008\u000b-\u001f]/g, ' ')
+      .slice(0, n);
+
   const patterns = createPatternWatch();
   let mission = readJson(localStorage, MISSION_KEY, null);
 
@@ -461,6 +472,44 @@ export function createIntelService({
     /** Behaviour patterns over the last ~45 min (orbits, AIS dark, meetings, jumps). */
     patterns: (options) => patterns.findings(options),
 
+    /**
+     * Record a finding: subject, location, time, confidence (0–1), source,
+     * assessment, and the strongest alternative reading.
+     */
+    addFinding(raw = {}) {
+      const conf = Number(raw.confidence);
+      const f = {
+        id: `F-${String(findings.length + 1).padStart(3, '0')}-${Math.random().toString(36).slice(2, 6)}`,
+        at: now(),
+        subject: txt(raw.subject, 140) || 'untitled',
+        location: {
+          lat: Number.isFinite(raw.lat) ? raw.lat : null,
+          lon: Number.isFinite(raw.lon) ? raw.lon : null,
+          label: txt(raw.place, 120),
+        },
+        time: txt(raw.time, 60) || new Date(now()).toISOString(),
+        confidence: Number.isFinite(conf)
+          ? Math.max(0, Math.min(1, conf))
+          : null,
+        source: txt(raw.source, 300),
+        assessment: txt(raw.assessment, 2000),
+        alternative: txt(raw.alternative, 600),
+        author: raw.author === 'operator' ? 'operator' : 'shepherd',
+      };
+      findings = [...findings, f].slice(-FINDINGS_MAX);
+      writeJson(localStorage, FINDINGS_KEY, findings);
+      emit('findings-changed', f);
+      return f;
+    },
+    listFindings: () =>
+      findings.map((f) => ({ ...f, location: { ...f.location } })),
+    removeFinding(id) {
+      const before = findings.length;
+      findings = findings.filter((f) => f.id !== id);
+      writeJson(localStorage, FINDINGS_KEY, findings);
+      emit('findings-changed', null);
+      return findings.length !== before;
+    },
     listZones: () => zones.map((z) => ({ ...z, ring: z.ring.slice() })),
     zoneById: (id) => zones.find((z) => z.id === id || z.name === id) || null,
     addZone({ name = '', kind = 'polygon', ring = [], meta = {} } = {}) {

@@ -557,6 +557,35 @@ export function createShepherdExecutor({
         newest,
       };
     },
+    record_finding: (args = {}) => {
+      if (!intel?.addFinding)
+        return { ok: false, error: 'intel service is not running' };
+      const f = intel.addFinding({ ...args, author: 'shepherd' });
+      return { ok: true, id: f.id, recorded: f.subject };
+    },
+    list_findings: () => ({
+      ok: true,
+      findings: intel?.listFindings?.() || [],
+    }),
+    export_product: async ({
+      title,
+      bluf,
+      assessment,
+      marking,
+      periodHours,
+    } = {}) => {
+      const { downloadProduct } = await import('../ui/adam/productExport.js');
+      return downloadProduct(
+        { title, bluf, assessment, marking, periodHours },
+        doc,
+      );
+    },
+    get_action_log: ({ limit } = {}) => ({
+      ok: true,
+      actions: (getConsole().shepherd?.agent?.actionLog?.() || [])
+        .slice(-(limit || 50))
+        .map((a) => ({ ...a, at: new Date(a.at).toISOString() })),
+    }),
     recommend_actions: ({ limit } = {}) => {
       if (!intel?.recommend)
         return { ok: false, error: 'intel service is not running' };

@@ -95,6 +95,16 @@ and report age, draws it, and says when it would enter a zone ("enters the
 exclusion zone in 4 h 12 m, ±6 km"). `asset_risk` scores mapped datacentres
 and dams 0–100 from live quakes and fires, listing the factors.
 
+**Findings and products.** Shepherd records each assessment as a structured
+finding (subject, location, time, confidence, source, assessment,
+alternative — `record_finding`). BRIEF → EXPORT PRODUCT (or `export_product`)
+writes one printable HTML document: cover with dissemination marking top and
+bottom, BLUF, assessment, a map extract of the view, findings, the watch at
+export, contact log, event log, every action Shepherd took, sources and a
+confidence key. Shepherd's own action log is under `log` in its header;
+`2nd` asks it to challenge its last answer (alternatives, what was assumed,
+what would change its confidence). Its pins and overlays survive reloads.
+
 ## Shepherd
 
 A streaming chat analyst on the right edge. It reads a `[console]` block with

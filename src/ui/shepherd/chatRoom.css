@@ -520,3 +520,39 @@
   border-color: var(--accent-alert, #f5a623);
   box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.25);
 }
+
+.shp-audit {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.shp-audit-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.shp-audit-head .shp-meta {
+  flex: 1;
+}
+
+.shp-audit-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 2px 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+}
+
+.shp-audit-row .shp-audit-args {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.shp-audit-row.is-failed .shp-audit-tool {
+  color: var(--accent-alert, #f5a623);
+}

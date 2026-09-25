@@ -315,8 +315,23 @@ export function installCaptureTools({ viewer, doc = document }) {
     flash.remove();
   });
 
+  /** The current view as a metadata-free image data URL (map extracts). */
+  async function imageDataUrl(maxWidth = 1600) {
+    viewer.render();
+    const src = viewer.scene.canvas;
+    const k = Math.min(1, maxWidth / src.width);
+    const out = doc.createElement('canvas');
+    out.width = Math.round(src.width * k);
+    out.height = Math.round(src.height * k);
+    out.getContext('2d').drawImage(src, 0, 0, out.width, out.height);
+    // JPEG at high quality keeps a map extract small; canvas output carries
+    // no EXIF.
+    return out.toDataURL('image/jpeg', 0.9);
+  }
+
   return {
     snapshot,
+    imageDataUrl,
     startRecording,
     stopRecording,
     setScale: (s) => applyScale(clampScale(s)),

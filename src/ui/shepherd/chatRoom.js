@@ -84,6 +84,19 @@ function toolLabel(name) {
   return TOOL_LABELS[name] || name.replace(/_/g, ' ');
 }
 
+const AUDIT_LABEL = 'log';
+const AUDIT_EXPORT = 'json';
+const AUDIT_CLEAR = 'clr';
+const CHALLENGE_LABEL = '2nd';
+export const CHALLENGE_PROMPT = [
+  'Second opinion. Challenge your previous answer as a red-team analyst would:',
+  '1. The strongest alternative interpretation of the same evidence, and one more if it exists.',
+  '2. Which of your claims rest on data you actually read this session, and which were assumed.',
+  '3. What specific observation would raise or lower your confidence, and how to get it with the console (tools you could run).',
+  '4. Your revised confidence line.',
+  'Do not simply restate the answer. If a tool would settle a point now, run it.',
+].join('\n');
+
 export function installShepherdRoom({
   agent,
   client,
@@ -130,11 +143,73 @@ export function installShepherdRoom({
   closeBtn.type = 'button';
   closeBtn.title = 'Close (Esc)';
   closeBtn.setAttribute('aria-label', 'Close Shepherd');
-  headBtns.append(settingsBtn, closeBtn);
+  const auditBtn = el(doc, 'button', 'shp-icon-btn', AUDIT_LABEL);
+  auditBtn.type = 'button';
+  auditBtn.title =
+    'Action log: every tool Shepherd ran, with arguments and result';
+  headBtns.append(auditBtn, settingsBtn, closeBtn);
   header.append(title, headBtns);
 
   const settings = el(doc, 'section', 'shp-settings');
   settings.hidden = true;
+  const audit = el(doc, 'section', 'shp-settings shp-audit');
+  audit.hidden = true;
+  function renderAudit() {
+    audit.replaceChildren();
+    const entries = (agent.actionLog?.() || []).slice().reverse();
+    const head = el(doc, 'div', 'shp-audit-head');
+    head.append(el(doc, 'span', 'shp-meta', `ACTION LOG · ${entries.length}`));
+    const exportBtn = el(doc, 'button', 'shp-icon-btn', AUDIT_EXPORT);
+    exportBtn.type = 'button';
+    exportBtn.addEventListener('click', () => {
+      const blob = new Blob(
+        [
+          JSON.stringify(
+            entries
+              .slice()
+              .reverse()
+              .map((e) => ({ ...e, at: new Date(e.at).toISOString() })),
+            null,
+            2,
+          ),
+        ],
+        { type: 'application/json' },
+      );
+      const url = URL.createObjectURL(blob);
+      const a = el(doc, 'a');
+      a.href = url;
+      a.download = `adam-shepherd-actions-${new Date().toISOString().slice(0, 10)}.json`;
+      doc.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    });
+    const clearBtn = el(doc, 'button', 'shp-icon-btn', AUDIT_CLEAR);
+    clearBtn.type = 'button';
+    clearBtn.addEventListener('click', () => {
+      agent.clearActionLog?.();
+      renderAudit();
+    });
+    head.append(exportBtn, clearBtn);
+    audit.append(head);
+    for (const e of entries.slice(0, 80)) {
+      const row = el(doc, 'div', `shp-audit-row${e.ok ? '' : ' is-failed'}`);
+      row.append(
+        el(
+          doc,
+          'span',
+          'shp-meta',
+          new Date(e.at).toISOString().slice(11, 19) + 'Z',
+        ),
+        el(doc, 'span', 'shp-audit-tool', `${e.ok ? '' : '✕ '}${e.tool}`),
+        el(doc, 'span', 'shp-meta shp-audit-args', e.args),
+      );
+      row.title = e.result;
+      audit.append(row);
+    }
+    if (!entries.length)
+      audit.append(el(doc, 'p', 'shp-meta', 'No tool calls yet.'));
+  }
 
   const log = el(doc, 'div', 'shp-log');
   log.setAttribute('role', 'log');
@@ -159,14 +234,19 @@ export function installShepherdRoom({
     'Attach a photo to locate, a GeoJSON/KML/KMZ map file, or a text document to read and plot (or paste / drop)';
   const sendBtn = el(doc, 'button', 'shp-send', 'send');
   sendBtn.type = 'submit';
+  const challengeBtn = el(doc, 'button', 'shp-icon-btn', CHALLENGE_LABEL);
+  challengeBtn.type = 'button';
+  challengeBtn.title =
+    'Second opinion: Shepherd challenges its last answer — alternatives, what would change its confidence';
   row.append(
     attachBtn,
+    challengeBtn,
     el(doc, 'span', 'shp-hint', 'enter to send · shift+enter newline'),
     sendBtn,
   );
   composer.append(attachments, input, row, fileInput);
 
-  root.append(header, settings, log, composer);
+  root.append(header, settings, audit, log, composer);
   doc.body.append(root);
   if (!dockTab()) {
     doc.body.append(tab);
@@ -708,6 +788,19 @@ export function installShepherdRoom({
   });
   on(tab, 'click', () => setOpen(true));
   on(closeBtn, 'click', () => setOpen(false));
+  on(auditBtn, 'click', () => {
+    audit.hidden = !audit.hidden;
+    auditBtn.classList.toggle('is-on', !audit.hidden);
+    if (!audit.hidden) renderAudit();
+  });
+  on(challengeBtn, 'click', () => {
+    if (agent.busy() || !agent.lastAnswer?.()) return;
+    void agent.send({
+      text: CHALLENGE_PROMPT,
+      display: 'second opinion on your last answer',
+      task: 'chat',
+    });
+  });
   on(settingsBtn, 'click', () => {
     settings.hidden = !settings.hidden;
     settingsBtn.classList.toggle('is-on', !settings.hidden);

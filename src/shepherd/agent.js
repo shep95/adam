@@ -72,6 +72,28 @@ export function wireMessages(thread) {
   });
 }
 
+export const ACTION_LOG_KEY = 'adam.shepherd.actions.v1';
+const ACTION_LOG_MAX = 300;
+
+/** One audit line for a tool call: what was asked, what came back. */
+export function actionLogEntry(call, result, at = Date.now()) {
+  const text = typeof result === 'string' ? result : JSON.stringify(result);
+  let ok = true;
+  try {
+    const parsed = JSON.parse(text);
+    ok = parsed?.ok !== false && !parsed?.error;
+  } catch {
+    ok = !/error/i.test(String(text).slice(0, 80));
+  }
+  return {
+    at,
+    tool: String(call?.name || '').slice(0, 60),
+    args: JSON.stringify(call?.args ?? {}).slice(0, 300),
+    ok,
+    result: String(text ?? '').slice(0, 240),
+  };
+}
+
 export function createShepherdAgent({
   client,
   executor,
@@ -90,6 +112,30 @@ export function createShepherdAgent({
   );
 
   const persist = () => memory.saveThread(thread).catch(() => {});
+
+  // Operator-facing audit trail of every tool Shepherd ran.
+  const store = (() => {
+    try {
+      return globalThis.localStorage;
+    } catch {
+      return null;
+    }
+  })();
+  let actionLog = [];
+  try {
+    actionLog = JSON.parse(store?.getItem(ACTION_LOG_KEY) || '[]');
+    if (!Array.isArray(actionLog)) actionLog = [];
+  } catch {
+    actionLog = [];
+  }
+  const logAction = (entry) => {
+    actionLog = [...actionLog, entry].slice(-ACTION_LOG_MAX);
+    try {
+      store?.setItem(ACTION_LOG_KEY, JSON.stringify(actionLog));
+    } catch {
+      /* storage full */
+    }
+  };
 
   async function send({ text, images = [], task = 'chat', display = null }) {
     await ready;
@@ -159,6 +205,7 @@ export function createShepherdAgent({
             name: call.name,
             result,
           });
+          logAction(actionLogEntry(call, result));
           onEvent({ type: 'tool-end', call, result });
         }
         if (rounds === MAX_TOOL_ROUNDS)
@@ -188,6 +235,23 @@ export function createShepherdAgent({
     },
     busy: () => Boolean(controller),
     thread: () => thread,
+    /** Tool-call audit trail, newest last. */
+    actionLog: () => actionLog.slice(),
+    clearActionLog() {
+      actionLog = [];
+      try {
+        store?.setItem(ACTION_LOG_KEY, '[]');
+      } catch {
+        /* ignore */
+      }
+    },
+    /** The last assistant reply, for a second opinion. */
+    lastAnswer() {
+      for (let i = thread.length - 1; i >= 0; i -= 1)
+        if (thread[i].role === 'assistant' && thread[i].text)
+          return thread[i].text;
+      return '';
+    },
     async clear() {
       controller?.abort();
       thread = [];

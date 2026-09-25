@@ -35,6 +35,7 @@ export function installShepherd({
   const client = createShepherdClient();
   const memory = createShepherdMemory();
   const overlay = createShepherdOverlay({ viewer });
+  overlay.restore();
   const buildings = createBuildings3d({
     viewer,
     mapStackController,

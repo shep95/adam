@@ -89,7 +89,30 @@ export function boundsFor(points) {
   };
 }
 
-export function createShepherdOverlay({ viewer }) {
+export const OVERLAY_JOURNAL_KEY = 'adam.shepherd.overlay.v1';
+
+export function createShepherdOverlay({
+  viewer,
+  storage = (() => {
+    try {
+      return globalThis.localStorage;
+    } catch {
+      return null;
+    }
+  })(),
+}) {
+  // Session autosave: overlays and pins are journaled and replayed on load,
+  // so a reload or crash does not lose what Shepherd built.
+  let journal = [];
+  let replaying = false;
+  const saveJournal = () => {
+    if (replaying) return;
+    try {
+      storage?.setItem(OVERLAY_JOURNAL_KEY, JSON.stringify(journal.slice(-60)));
+    } catch {
+      /* storage full */
+    }
+  };
   const source = new Cesium.CustomDataSource('adam-shepherd');
   viewer.dataSources.add(source);
   const state = { title: '', nodes: new Map(), links: [], pins: [] };
@@ -211,6 +234,9 @@ export function createShepherdOverlay({ viewer }) {
     source,
     flyToPoint,
     drawOverlay(args) {
+      if (!args.append) journal = journal.filter((j) => j.op !== 'overlay');
+      journal.push({ op: 'overlay', args: { ...args, fly: false } });
+      saveJournal();
       const overlay = normalizeOverlay(args);
       if (!args.append) {
         state.nodes.clear();
@@ -252,6 +278,12 @@ export function createShepherdOverlay({ viewer }) {
         Math.abs(lon) > 180
       )
         return { ok: false, error: 'lat/lon out of range' };
+      journal.push({ op: 'pin', args: { lat, lon, label, fly: false } });
+      journal = [
+        ...journal.filter((j) => j.op !== 'pin').slice(-24),
+        ...journal.filter((j) => j.op === 'overlay'),
+      ];
+      saveJournal();
       const id = `shepherd-pin-${state.pins.length}-${Date.now().toString(36)}`;
       const text = String(
         label || `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
@@ -311,7 +343,32 @@ export function createShepherdOverlay({ viewer }) {
       render();
       return { ok: true, lat, lon, label: text };
     },
+    /** Replay the saved journal (after a reload). */
+    restore() {
+      let saved = [];
+      try {
+        saved = JSON.parse(storage?.getItem(OVERLAY_JOURNAL_KEY) || '[]');
+      } catch {
+        saved = [];
+      }
+      if (!Array.isArray(saved) || !saved.length) return 0;
+      replaying = true;
+      journal = [];
+      for (const j of saved) {
+        try {
+          if (j?.op === 'overlay') this.drawOverlay({ ...j.args, fly: false });
+          else if (j?.op === 'pin') this.dropPin({ ...j.args, fly: false });
+        } catch {
+          /* skip a bad entry */
+        }
+      }
+      replaying = false;
+      saveJournal();
+      return saved.length;
+    },
     clear() {
+      journal = [];
+      saveJournal();
       source.entities.removeAll();
       state.nodes.clear();
       state.links = [];
@@ -320,6 +377,7 @@ export function createShepherdOverlay({ viewer }) {
       render();
       return { ok: true };
     },
+    pinsList: () => state.pins.map((p) => ({ ...p })),
     summary() {
       if (!state.nodes.size && !state.pins.length) return null;
       return `${state.title || 'untitled'} · ${state.nodes.size} nodes · ${state.links.length} links · ${state.pins.length} pins`;

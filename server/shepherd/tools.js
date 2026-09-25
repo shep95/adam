@@ -275,6 +275,52 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'record_finding',
+    description:
+      'Record a structured finding for the session product: subject, place (name) and lat/lon, time (ISO or plain), confidence 0-1, source (which layers/feeds/documents), assessment, and the strongest alternative reading. Record each distinct assessment you make; findings accumulate and export with export_product.',
+    parameters: obj(
+      {
+        subject: { type: 'string' },
+        place: { type: 'string' },
+        lat: { type: 'number' },
+        lon: { type: 'number' },
+        time: { type: 'string' },
+        confidence: { type: 'number', minimum: 0, maximum: 1 },
+        source: { type: 'string' },
+        assessment: { type: 'string' },
+        alternative: { type: 'string' },
+      },
+      ['subject', 'assessment', 'confidence', 'source'],
+    ),
+  },
+  {
+    name: 'list_findings',
+    description:
+      'The findings recorded this session (and earlier, until cleared).',
+    parameters: obj({}),
+  },
+  {
+    name: 'export_product',
+    description:
+      'Export a finished intelligence product the operator can hand to someone who was not in the session: cover with dissemination marking, BLUF, situation and assessment, map extract of the current view, findings table, watch at export, contact log, event log, analyst action log, sources and a confidence key. Write the BLUF and assessment yourself; marking defaults to UNCLASSIFIED — use what the operator specifies.',
+    parameters: obj(
+      {
+        title: { type: 'string' },
+        bluf: { type: 'string' },
+        assessment: { type: 'string' },
+        marking: { type: 'string' },
+        periodHours: { type: 'integer', minimum: 1, maximum: 720 },
+      },
+      ['title', 'bluf'],
+    ),
+  },
+  {
+    name: 'get_action_log',
+    description:
+      'The audit trail of tools you ran (time, tool, arguments, ok/failed) — for reporting what was done in the session.',
+    parameters: obj({ limit: { type: 'integer', minimum: 1, maximum: 300 } }),
+  },
+  {
     name: 'recommend_actions',
     description:
       'Decision support: ranked next actions for what is on the globe now (arm a watch on an uncovered finding, look through the nearest camera, track an orbiting aircraft, go there, check a degraded feed, arm the mission areas), each with its reasoning. Present them as recommendations; run one with run_recommendation when the operator agrees or asked you to act.',
