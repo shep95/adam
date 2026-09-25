@@ -52,6 +52,12 @@ export const SHORTCUTS = Object.freeze([
     modes: ['globe', 'tracking'],
   },
   {
+    keys: ['N'],
+    action: 'Nations: state institutions, infrastructure and summit venues',
+    group: 'ADAM',
+    modes: ['globe', 'tracking'],
+  },
+  {
     keys: ['Space'],
     action: 'Hold to talk to the voice analyst',
     group: 'Voice',

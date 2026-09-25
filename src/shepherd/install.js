@@ -17,6 +17,7 @@ import {
 import { loadTzLookup } from './localTime.js';
 import { installShepherdRoom } from '../ui/shepherd/chatRoom.js';
 import { installMapInteraction } from '../ui/adam/mapInteraction.js';
+import { installNationsPanel } from '../ui/adam/nationsPanel.js';
 
 export function installShepherd({
   viewer,
@@ -27,7 +28,9 @@ export function installShepherd({
   cesiumToken = '',
   getEnvironment = () => null,
   getSkyPanel = () => null,
+  placeSearch = null,
 }) {
+  let nations = null;
   const client = createShepherdClient();
   const memory = createShepherdMemory();
   const overlay = createShepherdOverlay({ viewer });
@@ -54,6 +57,7 @@ export function installShepherd({
     getTzLookup: () => tzLookup,
     getEnvironment,
     getSkyPanel,
+    getNations: () => nations,
   });
   let room = null;
   const getConsoleBlock = () => {
@@ -85,6 +89,13 @@ export function installShepherd({
     onEvent: (event) => room?.onAgentEvent(event),
   });
   room = installShepherdRoom({ agent, client, overlay });
+  nations = installNationsPanel({
+    viewer,
+    overlay,
+    placeSearch,
+    runGevAction,
+    room,
+  });
   const mapInteraction = installMapInteraction({
     viewer,
     overlay,
@@ -114,6 +125,7 @@ export function installShepherd({
       agent.abort();
       removeMoveEnd();
       mapInteraction.destroy();
+      nations?.destroy();
       room.destroy();
       buildings.destroy();
       overlay.destroy();

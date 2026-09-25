@@ -88,6 +88,7 @@ export function createShepherdExecutor({
   getTzLookup = () => null,
   getEnvironment = () => null,
   getSkyPanel = () => null,
+  getNations = () => null,
   memory = null,
   doc = globalThis.document,
 }) {
@@ -343,6 +344,18 @@ export function createShepherdExecutor({
     export_report: exportReport,
     set_3d_buildings: (args) => buildings.set(Boolean(args.enabled)),
     set_environment: (args) => setEnvironment(args),
+    nation_profile: async (args) => {
+      const nations = getNations();
+      if (!nations)
+        return { ok: false, error: 'nations panel is still loading' };
+      return nations.profile(args);
+    },
+    show_summits: () => {
+      const nations = getNations();
+      if (!nations)
+        return { ok: false, error: 'nations panel is still loading' };
+      return { ok: true, summits: nations.showSummits() };
+    },
   };
 
   return {

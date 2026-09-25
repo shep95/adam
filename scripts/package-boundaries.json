@@ -2016,6 +2016,11 @@
       "src/ui/adam/displayPolicy.css",
       "src/ui/adam/captureTools.js",
       "src/ui/adam/captureMath.js",
+      "src/ui/adam/nationsPanel.js",
+      "src/ui/adam/nationsPanel.css",
+      "src/nations/nationProfile.js",
+      "src/nations/summits.js",
+      "src/data/local_data/nations/nations.json",
       "src/ui/adam/captureTools.css"
     ],
     "external": [

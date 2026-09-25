@@ -1,0 +1,132 @@
+/* NATIONS — shares the centre lane and chrome with SKY (.sky-card). */
+
+.nat-search {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.nat-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font: 400 12px var(--font-mono);
+  color: var(--text-primary, #e6f1f7);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--data-radius, 4px);
+}
+
+.nat-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.nat-status {
+  min-height: 1.4em;
+  margin-bottom: 8px;
+  color: var(--text-dim);
+}
+
+.nat-profile {
+  margin-bottom: 10px;
+}
+
+.nat-profile[hidden],
+.nat-actions[hidden] {
+  display: none;
+}
+
+.nat-name {
+  font-size: var(--type-readout);
+  font-weight: var(--weight-readout);
+  color: var(--accent-primary);
+  letter-spacing: 1px;
+}
+
+.nat-official {
+  margin: 2px 0 6px;
+  color: var(--text-secondary);
+}
+
+.nat-facts {
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.nat-borders {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.nat-chip {
+  padding: 2px 8px;
+  font: 400 var(--type-meta) var(--font-mono);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--chip-radius, 999px);
+  cursor: pointer;
+}
+
+.nat-chip:hover {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.nat-actions {
+  margin-bottom: 12px;
+}
+
+.nat-summits {
+  display: grid;
+  gap: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.nat-summit {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 4px;
+  font: 400 var(--type-meta) var(--font-mono);
+  color: var(--text-secondary);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.nat-summit:hover {
+  color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+}
+
+.nat-summit.is-live .nat-summit-when {
+  color: var(--accent-alert);
+}
+
+.nat-summit.is-held {
+  opacity: 0.55;
+}
+
+.nat-summits > .sky-btn {
+  justify-self: start;
+  margin-top: 6px;
+}
+
+#adam-nations {
+  top: calc(132px / var(--adam-ui-scale, 1));
+  zoom: var(--adam-ui-scale, 1);
+}
+
+@media (max-width: 760px) {
+  #adam-nations {
+    top: auto;
+  }
+}

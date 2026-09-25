@@ -184,6 +184,26 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'nation_profile',
+    description:
+      'Open a country in the NATIONS panel: official name, capital, region, area, land borders, UN membership. capital = fly to the seat of government; government = map institutions around the capital from OpenStreetMap (legislature, executive offices, ministries, courts, embassies) as an overlay with counts by kind; infrastructure = switch on the infrastructure layers (military installations, power lines, pipelines, border crossings, IXPs, chokepoints, submarine cables, datacentres, dams, FIRs, maritime zones) and frame the country. Institutions only, never the whereabouts of a person.',
+    parameters: obj(
+      {
+        country: { type: 'string' },
+        capital: { type: 'boolean' },
+        government: { type: 'boolean' },
+        infrastructure: { type: 'boolean' },
+      },
+      ['country'],
+    ),
+  },
+  {
+    name: 'show_summits',
+    description:
+      'Put publicly announced multilateral summit venues (G7, G20, NATO, UNGA, COP, APEC, BRICS, SCO, WEF, Munich Security Conference, Shangri-La Dialogue) on the globe and return them with dates and status (held, live, upcoming). Venues and dates only.',
+    parameters: obj({}),
+  },
+  {
     name: 'set_3d_buildings',
     description: 'Show or hide photorealistic 3D buildings and terrain.',
     parameters: obj({ enabled: { type: 'boolean' } }, ['enabled']),

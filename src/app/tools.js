@@ -229,6 +229,7 @@ export function createApplicationTools({
         cesiumToken: mapStackController?.cesiumToken || '',
         getEnvironment: () => environment,
         getSkyPanel: () => skyPanel,
+        placeSearch,
       });
       debug.shepherd = shepherd;
     })
