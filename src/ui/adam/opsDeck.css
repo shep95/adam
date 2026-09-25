@@ -652,3 +652,36 @@ body.ui-clean-view .adam-ops-root {
     translate: calc(-1 * min(400px, 100vw)) 0;
   }
 }
+
+/* ── HEALTH ────────────────────────────────────────────────────────────── */
+.adam-ops-rail-btn.is-pulse {
+  animation: adam-health-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes adam-health-pulse {
+  50% {
+    box-shadow: 0 0 0 3px var(--accent-alert-edge);
+  }
+}
+
+.adam-health-level.is-nominal {
+  color: var(--accent-primary);
+}
+
+.adam-health-level.is-watch,
+.adam-health-level.is-degraded {
+  color: var(--accent-alert);
+}
+
+.adam-health-group {
+  margin-top: 8px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adam-ops-rail-btn.is-pulse {
+    animation: none;
+  }
+}

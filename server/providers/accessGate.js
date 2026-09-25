@@ -153,6 +153,22 @@ export function identifyRequest(req, adminToken, roles) {
   return null;
 }
 
+/** HMAC over an operator-profile digest, keyed by the deployment's admin token. */
+export function profileSignature(secret, digest) {
+  return crypto
+    .createHmac('sha256', String(secret))
+    .update(`adam-profile-v1:${digest}`)
+    .digest('hex');
+}
+
+export function profileKeyId(secret) {
+  return crypto
+    .createHash('sha256')
+    .update(`adam-profile-key:${secret}`)
+    .digest('hex')
+    .slice(0, 12);
+}
+
 /** Routes worth an audit line (cost-bearing or sensitive). */
 const AUDITED = [
   '/shepherd',
@@ -290,6 +306,39 @@ export function accessGate({
       if (!identity) {
         log(req, path, null, 'denied-no-session');
         return send(res, 401, { error: 'access token required', access: true });
+      }
+      if (path === '/access/sign' || path === '/access/verify') {
+        if (req.method !== 'POST')
+          return send(res, 405, { error: 'method not allowed' });
+        if (!secret)
+          return send(res, 404, {
+            error: 'profile signing needs ADAM_ACCESS_TOKEN',
+          });
+        let body = {};
+        try {
+          body = JSON.parse(await readRequestBody(req, 4096));
+        } catch {
+          body = {};
+        }
+        const digest = String(body.digest || '');
+        if (!/^[0-9a-f]{64}$/.test(digest))
+          return send(res, 400, { error: 'digest must be 64 hex characters' });
+        const sig = profileSignature(secret, digest);
+        const keyId = profileKeyId(secret);
+        log(req, path, identity, path.endsWith('sign') ? 'signed' : 'verified');
+        if (path === '/access/sign')
+          return send(res, 200, {
+            alg: 'HMAC-SHA256',
+            keyId,
+            signer: identity,
+            sig,
+          });
+        return send(res, 200, {
+          valid:
+            String(body.keyId || '') === keyId &&
+            safeEqual(String(body.sig || ''), sig),
+          keyId,
+        });
       }
       if (identity !== 'admin' && !roleAllows(roleMap.get(identity), path)) {
         log(req, path, identity, 'denied-by-role');

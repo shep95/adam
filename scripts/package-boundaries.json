@@ -1992,6 +1992,8 @@
       "src/ui/adam/opsDeck.css",
       "src/voice/actions/cockpit.js",
       "src/ui/adam/opsDeck.js",
+      "src/ui/adam/systemHealth.js",
+      "src/ui/adam/operatorProfile.js",
       "src/voice/actions/context.js",
       "src/layers/contextOverlay/chokepoints.js",
       "src/layers/submarineCables/landingDetail.js",

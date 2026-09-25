@@ -458,3 +458,54 @@ test('named roles: per-route allow lists, admin passes all, audit lines', async 
   );
   assert.ok(lines.every((l) => !JSON.stringify(l).includes('watch-token-123')));
 });
+
+test('operator profile signing: HMAC by the admin token, any signed-in role', async () => {
+  const env = {
+    ADAM_ACCESS_TOKEN: 'admin-token-000',
+    ADAM_ACCESS_ROLES: JSON.stringify({
+      watch: { token: 'watch-token-123', allow: ['/cctv'] },
+    }),
+  };
+  const plugins = [accessGate({ env, audit: () => {} })];
+  const digest = 'a'.repeat(64);
+  assert.equal(
+    (
+      await serve(plugins, '/api/access/sign', {
+        method: 'POST',
+        body: JSON.stringify({ digest }),
+      })
+    ).status,
+    401,
+  );
+  const cookie = `adam_access=${accessCookieValue('admin-token-000')}`;
+  const signed = await serve(plugins, '/api/access/sign', {
+    method: 'POST',
+    headers: { cookie },
+    body: JSON.stringify({ digest }),
+  });
+  const sig = JSON.parse(signed.text);
+  assert.equal(sig.alg, 'HMAC-SHA256');
+  assert.equal(sig.signer, 'admin');
+  assert.match(sig.sig, /^[0-9a-f]{64}$/);
+  const verify = async (body) =>
+    JSON.parse(
+      (
+        await serve(plugins, '/api/access/verify', {
+          method: 'POST',
+          headers: { cookie },
+          body: JSON.stringify(body),
+        })
+      ).text,
+    ).valid;
+  assert.equal(await verify({ digest, sig: sig.sig, keyId: sig.keyId }), true);
+  assert.equal(
+    await verify({ digest: 'b'.repeat(64), sig: sig.sig, keyId: sig.keyId }),
+    false,
+  );
+  const bad = await serve(plugins, '/api/access/sign', {
+    method: 'POST',
+    headers: { cookie },
+    body: '{"digest":"nothex"}',
+  });
+  assert.equal(bad.status, 400);
+});

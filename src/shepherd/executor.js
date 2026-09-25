@@ -321,6 +321,7 @@ export function createShepherdExecutor({
       case 'brief':
       case 'alerts':
       case 'filter':
+      case 'health':
         c.opsDeck?.toggleView?.(panel === 'filter' ? 'filters' : panel, open);
         return true;
       case 'keys':
@@ -389,6 +390,10 @@ export function createShepherdExecutor({
         for (const p of pins) intel.unpin(p.layerKey, p.value);
         return { ok: true, removed: pins.length };
       }
+      case 'profile_export':
+        if (typeof c.opsDeck?.exportProfile !== 'function')
+          return { ok: false, error: 'ops deck is not loaded' };
+        return c.opsDeck.exportProfile();
       case 'system_status': {
         const layers = (dataManager.getAll?.() || []).filter((l) => l.enabled);
         return {
@@ -398,6 +403,7 @@ export function createShepherdExecutor({
             count: l.stats?.count ?? null,
             error: l.stats?.error || null,
           })),
+          health: c.opsDeck?.readHealth?.() || null,
           recording: Boolean(doc.documentElement?.dataset?.adamRecordingSince),
           uiScale: Number(doc.documentElement?.dataset?.uiScale || 1),
           view: doc.documentElement?.dataset?.adamView || null,
