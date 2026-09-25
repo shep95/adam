@@ -46,6 +46,37 @@ export function flyToPreset(viewer, presetName, duration = 3.0) {
   });
 }
 
+/** Longitude the browser's own UTC offset implies (15° per hour). */
+export function homeLongitude(offsetMinutes = new Date().getTimezoneOffset()) {
+  const lon = -Number(offsetMinutes || 0) / 4;
+  return Math.max(-180, Math.min(180, lon));
+}
+
+/**
+ * Open on the whole Earth: the full globe, centred on the operator's own
+ * side of the world, with a slow settle from farther out.
+ * @returns {Function} Cancels the pending or active startup flight.
+ */
+export function flyToGlobe(viewer, { lon = homeLongitude(), lat = 20 } = {}) {
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(lon, lat, 32_000_000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
+  });
+  const timer = setTimeout(() => {
+    if (viewer.isDestroyed()) return;
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat, 20_000_000),
+      orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
+      duration: 3.0,
+      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+    });
+  }, 400);
+  return () => {
+    clearTimeout(timer);
+    if (!viewer.isDestroyed()) viewer.camera.cancelFlight();
+  };
+}
+
 /**
  * Set camera to Austin on load with a cinematic fly-in.
  * @returns {Function} Cancels the pending or active startup flight.
