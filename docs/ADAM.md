@@ -63,6 +63,18 @@ datacentres or dams, BRIEF lists assets inside each hazard's screening reach
 It is a screening distance, not a damage estimate. Shepherd reads it with
 `get_exposure`.
 
+**WATCH and triage.** One ranked list (0–100, each with its reason) across
+tripped alerts, cross-layer correlations (a vessel going AIS-dark near
+military aircraft, an orbit over a vessel meeting or a dark vessel, clusters
+of findings), infrastructure exposure, behaviour patterns, baseline surges
+and feed faults. The top three stay visible in the WATCH strip under the
+collection line whatever panel is open; items scoring 45+ are ringed on the
+globe (MARKS toggles them); anything new at 65+ is posted into Shepherd
+unasked. BRIEF opens with the same ranking and a MISSION line — state what
+you are watching for and matching items rise. Shepherd sees the ranking in
+every turn and reads it with `get_watch`; brief it in plain words and it
+calls `set_mission`, then configures layers, zones and alerts.
+
 ## Shepherd
 
 A streaming chat analyst on the right edge. It reads a `[console]` block with

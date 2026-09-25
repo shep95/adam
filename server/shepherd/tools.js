@@ -273,6 +273,35 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'get_watch',
+    description:
+      'The ranked picture (0-100): tripped alerts, cross-layer correlations (AIS-dark near military air, orbits over vessel meetings or dark vessels, pattern clusters), infrastructure exposure, behaviour patterns, baseline surges and feed faults, each with why it ranks and the plain alternative. Start here when asked what matters, what to look at, or what changed.',
+    parameters: obj({ limit: { type: 'integer', minimum: 1, maximum: 20 } }),
+  },
+  {
+    name: 'set_mission',
+    description:
+      'Record the operator\'s mission for the session in plain words, plus focus areas ({lat, lon, radiusKm, label}); it lifts matching items in the watch ranking. When the operator briefs you ("today I\'m watching Hormuz for..."), call set_mission, then configure the console for it: set_layers, create_alert_zone for the areas, filters, and fly there.',
+    parameters: obj(
+      {
+        text: { type: 'string' },
+        areas: {
+          type: 'array',
+          items: obj(
+            {
+              lat: { type: 'number' },
+              lon: { type: 'number' },
+              radiusKm: { type: 'number' },
+              label: { type: 'string' },
+            },
+            ['lat', 'lon'],
+          ),
+        },
+      },
+      ['text'],
+    ),
+  },
+  {
     name: 'cctv_find',
     description:
       'Search the public CCTV catalog (traffic and city cameras published by transport agencies — US, Canada, UK, Finland, Estonia, Germany, Australia). query matches road, junction, city, agency or country; omit it for the cameras nearest the view. Returns ids for cctv_connect. Use cctv_find with coverage=true to list countries and agencies.',

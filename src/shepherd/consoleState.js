@@ -74,6 +74,16 @@ export function readConsoleState({
     alertRules: Array.isArray(alerts) ? alerts.length : 0,
     overlay: overlay?.summary?.() || null,
     buildings3d: buildings?.state?.() || null,
+    mission: intel?.getMission?.()?.text || null,
+    watch: (() => {
+      try {
+        return (intel?.triage?.({ limit: 5 }) || []).map(
+          (t) => `${t.score} ${t.title}${t.label ? ` — ${t.label}` : ''}`,
+        );
+      } catch {
+        return [];
+      }
+    })(),
   };
 }
 
@@ -112,5 +122,8 @@ export function formatConsoleBlock(state) {
   if (state.alertRules) lines.push(`alert rules: ${state.alertRules}`);
   if (state.overlay) lines.push(`overlay: ${state.overlay}`);
   if (state.buildings3d) lines.push(`3d buildings: ${state.buildings3d}`);
+  if (state.mission) lines.push(`mission: ${state.mission}`);
+  if (state.watch?.length)
+    lines.push(`watch (ranked 0-100):\n  ${state.watch.join('\n  ')}`);
   return lines.join('\n');
 }

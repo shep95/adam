@@ -236,6 +236,65 @@ export function installOpsDeck({
   function renderBrief() {
     const brief = intel.brief();
     const body = el(doc, 'div', 'adam-ops-body');
+    // Mission: the operator's standing focus, which lifts matching items.
+    const mission = intel.getMission?.();
+    const missionRow = el(doc, 'form', 'adam-brief-mission');
+    const missionInput = el(doc, 'input', 'adam-input');
+    missionInput.type = 'text';
+    missionInput.maxLength = 500;
+    missionInput.placeholder = 'MISSION — WHAT ARE YOU WATCHING FOR TODAY?';
+    missionInput.value = mission?.text || '';
+    missionInput.setAttribute('aria-label', 'Mission');
+    missionInput.addEventListener('keydown', (e) => e.stopPropagation());
+    missionRow.append(missionInput);
+    missionRow.addEventListener('submit', (e) => {
+      e.preventDefault();
+      intel.setMission?.({
+        text: missionInput.value,
+        areas: intel.getMission?.()?.areas || [],
+      });
+      renderBrief();
+    });
+    body.append(missionRow);
+    // Triage first: the most significant things on the globe, ranked.
+    const ranked = intel.triage?.({ limit: 6 }) || [];
+    body.append(
+      el(doc, 'h3', 'adam-meta adam-ops-section', 'TOP OF THE PICTURE'),
+    );
+    if (!ranked.length)
+      body.append(
+        el(
+          doc,
+          'p',
+          'adam-meta adam-ops-note',
+          'Nothing ranks above routine right now.',
+        ),
+      );
+    for (const t of ranked) {
+      const row = button(
+        doc,
+        '',
+        'adam-brief-pattern',
+        () => {
+          if (Number.isFinite(t.lat))
+            viewer.camera.flyTo({
+              destination: Cesium.Cartesian3.fromDegrees(t.lon, t.lat, 150_000),
+              duration: 1.6,
+            });
+        },
+        { title: t.why },
+      );
+      row.append(
+        el(
+          doc,
+          'span',
+          `adam-meta ${t.score >= 80 ? 'adam-tier-critical' : t.score >= 60 ? 'adam-tier-alert' : 'adam-tier-primary'}`,
+          `${t.score} · ${t.title}`,
+        ),
+        el(doc, 'span', 'adam-meta adam-brief-facts', t.label),
+      );
+      body.append(row);
+    }
     body.append(el(doc, 'p', 'adam-value adam-brief-headline', brief.headline));
     const list = el(doc, 'ul', 'adam-brief-sections');
     for (const section of brief.sections) {

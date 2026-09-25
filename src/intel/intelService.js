@@ -23,6 +23,8 @@ import {
 import { layerSnapshots } from '../data/layerSnapshot.js';
 import { createPatternWatch } from './patternWatch.js';
 import { assessExposure } from './exposure.js';
+import { correlate } from './correlate.js';
+import { missionWords, triage as rankTriage } from './triage.js';
 
 export const BASELINE_LAYERS = Object.freeze([
   'flights',
@@ -39,6 +41,7 @@ const RECORD_LIMIT = 20_000;
 const LAST_TRACKED_KEY = 'adam.intel.lastTracked.v1';
 const PINS_KEY = 'adam.intel.pins.v1';
 const LAST_BRIEF_KEY = 'adam.intel.lastBrief.v1';
+export const MISSION_KEY = 'adam.intel.mission.v1';
 /** Fine baselines apply below this camera altitude, around the view. */
 export const FINE_BASELINE_MAX_ALT_M = 200_000;
 const FINE_CELL_DEG = 1;
@@ -213,6 +216,43 @@ export function createIntelService({
   }
 
   const patterns = createPatternWatch();
+  let mission = readJson(localStorage, MISSION_KEY, null);
+
+  function correlations() {
+    return correlate(patterns.findings({ limit: 99 }), {
+      military: getRecords('military'),
+      now: now(),
+    });
+  }
+
+  function triageItems({ limit = 12 } = {}) {
+    const faults = layerRows()
+      .filter(
+        (l) => l.enabled && ['unavailable', 'stale'].includes(l.feedState),
+      )
+      .map((l) => ({
+        id: l.id,
+        name: l.name,
+        state: l.feedState,
+        age: l.ageLabel,
+      }));
+    const anomalies = service.anomalies({ limit: 6 }).map((a) => {
+      const [s, w] = String(a.regionKey || '')
+        .split(':')
+        .map(Number);
+      return Number.isFinite(s) ? { ...a, lat: s + 5, lon: w + 5 } : a;
+    });
+    return rankTriage({
+      trips: alerts.activeTrips(),
+      correlations: correlations(),
+      exposure: assessExposure(getRecords, { now: now(), limit: 6 }),
+      patterns: patterns.findings({ limit: 20 }),
+      anomalies,
+      faults,
+      mission,
+      now: now(),
+    }).slice(0, limit);
+  }
   let patternCount = 0;
 
   function evaluateAlerts() {
@@ -322,6 +362,44 @@ export function createIntelService({
 
     /** Behaviour patterns over the last ~45 min (orbits, AIS dark, meetings, jumps). */
     patterns: (options) => patterns.findings(options),
+
+    /** Cross-layer correlations between behaviour findings and live contacts. */
+    correlations,
+    /** Everything worth attention, ranked 0–100 with a reason each. */
+    triage: triageItems,
+    /**
+     * The operator's standing mission: plain words plus optional focus areas
+     * ({lat, lon, radiusKm, label}); lifts matching items in triage.
+     */
+    setMission({ text = '', areas = [] } = {}) {
+      const clean = String(text).slice(0, 500);
+      mission =
+        clean || areas.length
+          ? {
+              text: clean,
+              words: missionWords(clean),
+              areas: areas
+                .filter(
+                  (a) => Number.isFinite(a?.lat) && Number.isFinite(a?.lon),
+                )
+                .slice(0, 12)
+                .map((a) => ({
+                  lat: a.lat,
+                  lon: a.lon,
+                  radiusKm: Math.min(
+                    2000,
+                    Math.max(5, Number(a.radiusKm) || 100),
+                  ),
+                  label: String(a.label || '').slice(0, 60),
+                })),
+              at: now(),
+            }
+          : null;
+      writeJson(localStorage, MISSION_KEY, mission);
+      emit('mission-changed', mission);
+      return mission;
+    },
+    getMission: () => (mission ? { ...mission } : null),
 
     /** Infrastructure (datacentres, dams) inside the reach of live quakes and strong fires. */
     exposure: ({ limit = 8 } = {}) =>

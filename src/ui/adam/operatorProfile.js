@@ -20,6 +20,7 @@ export const PROFILE_KEYS = Object.freeze([
   'adam.intel.baselines.v1',
   'adam.intel.baselines.fine.v1',
   'adam.intel.pins.v1',
+  'adam.intel.mission.v1',
   'adam.ui.scale',
   'gev:layer-state:v2',
   'godsEyeView.sceneProject.v2',

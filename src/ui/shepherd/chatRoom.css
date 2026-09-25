@@ -508,3 +508,15 @@
     transition: none !important;
   }
 }
+
+.shp-note--watch {
+  opacity: 0.9;
+  color: var(--accent-alert, #f5a623);
+  border-left: 2px solid var(--accent-alert, #f5a623);
+  padding-left: 6px;
+}
+
+.shp-tab.has-notice {
+  border-color: var(--accent-alert, #f5a623);
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.25);
+}

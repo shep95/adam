@@ -191,6 +191,7 @@ export function installShepherdRoom({
 
   function setOpen(open) {
     root.classList.toggle('is-open', open);
+    if (open) tab.classList.remove('has-notice');
     tab.setAttribute('aria-pressed', String(open));
     if (!tab.classList.contains('shp-tab--docked'))
       tab.classList.toggle('is-hidden', open);
@@ -740,6 +741,11 @@ export function installShepherdRoom({
     open: () => setOpen(true),
     close: () => setOpen(false),
     toggle: () => setOpen(!root.classList.contains('is-open')),
+    /** An ambient line from the watch engine, without a model call. */
+    notice(text) {
+      addNote(String(text).slice(0, 400), 'watch');
+      if (!root.classList.contains('is-open')) tab.classList.add('has-notice');
+    },
     ask(text) {
       setOpen(true);
       input.value = text;

@@ -302,6 +302,19 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] rewind failed to load:', error));
   defer(() => rewind?.destroy());
 
+  // WATCH: persistent ranked picture, globe marks, ambient Shepherd lines.
+  let watchStrip = null;
+  import('../ui/adam/watchStrip.js')
+    .then(({ installWatchStrip }) => {
+      if (signal?.aborted) return;
+      watchStrip = installWatchStrip({ viewer, intel });
+      debug.watch = watchStrip;
+    })
+    .catch((error) =>
+      console.warn('[adam] watch strip failed to load:', error),
+    );
+  defer(() => watchStrip?.destroy());
+
   // CAMERAS: directory of every public camera, with one-click connect.
   let cctvDirectory = null;
   import('../ui/adam/cctvDirectory.js')

@@ -548,6 +548,20 @@ export function createShepherdExecutor({
         newest,
       };
     },
+    get_watch: ({ limit } = {}) => {
+      if (!intel?.triage)
+        return { ok: false, error: 'intel service is not running' };
+      return {
+        ok: true,
+        mission: intel.getMission?.() || null,
+        items: intel.triage({ limit: limit || 10 }),
+      };
+    },
+    set_mission: ({ text = '', areas = [] } = {}) => {
+      if (!intel?.setMission)
+        return { ok: false, error: 'intel service is not running' };
+      return { ok: true, mission: intel.setMission({ text, areas }) };
+    },
     cctv_find: async ({ query = '', coverage = false, limit } = {}) => {
       const dir = getConsole().cctvDirectory;
       if (!dir)
