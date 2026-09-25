@@ -366,6 +366,20 @@ export function createApplicationTools({
     );
   defer(() => cctvDirectory?.destroy());
 
+  // WHAT'S HERE: photos and pages about the streets, landmarks and buildings
+  // at a point (right-click menu, Shepherd place_dossier).
+  let placeDossier = null;
+  import('../ui/adam/placeDossier.js')
+    .then(({ installPlaceDossier }) => {
+      if (signal?.aborted) return;
+      placeDossier = installPlaceDossier({});
+      debug.placeDossier = placeDossier;
+    })
+    .catch((error) =>
+      console.warn('[adam] place dossier failed to load:', error),
+    );
+  defer(() => placeDossier?.destroy());
+
   // The Cesium ion mark is an attribution for ion-served data; without an
   // ion token nothing comes from ion, so the mark is not shown.
   const ionInUse = Boolean(mapStackController?.cesiumToken);

@@ -31,6 +31,7 @@ import { flightLookupProxy } from './flightLookup.js';
 import { shepherdProxy } from '../shepherd/router.js';
 import { notifyProxy } from './notify.js';
 import { openFeedsProxy } from './openFeeds.js';
+import { placeMediaProxy } from './placeMedia.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -68,6 +69,7 @@ function localProviderPlugins() {
     shepherdProxy(),
     notifyProxy(),
     openFeedsProxy(),
+    placeMediaProxy(),
     keySetupEndpoint(),
   ];
 }

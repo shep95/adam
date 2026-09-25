@@ -164,6 +164,9 @@ export function installMapInteraction({
           `what is at ${coords}? give me the osint picture for this spot — infrastructure, activity, anything notable — and mark it on the map.`,
         ),
       ),
+      item("what's here · photos & pages", '', () =>
+        globalThis.__godsEyeView?.placeDossier?.open(lat, lon),
+      ),
       item('live sky here', 'L', () => {
         overlay.flyToPoint(lat, lon, 2500);
         getSkyPanel()?.open();

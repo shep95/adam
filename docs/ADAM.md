@@ -113,6 +113,23 @@ public GeoJSON/KML/CSV URL (`load_url` — https, public hosts, no redirects,
 R/S/G scales and what they do to HF and GNSS (`space_weather`). Ingested
 feeds live in server memory; use the standalone server for long-lived ones.
 
+### WHAT'S HERE (place dossier)
+
+Right-click anywhere → **what's here · photos & pages**, or ask Shepherd
+(`place_dossier`). The card pulls, for the streets, landmarks and buildings
+around the point:
+
+- Street View (server-proxied; needs a Google key) and Mapillary street-level
+  photos (`MAPILLARY_TOKEN`)
+- geotagged Wikimedia Commons photos, with author and licence on each
+- Wikipedia articles about what stands there, nearest first
+- named OpenStreetMap places with their websites and Wikipedia links
+- a one-click web search through Shepherd for pages, images and documents
+  about the site (heritage, planning, history, news)
+
+Places and structures only: private homes are dropped from the OSM list and
+nothing looks up who lives at or owns an address.
+
 ## Shepherd
 
 A streaming chat analyst on the right edge. It reads a `[console]` block with

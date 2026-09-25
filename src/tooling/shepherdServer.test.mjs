@@ -716,3 +716,84 @@ test('open feeds: space weather, GDELT, ingest auth, URL guard', async () => {
     'reading still needs a session',
   );
 });
+
+test('place dossier: wikipedia, commons, street view metadata; keys stay server-side', async () => {
+  const { placeMediaProxy } =
+    await import('../../server/providers/placeMedia.js');
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(String(url));
+    const u = String(url);
+    const json = (b) => ({ ok: true, json: async () => b, headers: new Map() });
+    if (u.includes('wikipedia.org'))
+      return json({
+        query: {
+          pages: {
+            1: {
+              pageid: 1,
+              title: 'Congress Avenue Bridge',
+              extract: 'A bridge.',
+              fullurl: 'https://en.wikipedia.org/wiki/Congress_Avenue_Bridge',
+              thumbnail: { source: 'https://upload.wikimedia.org/t.jpg' },
+              coordinates: [{ lat: 30.2615, lon: -97.745 }],
+            },
+          },
+        },
+      });
+    if (u.includes('commons.wikimedia.org'))
+      return json({
+        query: {
+          pages: {
+            2: {
+              title: 'File:Bridge.jpg',
+              coordinates: [{ lat: 30.262, lon: -97.745 }],
+              imageinfo: [
+                {
+                  mime: 'image/jpeg',
+                  thumburl: 'https://upload.wikimedia.org/b.jpg',
+                  descriptionurl:
+                    'https://commons.wikimedia.org/wiki/File:Bridge.jpg',
+                  extmetadata: {
+                    LicenseShortName: { value: 'CC BY-SA 4.0' },
+                    Artist: { value: '<a>Someone</a>' },
+                  },
+                },
+              ],
+            },
+            3: {
+              title: 'File:Doc.pdf',
+              imageinfo: [{ mime: 'application/pdf' }],
+            },
+          },
+        },
+      });
+    if (u.includes('streetview/metadata'))
+      return json({
+        status: 'OK',
+        date: '2024-05',
+        location: { lat: 30.2616, lng: -97.7449 },
+      });
+    throw new Error('unexpected ' + u);
+  };
+  const plugin = placeMediaProxy({
+    env: {},
+    fetchImpl,
+    googleKey: () => 'SECRETKEY',
+  });
+  const r = await serve(
+    [plugin],
+    '/api/place?lat=30.2616&lon=-97.745&radius=600',
+  );
+  const body = JSON.parse(r.text);
+  assert.equal(body.wikipedia[0].title, 'Congress Avenue Bridge');
+  assert.equal(body.photos.length, 1, 'non-image files dropped');
+  assert.equal(body.photos[0].license, 'CC BY-SA 4.0');
+  assert.equal(body.photos[0].author, 'Someone');
+  assert.equal(body.streetView.date, '2024-05');
+  assert.equal(body.sources.mapillary, 'no MAPILLARY_TOKEN');
+  assert.ok(
+    !r.text.includes('SECRETKEY'),
+    'the Google key never reaches the browser',
+  );
+  assert.equal((await serve([plugin], '/api/place?lat=999&lon=0')).status, 400);
+});

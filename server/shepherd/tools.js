@@ -533,6 +533,19 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'place_dossier',
+    description:
+      "Open WHAT'S HERE for a point: public photos of the street, landmarks and buildings (Wikimedia Commons, Street View, Mapillary), Wikipedia articles about what stands there, and named OpenStreetMap places with their websites. Returns titles, links and counts. Places and structures only — never use it to find who lives at or owns an address.",
+    parameters: obj(
+      {
+        lat: { type: 'number' },
+        lon: { type: 'number' },
+        radius: { type: 'integer', minimum: 50, maximum: 5000 },
+      },
+      ['lat', 'lon'],
+    ),
+  },
+  {
     name: 'get_exposure',
     description:
       'Infrastructure exposure: mapped datacentres and dams inside the screening reach of live hazards — earthquakes M4.5+ in the last 48 h (40-500 km by magnitude) and satellite fires ≥50 MW (5 km). Needs the earthquakes / FIRMS and datacentre / dam layers on. Reach is a screening distance, not damage; say so.',

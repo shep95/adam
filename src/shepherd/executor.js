@@ -871,6 +871,14 @@ export function createShepherdExecutor({
         };
       return dir.connect(target);
     },
+    place_dossier: async ({ lat, lon, radius } = {}) => {
+      const dossier = getConsole().placeDossier;
+      if (!dossier)
+        return { ok: false, error: 'place dossier is still loading' };
+      if (!Number.isFinite(lat) || !Number.isFinite(lon))
+        return { ok: false, error: 'lat and lon required' };
+      return dossier.open(lat, lon, { radius: radius || 600 });
+    },
     get_exposure: ({ limit } = {}) => {
       const exposure = intel?.exposure?.({ limit: limit || 8 });
       if (!exposure)

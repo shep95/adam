@@ -1,0 +1,147 @@
+.adam-place {
+  position: fixed;
+  top: calc(176px / var(--adam-ui-scale, 1));
+  right: 24px;
+  z-index: 625;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 320px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--font-condensed, 'IBM Plex Sans Condensed', sans-serif);
+  zoom: var(--adam-ui-scale, 1);
+}
+
+.adam-place[hidden] {
+  display: none;
+}
+
+.adam-place-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.adam-place-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.adam-place-kicker,
+.adam-place-sub,
+.adam-place-dist,
+.adam-place-note,
+.adam-place-hero figcaption {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.adam-place-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary, #e6f4f6);
+}
+
+.adam-place-close {
+  background: none;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.adam-place-body {
+  overflow-y: auto;
+  padding: 8px 12px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.adam-place-hero {
+  margin: 0 0 8px;
+}
+
+.adam-place-hero img {
+  width: 100%;
+  border-radius: 4px;
+  display: block;
+}
+
+.adam-place-section {
+  margin: 12px 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.adam-place-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.adam-place-photo img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 3px;
+  display: block;
+}
+
+.adam-place-article {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.adam-place-article img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.adam-place-extract {
+  margin: 3px 0 0;
+}
+
+.adam-place-link {
+  color: var(--accent-primary);
+}
+
+.adam-place-osm {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adam-place-osm li {
+  padding: 3px 0;
+}
+
+.adam-place-osm-name {
+  color: var(--text-primary, #e6f4f6);
+}
+
+.adam-place-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.adam-place-actions .adam-chip {
+  text-decoration: none;
+}
+
+.adam-place-empty {
+  font-style: italic;
+}
