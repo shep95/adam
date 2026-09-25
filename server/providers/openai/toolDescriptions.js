@@ -601,7 +601,7 @@ export const ACTION_DESCRIPTIONS = {
   },
   brief_situation: {
     description:
-      'Situational summary across EVERY loaded layer at once: aircraft, vessels, fires, earthquakes, satellites, anything anomalous against the rolling 7-day baseline, tripped alert triggers, and feeds that are not live. Use for "brief me", "what\'s active", "sitrep", "give me the picture". Read the returned `spoken` text, keeping every number verbatim; do not also call analyst_query for the same request.',
+      'Situational summary across EVERY loaded layer at once: aircraft, vessels, fires, earthquakes, satellites, anything anomalous against the rolling 7-day baseline, tripped alert triggers, and feeds that are not live. Use for "brief me", "what\'s active", "sitrep", "give me the picture". Read the returned `spoken` text, keeping every number verbatim; do not also call analyst_query for the same request. delta=true for "what changed since my last brief". format=markdown returns a written BLUF-first product in `markdown` (for reports and export).',
     $position: 1,
   },
 };

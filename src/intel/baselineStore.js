@@ -114,6 +114,7 @@ export function createBaselineStore({
   storage = null,
   now = () => Date.now(),
   cellDeg = BASELINE_CELL_DEG,
+  storageKey = BASELINE_STORAGE_KEY,
 } = {}) {
   /** @type {Map<string, Array<{day: number, mean: number, n: number}>>} */
   let entries = new Map();
@@ -122,7 +123,7 @@ export function createBaselineStore({
   const load = () => {
     if (!storage) return;
     try {
-      const raw = storage.getItem(BASELINE_STORAGE_KEY);
+      const raw = storage.getItem(storageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') return;
@@ -151,10 +152,7 @@ export function createBaselineStore({
     if (!storage || !dirty) return;
     dirty = false;
     try {
-      storage.setItem(
-        BASELINE_STORAGE_KEY,
-        JSON.stringify(Object.fromEntries(entries)),
-      );
+      storage.setItem(storageKey, JSON.stringify(Object.fromEntries(entries)));
     } catch {
       /* quota or private mode: the in-memory baseline still works */
     }

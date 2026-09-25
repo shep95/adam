@@ -51,9 +51,24 @@ export function updateContext(info, heading) {
     // say so instead of re-deriving stale geometry as if it were live.
     const enteringLost = this.context.dataset.state !== 'lost';
     this.context.dataset.state = 'lost';
+    // How long ago matters: a 4 s gap and a 40 min silence mean different
+    // things. The timer runs from the moment contact was lost and escalates
+    // once the feed's own staleness window has passed.
+    if (enteringLost || !this._contactLostSince)
+      this._contactLostSince =
+        Number(snapshot.subject?.lastSeenMs) || Date.now();
+    const lostMs = Date.now() - this._contactLostSince;
+    const escalateAfterMs = /vessel|ais/i.test(
+      String(snapshot.subject?.layerId || snapshot.subject?.kind || ''),
+    )
+      ? 15 * 60_000
+      : 2 * 60_000;
+    this.context.classList.toggle(
+      'adam-lost-escalated',
+      lostMs > escalateAfterMs,
+    );
     if (this.contextUncertainty) {
-      this.contextUncertainty.textContent =
-        'CONTACT LOST · LAST KNOWN READOUT · NOT AN ALL-CLEAR';
+      this.contextUncertainty.textContent = `CONTACT LOST · ${formatLostElapsed(lostMs)} · LAST KNOWN READOUT · NOT AN ALL-CLEAR`;
     }
     // The cue changes the footer's height; re-run layout once on the way in
     // rather than every frame the contact stays lost.
@@ -67,6 +82,8 @@ export function updateContext(info, heading) {
     return;
   }
 
+  this._contactLostSince = null;
+  this.context.classList.remove('adam-lost-escalated');
   let unknownCount = 0;
   const nearest = [];
   for (const cohort of snapshot.cohorts) {
@@ -154,4 +171,14 @@ export function updateContext(info, heading) {
     this.contextLayoutStamp = snapshot.evaluatedAt;
     this.scheduleContextLayout();
   }
+}
+
+/** mm:ss under an hour, h:mm:ss after. */
+export function formatLostElapsed(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const p = (n) => String(n).padStart(2, '0');
+  const h = Math.floor(s / 3600);
+  return h
+    ? `${h}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`
+    : `${p(Math.floor(s / 60))}:${p(s % 60)}`;
 }

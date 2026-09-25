@@ -904,7 +904,10 @@ const schemas = [
     parameters: {
       type: 'object',
       additionalProperties: false,
-      properties: {},
+      properties: {
+        format: { type: 'string', enum: ['spoken', 'markdown', 'json'] },
+        delta: { type: 'boolean' },
+      },
     },
   },
 ];

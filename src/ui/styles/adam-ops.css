@@ -280,3 +280,9 @@ body.cockpit-mode.adam-cockpit-compact
 #style-buttons .style-btn[hidden] {
   display: none !important;
 }
+
+/* CONTACT LOST escalates once the feed's staleness window has passed. */
+.adam-lost-escalated [id$='-uncertainty'],
+.adam-lost-escalated #cockpit-context-uncertainty {
+  color: var(--ops-alert) !important;
+}

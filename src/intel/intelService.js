@@ -14,7 +14,12 @@
 
 import { createBaselineStore, regionKeyFor } from './baselineStore.js';
 import { createAlertMonitor } from './alertRules.js';
-import { buildSituationBrief } from './briefing.js';
+import {
+  briefDelta,
+  briefSnapshot,
+  buildSituationBrief,
+  formatBriefMarkdown,
+} from './briefing.js';
 import { layerSnapshots } from '../data/layerSnapshot.js';
 
 export const BASELINE_LAYERS = Object.freeze([
@@ -31,6 +36,11 @@ const ALERT_INTERVAL_MS = 5_000;
 const RECORD_LIMIT = 20_000;
 const LAST_TRACKED_KEY = 'adam.intel.lastTracked.v1';
 const PINS_KEY = 'adam.intel.pins.v1';
+const LAST_BRIEF_KEY = 'adam.intel.lastBrief.v1';
+/** Fine baselines apply below this camera altitude, around the view. */
+export const FINE_BASELINE_MAX_ALT_M = 200_000;
+const FINE_CELL_DEG = 1;
+const FINE_FOCUS_DEG = 3;
 
 let activeService = null;
 
@@ -120,6 +130,22 @@ export function createIntelService({
   };
 
   const baselines = createBaselineStore({ storage: localStorage, now });
+  // Fine 1° cells, sampled only around the operator's focus when zoomed in:
+  // a 10° cell is noise for a port, a base or a chokepoint.
+  const fineBaselines = createBaselineStore({
+    storage: localStorage,
+    now,
+    cellDeg: FINE_CELL_DEG,
+    storageKey: 'adam.intel.baselines.fine.v1',
+  });
+  let focus = null;
+  const inFocus = (r) =>
+    focus &&
+    Math.abs(Number(r?.lat) - focus.lat) <= FINE_FOCUS_DEG &&
+    Math.abs(((Number(r?.lon) - focus.lon + 540) % 360) - 180) <=
+      FINE_FOCUS_DEG;
+  const fineActive = () =>
+    Boolean(focus && focus.altM < FINE_BASELINE_MAX_ALT_M);
   const alerts = createAlertMonitor({
     storage: localStorage,
     onTrip: (rule, result) => emit('alert-tripped', { rule, result }),
@@ -174,8 +200,13 @@ export function createIntelService({
     for (const layerKey of BASELINE_LAYERS) {
       const records = getRecords(layerKey);
       if (records.length) baselines.sample(layerKey, records);
+      if (fineActive()) {
+        const local = records.filter(inFocus);
+        if (local.length) fineBaselines.sample(layerKey, local);
+      }
     }
     baselines.persist();
+    fineBaselines.persist();
     emit('baselines-sampled', { size: baselines.size() });
   }
 
@@ -306,14 +337,48 @@ export function createIntelService({
       return out;
     },
 
-    brief() {
-      return buildSituationBrief({
+    /** Where the operator is looking; enables fine 1° baselines up close. */
+    setFocus(lat, lon, altM) {
+      if (![lat, lon, altM].every(Number.isFinite)) return;
+      focus = { lat, lon, altM };
+    },
+    getFocus: () => (focus ? { ...focus, fine: fineActive() } : null),
+
+    /**
+     * Situational brief. `delta` compares with the previous brief this
+     * session; `format: 'markdown'` adds a BLUF-first written product.
+     */
+    brief({ delta = false, format = 'spoken' } = {}) {
+      const fine = fineActive();
+      const brief = buildSituationBrief({
         layers: layerRows(),
-        getRecords,
+        getRecords: fine ? (key) => getRecords(key) : getRecords,
         baselineStore: baselines,
         alertTrips: alerts.activeTrips(),
         now: now(),
       });
+      if (fine) {
+        const local = [];
+        for (const layerKey of BASELINE_LAYERS) {
+          const records = getRecords(layerKey).filter(inFocus);
+          if (records.length)
+            local.push(
+              ...fineBaselines.anomalies(layerKey, records, { limit: 3 }),
+            );
+        }
+        brief.anomalies = [...local, ...brief.anomalies].slice(0, 8);
+        brief.baselineScale =
+          '1° cells around the view (zoomed in), 10° cells elsewhere';
+      } else brief.baselineScale = '10° cells';
+      const previous = readJson(sessionStorage, LAST_BRIEF_KEY, null);
+      if (delta) {
+        brief.delta = briefDelta(previous, brief);
+        if (brief.delta) brief.spoken = `${brief.spoken} ${brief.delta.spoken}`;
+      }
+      writeJson(sessionStorage, LAST_BRIEF_KEY, briefSnapshot(brief));
+      if (format === 'markdown')
+        brief.markdown = formatBriefMarkdown(brief, brief.delta || null);
+      return brief;
     },
 
     getLastTracked() {

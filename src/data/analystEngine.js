@@ -167,6 +167,25 @@ function summarize(items, sortField) {
 }
 
 /**
+ * When examined records are a sample of a larger loaded set, say so in words
+ * the narration must repeat, so a capped count is never passed off as whole.
+ */
+export function cappedCoverage(layersQueried = []) {
+  const capped = layersQueried.filter(
+    (l) => l.sourceTruncated && Number.isFinite(l.loadedCount),
+  );
+  if (!capped.length) return { capped: false };
+  const parts = capped.map(
+    (l) =>
+      `${l.recordsExamined.toLocaleString('en-US')} of ${l.loadedCount.toLocaleString('en-US')} ${l.layerKey}`,
+  );
+  return {
+    capped: true,
+    qualifier: `Based on the first ${parts.join(', ')} loaded records — there may be more.`,
+  };
+}
+
+/**
  * Create an engine bound to live providers. All spatial/text/number logic is
  * in the pure helpers above; this closure only sequences and remembers.
  */
@@ -343,6 +362,7 @@ export function createAnalystEngine(providers) {
           ? { feedProvenance: feedProvenanceEnvelope(queriedSnapshots) }
           : {}),
         followUp: Boolean(spec.followUp && lastResult),
+        ...cappedCoverage(layersQueried),
         note: layersQueried.some(
           (layer) => layer.basis === 'bounded-loaded-records',
         )

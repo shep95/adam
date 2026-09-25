@@ -360,3 +360,66 @@ test('intel service: last tracked and pins survive, resolve live and cap at four
   assert.equal(again.getPins().length, 3);
   assert.match(again.brief().headline, /5 aircraft/);
 });
+
+test('brief delta, BLUF markdown and capped-count disclosure', async () => {
+  const { briefDelta, briefSnapshot, formatBriefMarkdown } =
+    await import('./briefing.js');
+  const { cappedCoverage } = await import('../data/analystEngine.js');
+  const base = {
+    generatedAt: '2026-09-25T09:00:00.000Z',
+    headline: '120 aircraft',
+    sections: [
+      {
+        layerKey: 'flights',
+        label: 'Aircraft',
+        count: 120,
+        facts: [],
+        feedState: 'nominal',
+      },
+    ],
+    anomalies: [],
+    alerts: [],
+    feedIssues: [],
+    spoken: '',
+  };
+  const later = {
+    ...base,
+    generatedAt: '2026-09-25T11:00:00.000Z',
+    headline: '150 aircraft',
+    sections: [{ ...base.sections[0], count: 150 }],
+    alerts: [{ id: 'r1', label: 'military in zone', detail: '2 inside' }],
+  };
+  const delta = briefDelta(briefSnapshot(base), later);
+  assert.equal(delta.counts[0].change, 30);
+  assert.deepEqual(delta.newAlerts, ['r1']);
+  assert.match(delta.spoken, /120 minutes ago: Aircraft up 30 to 150/);
+  const md = formatBriefMarkdown(
+    { ...later, baselineScale: '10° cells' },
+    delta,
+  );
+  assert.match(md, /^# Situation brief/);
+  assert.match(
+    md.split('\n')[2],
+    /^\*\*BLUF:\*\* 150 aircraft — 1 alert trigger/,
+  );
+  assert.match(md, /## Change since/);
+  assert.match(md, /confidence: 0\.85 · signal: strong/);
+  assert.equal(briefDelta(null, later), null);
+  const capped = cappedCoverage([
+    {
+      layerKey: 'military',
+      recordsExamined: 2000,
+      loadedCount: 2400,
+      sourceTruncated: true,
+    },
+  ]);
+  assert.equal(capped.capped, true);
+  assert.match(
+    capped.qualifier,
+    /first 2,000 of 2,400 military loaded records — there may be more/,
+  );
+  assert.equal(
+    cappedCoverage([{ layerKey: 'flights', recordsExamined: 10 }]).capped,
+    false,
+  );
+});

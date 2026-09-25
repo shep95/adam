@@ -202,3 +202,158 @@ export function buildSituationBrief({
     spoken: spokenParts.join(' '),
   };
 }
+
+/** Compact snapshot of a brief, kept to compute the next brief's changes. */
+export function briefSnapshot(brief) {
+  return {
+    at: brief.generatedAt,
+    counts: Object.fromEntries(
+      brief.sections.map((s) => [s.layerKey, s.count]),
+    ),
+    labels: Object.fromEntries(
+      brief.sections.map((s) => [s.layerKey, s.label]),
+    ),
+    anomalies: brief.anomalies
+      .filter((a) => a.level !== 'quiet')
+      .map((a) => `${a.layerKey}|${a.regionKey}|${a.level}`),
+    alerts: brief.alerts.map((a) => a.id),
+  };
+}
+
+/**
+ * What changed between a previous brief snapshot and this brief: count
+ * movement per layer, new and cleared anomalies, new and cleared alerts.
+ */
+export function briefDelta(previous, brief) {
+  if (!previous?.at) return null;
+  const now = briefSnapshot(brief);
+  const keys = new Set([
+    ...Object.keys(previous.counts || {}),
+    ...Object.keys(now.counts),
+  ]);
+  const counts = [...keys]
+    .map((layerKey) => {
+      const before = previous.counts?.[layerKey] ?? 0;
+      const after = now.counts[layerKey] ?? 0;
+      return {
+        layerKey,
+        label: now.labels[layerKey] || previous.labels?.[layerKey] || layerKey,
+        before,
+        after,
+        change: after - before,
+      };
+    })
+    .filter((c) => c.change !== 0);
+  const setDiff = (a = [], b = []) => a.filter((x) => !b.includes(x));
+  const delta = {
+    since: previous.at,
+    counts,
+    newAnomalies: setDiff(now.anomalies, previous.anomalies),
+    clearedAnomalies: setDiff(previous.anomalies, now.anomalies),
+    newAlerts: setDiff(now.alerts, previous.alerts),
+    clearedAlerts: setDiff(previous.alerts, now.alerts),
+  };
+  const mins = Math.max(
+    0,
+    Math.round(
+      (Date.parse(brief.generatedAt) - Date.parse(previous.at)) / 60000,
+    ),
+  );
+  const parts = counts.map(
+    (c) =>
+      `${c.label} ${c.change > 0 ? 'up' : 'down'} ${Math.abs(c.change)} to ${c.after}`,
+  );
+  if (delta.newAnomalies.length)
+    parts.push(
+      `${delta.newAnomalies.length} new anomal${delta.newAnomalies.length === 1 ? 'y' : 'ies'}`,
+    );
+  if (delta.clearedAnomalies.length)
+    parts.push(`${delta.clearedAnomalies.length} cleared`);
+  if (delta.newAlerts.length)
+    parts.push(
+      `${delta.newAlerts.length} new alert${delta.newAlerts.length === 1 ? '' : 's'} tripped`,
+    );
+  delta.spoken = parts.length
+    ? `Since the last brief ${mins} minutes ago: ${parts.join('; ')}.`
+    : `No change since the last brief ${mins} minutes ago.`;
+  return delta;
+}
+
+/** Written product: BLUF first, supporting detail, provenance, confidence. */
+export function formatBriefMarkdown(brief, delta = null) {
+  const lines = [];
+  const notable = brief.anomalies.filter((a) => a.level !== 'quiet');
+  const bluf = [brief.headline];
+  if (brief.alerts.length)
+    bluf.push(`${brief.alerts.length} alert trigger(s) tripped`);
+  if (notable.length) bluf.push(notable[0].statement);
+  if (delta && delta.counts.length) bluf.push(delta.spoken);
+  lines.push(
+    `# Situation brief — ${brief.generatedAt.replace('T', ' ').replace(/\.\d+Z$/, 'Z')}`,
+    '',
+  );
+  lines.push(`**BLUF:** ${bluf.join(' — ')}`, '');
+  lines.push('## Activity');
+  for (const s of brief.sections) {
+    const state =
+      s.feedState && s.feedState !== 'nominal'
+        ? ` _(${String(s.feedState).toUpperCase()}${s.ageLabel ? `, ${s.ageLabel}` : ''})_`
+        : '';
+    lines.push(
+      `- **${s.label}:** ${s.count.toLocaleString('en-US')}${s.facts.length ? ` — ${s.facts.join(', ')}` : ''}${state}`,
+    );
+  }
+  if (!brief.sections.length) lines.push('- No data layers are active.');
+  if (delta) {
+    lines.push(
+      '',
+      `## Change since ${delta.since.replace('T', ' ').replace(/\.\d+Z$/, 'Z')}`,
+    );
+    if (
+      !delta.counts.length &&
+      !delta.newAnomalies.length &&
+      !delta.newAlerts.length
+    )
+      lines.push('- No change.');
+    for (const c of delta.counts)
+      lines.push(
+        `- ${c.label}: ${c.before} → ${c.after} (${c.change > 0 ? '+' : ''}${c.change})`,
+      );
+    if (delta.newAnomalies.length)
+      lines.push(`- New anomalies: ${delta.newAnomalies.length}`);
+    if (delta.clearedAnomalies.length)
+      lines.push(`- Cleared anomalies: ${delta.clearedAnomalies.length}`);
+    if (delta.newAlerts.length)
+      lines.push(`- New alerts: ${delta.newAlerts.length}`);
+  }
+  if (notable.length) {
+    lines.push('', '## Anomalies (vs 7-day baseline, same hour)');
+    for (const a of notable) lines.push(`- ${a.statement}`);
+  }
+  if (brief.alerts.length) {
+    lines.push('', '## Alerts tripped');
+    for (const a of brief.alerts)
+      lines.push(`- ${a.label}${a.detail ? ` — ${a.detail}` : ''}`);
+  }
+  if (brief.feedIssues.length) {
+    lines.push('', '## Feed status');
+    for (const f of brief.feedIssues)
+      lines.push(
+        `- ${f.label}: ${String(f.feedState).toUpperCase()}${f.ageLabel ? ` (${f.ageLabel})` : ''}`,
+      );
+  }
+  lines.push('', '## Coverage');
+  lines.push(
+    '- Counts cover data loaded by enabled layers, not the whole world.',
+  );
+  lines.push(
+    `- Baselines: ${brief.baselineScale || '10° cells'}; a baseline needs at least two days of history for the same hour.`,
+  );
+  const signal = brief.feedIssues.length ? 'moderate' : 'strong';
+  const conf = brief.feedIssues.length ? 0.65 : 0.85;
+  lines.push(
+    '',
+    `confidence: ${conf.toFixed(2)} · signal: ${signal} · evidence: live layer counts and rolling baselines · unknown: coverage outside loaded feeds`,
+  );
+  return lines.join('\n');
+}

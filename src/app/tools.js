@@ -186,6 +186,23 @@ export function createApplicationTools({
   // ADAM intel: baselines, alert triggers, last tracked, pins. The ops deck UI
   // is imported after the globe is up so it never sits on the startup parse.
   const intel = createIntelService({ dataManager }).start();
+  // Fine baselines follow the operator's view when zoomed in.
+  const syncIntelFocus = () => {
+    const canvas = viewer.scene.canvas;
+    const hit = viewer.camera.pickEllipsoid(
+      { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 },
+      viewer.scene.globe.ellipsoid,
+    );
+    const carto = hit
+      ? viewer.scene.globe.ellipsoid.cartesianToCartographic(hit)
+      : viewer.camera.positionCartographic;
+    intel.setFocus(
+      (carto.latitude * 180) / Math.PI,
+      (carto.longitude * 180) / Math.PI,
+      viewer.camera.positionCartographic.height,
+    );
+  };
+  defer(viewer.camera.moveEnd.addEventListener(syncIntelFocus));
   defer(() => intel.stop());
   debug.intel = intel;
   let opsDeck = null;

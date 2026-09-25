@@ -29,7 +29,7 @@ test('the complete Realtime tool payload pins the additive analyst, satellite, L
     digest,
     // Re-derived for the additive `local-adsb` set_layer_visibility value and
     // the Cyber HUD layout; the separate sonar tool is excluded above.
-    '10b1a9a7579bd93e8c6ca08c7246234e8b590b60e48179bd7b04eab24e85d874',
+    '505db533b4665fe6095b562e4a002d548393814cbb57735fdf4c1a13b31e7508',
   );
 });
 

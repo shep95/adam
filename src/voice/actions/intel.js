@@ -68,7 +68,8 @@ export function activityBaselineFor(
 }
 
 /** Voice action `brief_situation`. */
-export async function handleBriefSituation() {
+export async function handleBriefSituation(ctx = {}) {
+  const args = ctx.args || {};
   const service = getIntelService();
   if (!service) {
     return {
@@ -77,7 +78,10 @@ export async function handleBriefSituation() {
       error: 'The intel service is not running, so no brief is available.',
     };
   }
-  const brief = service.brief();
+  const format = ['spoken', 'markdown', 'json'].includes(args.format)
+    ? args.format
+    : 'spoken';
+  const brief = service.brief({ delta: Boolean(args.delta), format });
   return {
     ok: true,
     action: 'brief_situation',
@@ -93,6 +97,9 @@ export async function handleBriefSituation() {
     alerts: brief.alerts,
     feedIssues: brief.feedIssues,
     generatedAt: brief.generatedAt,
+    baselineScale: brief.baselineScale,
+    ...(brief.delta ? { delta: brief.delta } : {}),
+    ...(brief.markdown ? { markdown: brief.markdown } : {}),
   };
 }
 

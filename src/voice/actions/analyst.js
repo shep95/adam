@@ -170,8 +170,21 @@ export function analystProviders(
       });
     },
     getRecordCoverage(layerKey, rows) {
-      if (!['satellites', 'local-datacenters', 'local-dams'].includes(layerKey))
+      if (
+        !['satellites', 'local-datacenters', 'local-dams'].includes(layerKey)
+      ) {
+        // Any layer: disclose when the examined records are a sample of more.
+        const loaded = dataManager.layers
+          .get(layerKey)
+          ?.module?.getStats?.().count;
+        if (Number.isFinite(loaded) && loaded > rows.length)
+          return {
+            recordsExamined: rows.length,
+            loadedCount: loaded,
+            sourceTruncated: true,
+          };
         return null;
+      }
       const module = dataManager.layers.get(layerKey)?.module;
       const loaded = module?.getStats?.().count;
       return {
