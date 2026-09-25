@@ -361,7 +361,7 @@ test('default COVERAGE refresh materializes the active and visible camera frustu
 });
 
 test('geometry drain pacing yields to tracked and cockpit camera ownership', () => {
-  assert.deepEqual(cctvGeometryDrainPacing(), { batchSize: 4, delayMs: 120 });
+  assert.deepEqual(cctvGeometryDrainPacing(), { batchSize: 6, delayMs: 60 });
   assert.deepEqual(
     cctvGeometryDrainPacing({ trackedEntity: { id: 'flight-1' } }),
     { batchSize: 2, delayMs: 250 },
@@ -398,10 +398,10 @@ test('geometry drain rechecks pacing when tracking releases between batches', ()
   const untrackedBatch = runBatch();
   assert.deepEqual(untrackedBatch, {
     hasMore: true,
-    batchSize: 4,
-    delayMs: 120,
+    batchSize: 6,
+    delayMs: 60,
   });
-  assert.deepEqual(visited, [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(visited, [1, 2, 3, 4, 5, 6, 7, 8]);
 
   assert.match(
     processGeometryBatch.toString(),

@@ -16,6 +16,24 @@ import { readRequestBody } from './common/request.js';
 import { makeRateLimiter, clientKey } from './common/rate-limit.js';
 
 const COOKIE = 'adam_access';
+/** Routes that spend the operator's provider credit. */
+export const PAID_PREFIXES = Object.freeze([
+  '/shepherd',
+  '/openai',
+  '/realtime',
+  '/google',
+]);
+
+/** Serverless/public hosting, where "no token" must not mean "open". */
+export function isPublicHost(env = process.env) {
+  return Boolean(
+    env.VERCEL ||
+    env.VERCEL_ENV ||
+    env.NETLIFY ||
+    env.RENDER ||
+    env.ADAM_PUBLIC_HOST,
+  );
+}
 const MAX_AGE_S = 30 * 86_400;
 
 export function accessCookieValue(token) {
@@ -118,7 +136,21 @@ export function accessGate({ env = process.env } = {}) {
           },
         );
       }
-      if (!secret || accessGranted(req, secret)) return next();
+      if (!secret) {
+        // Fail closed for paid endpoints on a public host with no token:
+        // otherwise anyone holding the URL spends the operator's AI keys.
+        if (
+          isPublicHost(env) &&
+          PAID_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))
+        )
+          return send(res, 503, {
+            error:
+              'set ADAM_ACCESS_TOKEN on this deployment to enable AI features',
+            access: false,
+          });
+        return next();
+      }
+      if (accessGranted(req, secret)) return next();
       return send(res, 401, { error: 'access token required', access: true });
     });
   }

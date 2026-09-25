@@ -381,3 +381,21 @@ test('chat sends the fixed server tool list, never client tools, through anthrop
   assert.ok(!names.includes('evil_tool'));
   assert.equal(request.system[0].cache_control.type, 'ephemeral');
 });
+
+test('a public host with no access token fails closed for paid routes only', async () => {
+  const probe = {
+    name: 'probe',
+    configureServer(s) {
+      s.middlewares.use('/api', (_q, res) => res.end('ok'));
+    },
+  };
+  const plugins = [accessGate({ env: { VERCEL: '1' } }), probe];
+  assert.equal((await serve(plugins, '/api/shepherd/status')).status, 503);
+  assert.equal((await serve(plugins, '/api/realtime/token')).status, 503);
+  assert.equal((await serve(plugins, '/api/earthquakes')).text, 'ok');
+  assert.equal(
+    (await serve([accessGate({ env: {} }), probe], '/api/shepherd/status'))
+      .text,
+    'ok',
+  );
+});

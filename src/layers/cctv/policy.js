@@ -51,9 +51,11 @@ export const COVERAGE_NEIGHBOR_RADIUS_KM = 1.8;
 // refined in small batches (active camera first, then nearest-to-viewer) so
 // enabling the layer never raycasts every camera in a single frame.
 
-export const GEO_LOAD_BATCH_SIZE = 4;
+// ADAM: 6 per 60 ms (was 4 per 120 ms) — cameras settle about 3× sooner
+// while each batch still stays well inside one frame's raycast budget.
+export const GEO_LOAD_BATCH_SIZE = 6;
 
-export const GEO_LOAD_BATCH_DELAY_MS = 120;
+export const GEO_LOAD_BATCH_DELAY_MS = 60;
 
 export const GEO_TRACKING_BATCH_SIZE = 2;
 
@@ -132,7 +134,9 @@ export const PROBE_MIN_RANGE_M = 12;
 // so past this budget init proceeds on catalog fallbacks and the batch applies
 // post-hoc (applyLateGroundPriors) when it lands.
 
-export const GROUND_PRIOR_INIT_WAIT_MS = 8000;
+// ADAM: 1.5 s (was 8 s). Late priors already apply post-hoc, so a slow
+// upstream now costs a small refinement later instead of an 8 s blank layer.
+export const GROUND_PRIOR_INIT_WAIT_MS = 1500;
 
 /** Default calibration offsets — all zeroed, range scale 1x. */
 

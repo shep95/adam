@@ -22,7 +22,7 @@ export const PROVIDERS = Object.freeze({
     label: 'Claude (Anthropic)',
     keyEnv: 'ANTHROPIC_API_KEY',
     modelEnv: 'ANTHROPIC_MODEL',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-opus-5-5',
     vision: true,
     promptMode: 'full',
   },
@@ -86,9 +86,11 @@ export function providerKey(id, env = ENV()) {
 
 export function providerModel(id, requested, env = ENV()) {
   const spec = PROVIDERS[id];
-  const safe = /^[A-Za-z0-9._:/@-]{1,120}$/.test(String(requested || ''))
-    ? String(requested)
-    : '';
+  const safe =
+    /^[A-Za-z0-9._:/@-]{1,120}$/.test(String(requested || '')) &&
+    !String(requested).includes('..')
+      ? String(requested)
+      : '';
   return safe || String(env[spec.modelEnv] || '').trim() || spec.defaultModel;
 }
 

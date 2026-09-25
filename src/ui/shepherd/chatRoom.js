@@ -416,6 +416,7 @@ export function installShepherdRoom({
     } catch (error) {
       status = null;
       if (error.status === 401) return promptAccess();
+      if (error.status === 503) addNote(error.message, 'error');
     }
     renderSettings();
     const configured = status?.providers?.filter((p) => p.configured) || [];
