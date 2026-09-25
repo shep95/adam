@@ -137,7 +137,7 @@ export function installCaptureTools({ viewer, doc = document }) {
     const right = `${now.toISOString().replace(/\.\d+Z$/, 'Z')}${local ? ` · ${local.toUpperCase()}` : ''} · #HOUSEOFASHER`;
     ctx.font = `500 ${Math.round(strip * 0.42)}px "JetBrains Mono", ui-monospace, monospace`;
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#00d4ff';
+    ctx.fillStyle = '#00bcd4';
     ctx.fillText(left, strip * 0.5, h + strip / 2);
     ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(216, 230, 238, 0.7)';

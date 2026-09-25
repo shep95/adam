@@ -522,7 +522,7 @@ export function installOpsDeck({
         'adam-chip adam-latch adam-primary-btn',
         async () => {
           const ring = await capturePolygon(viewer, {
-            color: '#00d4ff',
+            color: '#00bcd4',
             onHint: (text) => {
               if (regionHint) regionHint.textContent = text;
             },
@@ -606,7 +606,7 @@ export function installOpsDeck({
           width: 2,
           clampToGround: true,
           material: new Cesium.PolylineDashMaterialProperty({
-            color: Cesium.Color.fromCssColorString('#00d4ff'),
+            color: Cesium.Color.fromCssColorString('#00bcd4'),
           }),
         },
       });
@@ -618,7 +618,7 @@ export function installOpsDeck({
           width: rule.triggered ? 3 : 2,
           clampToGround: true,
           material: Cesium.Color.fromCssColorString(
-            rule.triggered ? '#e16666' : '#f5a623',
+            rule.triggered ? '#e53935' : '#f5a623',
           ),
         },
       });

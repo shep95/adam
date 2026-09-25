@@ -24,8 +24,8 @@
     transparent
   );
   box-shadow:
-    0 0 12px 2px rgba(0, 212, 255, 0.45),
-    0 -40px 60px -20px rgba(0, 212, 255, 0.12);
+    0 0 12px 2px rgba(0, 188, 212, 0.45),
+    0 -40px 60px -20px rgba(0, 188, 212, 0.12);
 }
 
 .adam-scan-label {
@@ -36,7 +36,7 @@
   font: 500 var(--type-meta) / 1 var(--font-mono);
   letter-spacing: 2.4px;
   color: var(--accent-primary);
-  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+  text-shadow: 0 0 8px rgba(0, 188, 212, 0.6);
   white-space: nowrap;
 }
 
@@ -92,7 +92,7 @@
   height: 140px;
   border: 1.5px solid var(--accent-primary);
   border-radius: 50%;
-  box-shadow: 0 0 14px rgba(0, 212, 255, 0.45);
+  box-shadow: 0 0 14px rgba(0, 188, 212, 0.45);
 }
 
 .adam-acquire-tick {
@@ -158,7 +158,7 @@
   0% {
     box-shadow:
       0 0 0 1px var(--accent-primary),
-      0 0 22px 4px rgba(0, 212, 255, 0.55);
+      0 0 22px 4px rgba(0, 188, 212, 0.55);
     filter: brightness(1.6);
   }
   100% {

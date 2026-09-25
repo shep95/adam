@@ -19,14 +19,14 @@
 
 :root {
   /* ── 1. Accent tiers ─────────────────────────── */
-  --accent-primary: #00d4ff;
-  --accent-primary-dim: rgba(0, 212, 255, 0.15);
+  --accent-primary: #00bcd4;
+  --accent-primary-dim: rgba(0, 188, 212, 0.15);
   --accent-alert: #f5a623;
   --accent-alert-dim: rgba(245, 166, 35, 0.12);
   --accent-alert-edge: rgba(245, 166, 35, 0.7);
-  --accent-critical: #e16666;
-  --accent-critical-dim: rgba(225, 102, 102, 0.12);
-  --accent-critical-edge: rgba(225, 102, 102, 0.75);
+  --accent-critical: #e53935;
+  --accent-critical-dim: rgba(229, 57, 53, 0.12);
+  --accent-critical-edge: rgba(229, 57, 53, 0.75);
 
   /* ── 2. Geometry ─────────────────────────────── */
   --panel-radius: 4px;

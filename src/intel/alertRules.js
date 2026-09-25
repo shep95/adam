@@ -242,6 +242,10 @@ export function createAlertMonitor({
     activeTrips: () =>
       [...rules.values()]
         .filter((rule) => state.get(rule.id)?.triggered)
-        .map((rule) => ({ rule, result: state.get(rule.id).lastResult })),
+        .map((rule) => ({
+          rule,
+          result: state.get(rule.id).lastResult,
+          trippedAt: state.get(rule.id).trippedAt,
+        })),
   };
 }

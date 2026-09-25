@@ -45,6 +45,13 @@ const STYLE_NAMES = {
   snow: 'SNOW',
 };
 
+/** Smallest viewport the full cockpit instrument layout is designed for. */
+export const COCKPIT_MIN = Object.freeze({ width: 1024, height: 650 });
+
+export function cockpitCompact(width, height) {
+  return width < COCKPIT_MIN.width || height < COCKPIT_MIN.height;
+}
+
 export function elapsedLabel(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const p = (n) => String(n).padStart(2, '0');
@@ -71,6 +78,16 @@ export function installHudPolicy({ viewer, dataManager, doc = document }) {
       strip.remove();
       indicator.classList.remove('adam-state-strip');
     });
+  }
+
+  // ── Persistent alert line under the collection clock ────────────────────
+  const recLine = doc.getElementById('hud-rec');
+  const alertLine = recLine ? doc.createElement('div') : null;
+  if (alertLine) {
+    alertLine.className = 'hud-alert-line is-suppressed';
+    alertLine.setAttribute('role', 'status');
+    recLine.after(alertLine);
+    cleanups.push(() => alertLine.remove());
   }
 
   // ── Right rail: DISPLAY button on the top bar ────────────────────────────
@@ -151,6 +168,22 @@ export function installHudPolicy({ viewer, dataManager, doc = document }) {
         elapsed.textContent = recording ? elapsedLabel(Date.now() - since) : '';
     }
 
+    // Persistent alert channel: tripped rules stay on screen until they clear.
+    const trips =
+      globalThis.__godsEyeView?.intel?.alerts?.activeTrips?.() || [];
+    if (alertLine) {
+      if (trips.length) {
+        const first = Math.min(...trips.map((t) => t.trippedAt || Date.now()));
+        const since = new Date(first).toISOString().slice(11, 16);
+        alertLine.textContent = `ALERT ×${trips.length} · SINCE ${since}Z · ${String(
+          trips[0].rule?.label || '',
+        )
+          .toUpperCase()
+          .slice(0, 40)}`;
+      }
+      alertLine.classList.toggle('is-suppressed', trips.length === 0);
+    }
+
     // Suppression.
     const ais = doc.getElementById('hud-ais-vessel');
     if (ais)
@@ -186,6 +219,40 @@ export function installHudPolicy({ viewer, dataManager, doc = document }) {
         layerOutOfScale(row.dataset.layerId, altM),
       );
   }
+
+  // ── Cockpit below its designed viewport: compact readout, said once ─────
+  const notice = doc.createElement('div');
+  notice.className = 'adam-cockpit-notice';
+  notice.setAttribute('role', 'status');
+  notice.hidden = true;
+  doc.body.append(notice);
+  cleanups.push(() => notice.remove());
+  let noticeShown = false;
+  function syncCockpit() {
+    const inCockpit = doc.body.classList.contains('cockpit-mode');
+    const compact =
+      inCockpit &&
+      cockpitCompact(globalThis.innerWidth, globalThis.innerHeight);
+    doc.body.classList.toggle('adam-cockpit-compact', compact);
+    if (compact && !noticeShown) {
+      noticeShown = true;
+      notice.textContent = `COCKPIT NEEDS ${COCKPIT_MIN.width}×${COCKPIT_MIN.height} · COMPACT READOUT ACTIVE`;
+      notice.hidden = false;
+      setTimeout(() => (notice.hidden = true), 5000);
+    }
+    if (!inCockpit) noticeShown = false;
+  }
+  const bodyObserver = new MutationObserver(syncCockpit);
+  bodyObserver.observe(doc.body, {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+  globalThis.addEventListener?.('resize', syncCockpit);
+  cleanups.push(() => {
+    bodyObserver.disconnect();
+    globalThis.removeEventListener?.('resize', syncCockpit);
+    doc.body.classList.remove('adam-cockpit-compact');
+  });
 
   const timer = setInterval(refresh, 1000);
   const removeMoveEnd = viewer.camera.moveEnd.addEventListener(refresh);

@@ -224,3 +224,59 @@ body {
   color: var(--ops-text-dim);
   text-transform: none;
 }
+
+/* Persistent alert channel (under the collection clock). */
+#intel-hud .hud-alert-line {
+  color: var(--ops-alert);
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  animation: adam-alert-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes adam-alert-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #intel-hud .hud-alert-line {
+    animation: none;
+  }
+}
+
+/* Cockpit below 1024×650: keep the flight readouts, drop the utility strip,
+   context, signals and route panels that cannot fit. */
+body.cockpit-mode.adam-cockpit-compact
+  :is(
+    #cockpit-utility-controls,
+    #cockpit-context,
+    #cockpit-signal-stream,
+    #cockpit-route,
+    #cockpit-news-list
+  ) {
+  display: none !important;
+}
+
+.adam-cockpit-notice {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 600;
+  padding: 6px 12px;
+  font: 500 10px var(--font-mono);
+  letter-spacing: 1.6px;
+  color: var(--ops-text);
+  background: var(--ops-surface);
+  border-left: 2px solid var(--ops-alert);
+}
+
+.adam-cockpit-notice[hidden] {
+  display: none;
+}
+
+/* Preset profile (displayPolicy.js): hidden looks stay hidden. */
+#style-buttons .style-btn[hidden] {
+  display: none !important;
+}

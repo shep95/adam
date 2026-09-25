@@ -40,3 +40,10 @@ test('recording elapsed and layer scale', () => {
   assert.equal(layerOutOfScale('flights', 5_000), false);
   assert.equal(layerOutOfScale('earthquakes', 9e7), false);
 });
+
+test('cockpit compact threshold and preset profiles', async () => {
+  const { cockpitCompact } = await import('./ui/adam/hudPolicy.js');
+  assert.equal(cockpitCompact(1366, 768), false);
+  assert.equal(cockpitCompact(1080, 640), true);
+  assert.equal(cockpitCompact(900, 900), true);
+});

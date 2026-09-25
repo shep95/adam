@@ -16,7 +16,7 @@ import {
 const MAX_NODES = 200;
 const MAX_LINKS = 400;
 const PULSE_MS = 3200;
-const CYAN = '#00d4ff';
+const CYAN = '#00bcd4';
 const AMBER = '#f5a623';
 const DIM = '#8aa4b8';
 
