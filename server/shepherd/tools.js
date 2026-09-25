@@ -533,6 +533,38 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'map_layers',
+    description:
+      'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: [
+            'list',
+            'catalog',
+            'add',
+            'remove',
+            'opacity',
+            'show',
+            'hide',
+            'raise',
+            'lower',
+            'import',
+            'sea_level',
+            'open',
+          ],
+        },
+        id: { type: 'string' },
+        opacity: { type: 'number', minimum: 0, maximum: 1 },
+        url: { type: 'string' },
+        label: { type: 'string' },
+        rise_m: { type: 'number', minimum: 0, maximum: 100 },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'place_dossier',
     description:
       "Open WHAT'S HERE for a point: public photos of the street, landmarks and buildings (Wikimedia Commons, Street View, Mapillary), Wikipedia articles about what stands there, and named OpenStreetMap places with their websites. Returns titles, links and counts. Places and structures only — never use it to find who lives at or owns an address.",

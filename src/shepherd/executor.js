@@ -871,6 +871,47 @@ export function createShepherdExecutor({
         };
       return dir.connect(target);
     },
+    map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
+      const maps = getConsole().mapLayers;
+      if (!maps) return { ok: false, error: 'map layers are still loading' };
+      let result = { ok: true };
+      switch (action) {
+        case 'list':
+          break;
+        case 'catalog':
+          return { ok: true, catalog: maps.catalog(), presets: maps.presets() };
+        case 'add':
+          result = maps.add(id);
+          break;
+        case 'remove':
+          result = maps.remove(id);
+          break;
+        case 'opacity':
+          result = maps.setAlpha(id, opacity ?? 1);
+          break;
+        case 'show':
+        case 'hide':
+          result = maps.setShow(id, action === 'show');
+          break;
+        case 'raise':
+        case 'lower':
+          result = maps.move(id, action === 'raise' ? 1 : -1);
+          break;
+        case 'import':
+          result = maps.importUrl(url, label);
+          break;
+        case 'sea_level':
+          maps.add('sea-level');
+          result = maps.setRise(rise_m ?? 0);
+          break;
+        case 'open':
+          maps.open();
+          break;
+        default:
+          return { ok: false, error: `unknown action ${action}` };
+      }
+      return { ...result, ...maps.list() };
+    },
     place_dossier: async ({ lat, lon, radius } = {}) => {
       const dossier = getConsole().placeDossier;
       if (!dossier)

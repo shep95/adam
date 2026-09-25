@@ -1,6 +1,7 @@
 /* ── CAMERAS directory: the centre flyout slot, like SKY ──────────────── */
 .adam-cctv-dir {
   position: fixed;
+  padding: 14px 16px 16px;
   top: calc(132px / var(--adam-ui-scale, 1));
   left: 50%;
   translate: -50% 0;

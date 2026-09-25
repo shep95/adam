@@ -317,7 +317,10 @@
 .adam-chip-row .adam-chip,
 .adam-card-actions .adam-chip,
 .adam-alert-actions .adam-chip,
-.adam-alert-form .adam-chip {
+.adam-alert-form .adam-chip,
+.adam-maps-presets .adam-chip,
+.adam-maps-import .adam-chip,
+.adam-place-actions .adam-chip {
   padding: 4px 10px;
   font-family: var(--font-mono);
   font-size: var(--type-meta);

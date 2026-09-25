@@ -380,6 +380,17 @@ export function createApplicationTools({
     );
   defer(() => placeDossier?.destroy());
 
+  // MAPS: other map sources stacked over the base map, plus sea level rise.
+  let mapLayers = null;
+  import('../ui/adam/mapLayers.js')
+    .then(({ installMapLayers }) => {
+      if (signal?.aborted) return;
+      mapLayers = installMapLayers({ viewer, mapStackController });
+      debug.mapLayers = mapLayers;
+    })
+    .catch((error) => console.warn('[adam] map layers failed to load:', error));
+  defer(() => mapLayers?.destroy());
+
   // The Cesium ion mark is an attribution for ion-served data; without an
   // ion token nothing comes from ion, so the mark is not shown.
   const ionInUse = Boolean(mapStackController?.cesiumToken);

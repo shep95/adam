@@ -113,6 +113,35 @@ public GeoJSON/KML/CSV URL (`load_url` — https, public hosts, no redirects,
 R/S/G scales and what they do to HF and GNSS (`space_weather`). Ingested
 feeds live in server memory; use the standalone server for long-lived ones.
 
+### MAPS (stacked map sources and the future coast)
+
+The **maps** chip stacks other map sources over the base map. Each layer
+has its own visibility, opacity and place in the stack (↑ ↓), and the stack
+is remembered in the browser.
+
+- **Future coast**: one sea-level control (0–100 m, square-root slider) with
+  IPCC AR6 presets: 2050 (+0.2 m), 2100 low / middle / high emissions
+  (+0.44 / +0.56 / +0.77 m), 2100 and 2150 ice-sheet collapse (+2 / +5 m),
+  all of Greenland (+7.4 m), all land ice (+70 m). It drives two layers:
+  *sea level rise · world*, computed in the browser from global elevation
+  tiles (land above today's sea and below the new one, shaded by depth; a
+  bathtub model with no connectivity, defences, subsidence or tides), and
+  NOAA's US projection (0–10 ft, connected areas).
+- **Base maps** to blend or compare: Esri satellite / streets / topographic /
+  hillshade, National Geographic, OpenStreetMap, OSM humanitarian,
+  OpenTopoMap, Carto dark / light, Sentinel-2 cloudless 2021.
+- **Earth observation** (NASA GIBS, yesterday): VIIRS and MODIS true colour,
+  sea surface temperature, snow cover, Black Marble night lights.
+- **Reference overlays**: place names and borders, roads, OpenSeaMap sea
+  marks, OpenRailwayMap.
+- **Ocean floor**: GEBCO bathymetry, Esri ocean basemap.
+- **Import a map**: paste an XYZ template (`{z}/{x}/{y}`, `{-y}`, `{s}`), a
+  WMTS REST template, an ArcGIS MapServer URL or a WMS URL with `layers=`.
+  HTTPS only.
+
+Shepherd drives the same stack with `map_layers` (list, catalog, add,
+remove, opacity, show/hide, raise/lower, import, sea_level).
+
 ### WHAT'S HERE (place dossier)
 
 Right-click anywhere → **what's here · photos & pages**, or ask Shepherd
