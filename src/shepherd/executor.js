@@ -1015,6 +1015,41 @@ export function createShepherdExecutor({
         return { ...maps.add(layer || 'activity-heat'), ...maps.list() };
       return maps.heatRanking();
     },
+    volcano: async ({ name, lat, lon, vei, show_all } = {}) => {
+      const v = getConsole().volcanoes;
+      if (!v) return { ok: false, error: 'volcano panel is still loading' };
+      if (show_all && !name && !Number.isFinite(lat)) return v.showAll(true);
+      const out = await v.project({ name, lat, lon, vei });
+      if (show_all) await v.showAll(true);
+      return out;
+    },
+    space: async ({ action, diameter_m, velocity_kms, lat, lon } = {}) => {
+      const sp = getConsole().space;
+      if (!sp) return { ok: false, error: 'space panel is still loading' };
+      if (action === 'open') {
+        sp.open();
+        return { ok: true };
+      }
+      if (action === 'planets') return { ok: true, planets: sp.planets() };
+      if (action === 'asteroids')
+        return { ok: true, ...(await sp.asteroids()) };
+      if (action === 'impact') {
+        let at = { lat, lon };
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+          const c = viewer.camera.positionCartographic;
+          at = {
+            lat: (c.latitude * 180) / Math.PI,
+            lon: (c.longitude * 180) / Math.PI,
+          };
+        }
+        return sp.showImpact({
+          ...at,
+          diameterM: diameter_m || 50,
+          velocityKms: velocity_kms || 20,
+        });
+      }
+      return { ok: false, error: `unknown action ${action}` };
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };

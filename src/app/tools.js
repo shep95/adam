@@ -403,6 +403,28 @@ export function createApplicationTools({
     .catch((error) => console.warn('[adam] hints failed to load:', error));
   defer(() => hints?.destroy());
 
+  // VOLCANOES and SPACE: eruptions and hazard reach; planets and asteroids.
+  let volcanoes = null;
+  let space = null;
+  Promise.all([
+    import('../ui/adam/volcanoPanel.js'),
+    import('../ui/adam/spacePanel.js'),
+  ])
+    .then(([{ installVolcanoPanel }, { installSpacePanel }]) => {
+      if (signal?.aborted) return;
+      volcanoes = installVolcanoPanel({ viewer });
+      space = installSpacePanel({ viewer });
+      debug.volcanoes = volcanoes;
+      debug.space = space;
+    })
+    .catch((error) =>
+      console.warn('[adam] volcano/space panels failed to load:', error),
+    );
+  defer(() => {
+    volcanoes?.destroy();
+    space?.destroy();
+  });
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')

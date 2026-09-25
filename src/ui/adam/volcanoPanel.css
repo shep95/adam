@@ -1,0 +1,179 @@
+/* ── VOLCANOES: centre flyout slot ──────────────────────────────────── */
+.adam-volcanoes,
+.adam-space {
+  position: fixed;
+  top: calc(132px / var(--adam-ui-scale, 1));
+  left: 50%;
+  translate: -50% 0;
+  z-index: 611;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 300px);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 16px;
+  overflow: hidden;
+  zoom: var(--adam-ui-scale, 1);
+}
+
+.adam-volcanoes[hidden],
+.adam-space[hidden] {
+  display: none;
+}
+
+.adam-volc-body {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.adam-volc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.adam-volc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-primary, #e6f4f6);
+}
+
+.adam-volc-search {
+  flex: 1 1 100%;
+}
+
+.adam-volc-kinds {
+  display: flex;
+  gap: 4px;
+}
+
+.adam-volc-kinds .adam-chip,
+.adam-volc-hazard .adam-chip {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.adam-volc-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.adam-volc-row {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  grid-template-areas: 'dot name alert' 'dot sub alert';
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 4px;
+  text-align: left;
+  color: var(--text-primary, #e6f4f6);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.adam-volc-row:hover,
+.adam-volc-row.is-on {
+  background: var(--accent-primary-dim);
+}
+
+.adam-volc-dot {
+  grid-area: dot;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.adam-volc-dot.is-land {
+  background: #ff6b2c;
+}
+
+.adam-volc-dot.is-sea {
+  background: #3fa9f5;
+}
+
+.adam-volc-name {
+  grid-area: name;
+  font-size: 13px;
+}
+
+.adam-volc-sub {
+  grid-area: sub;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.adam-volc-alert {
+  grid-area: alert;
+  font: 600 11px var(--adam-font-mono);
+}
+
+.adam-volc-hazard {
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 107, 44, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 107, 44, 0.05);
+}
+
+.adam-volc-selected {
+  font: 600 14px var(--adam-font-sans);
+  color: var(--text-primary, #e6f4f6);
+}
+
+.adam-volc-vei-label {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.adam-volc-vei {
+  width: 100%;
+  accent-color: #ff6b2c;
+}
+
+.adam-volc-rings {
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-primary, #e6f4f6);
+}
+
+.adam-volc-rings li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.adam-volc-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.adam-volc-note {
+  margin: 6px 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 760px) {
+  .adam-volcanoes,
+  .adam-space {
+    top: auto;
+    bottom: 150px;
+    max-height: 60vh;
+  }
+}

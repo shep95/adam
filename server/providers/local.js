@@ -34,6 +34,7 @@ import { openFeedsProxy } from './openFeeds.js';
 import { placeMediaProxy } from './placeMedia.js';
 import { keyedFeedsProxy } from './keyedFeeds.js';
 import { ownershipProxy } from './ownership.js';
+import { earthSpaceProxy } from './earthSpace.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -74,6 +75,7 @@ function localProviderPlugins() {
     placeMediaProxy(),
     keyedFeedsProxy(),
     ownershipProxy(),
+    earthSpaceProxy(),
     keySetupEndpoint(),
   ];
 }

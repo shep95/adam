@@ -611,6 +611,36 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'volcano',
+    description:
+      'Volcanoes on land and under the sea. With name (or lat/lon for the nearest), fly there and draw eruption hazard rings — explosion (ballistic blocks), pyroclastic flows, heavy and light ash, lava — for eruption size vei (0–8; default its largest recorded). Returns the distances; say they are illustrative. With show_all=true, put every Holocene volcano on the globe (orange land, blue undersea) and list USGS volcanoes on alert now.',
+    parameters: obj({
+      name: { type: 'string' },
+      lat: { type: 'number' },
+      lon: { type: 'number' },
+      vei: { type: 'integer', minimum: 0, maximum: 8 },
+      show_all: { type: 'boolean' },
+    }),
+  },
+  {
+    name: 'space',
+    description:
+      'The solar system. action: planets (distance, light-time, and whether each is up from the centre of the view), asteroids (near-Earth asteroids passing within 0.05 AU in the next 60 days from NASA/JPL, with size, speed, miss distance and if-it-hit energy), impact (draw a hypothetical impact footprint for diameter_m and velocity_kms at lat/lon or the view centre: severe damage, burns, windows; it is scaling from energy, not a forecast), open (the SPACE panel with the orrery and belt).',
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: ['planets', 'asteroids', 'impact', 'open'],
+        },
+        diameter_m: { type: 'number', minimum: 1, maximum: 20000 },
+        velocity_kms: { type: 'number', minimum: 5, maximum: 75 },
+        lat: { type: 'number' },
+        lon: { type: 'number' },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',
