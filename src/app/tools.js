@@ -238,6 +238,19 @@ export function createApplicationTools({
   const displayPolicy = applyDisplayPolicy({ styleManager });
   defer(() => displayPolicy.destroy());
 
+  // Snapshot, record and interface scale on the top action bar.
+  let captureTools = null;
+  import('../ui/adam/captureTools.js')
+    .then(({ installCaptureTools }) => {
+      if (signal?.aborted) return;
+      captureTools = installCaptureTools({ viewer });
+      debug.capture = captureTools;
+    })
+    .catch((error) =>
+      console.warn('[adam] capture tools failed to load:', error),
+    );
+  defer(() => captureTools?.destroy());
+
   // The Cesium ion mark is an attribution for ion-served data; without an
   // ion token nothing comes from ion, so the mark is not shown.
   const ionInUse = Boolean(mapStackController?.cesiumToken);

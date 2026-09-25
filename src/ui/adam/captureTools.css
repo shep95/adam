@@ -1,0 +1,154 @@
+/* ── Interface scale: every panel and control, never the globe ───────────
+   The panel stacks are placed by the layout controller in pixels, so their
+   children scale and the stacks stay where the controller put them. */
+:root {
+  --adam-ui-scale: 1;
+}
+
+:is(
+  #title-bar,
+  #style-indicator,
+  #top-center-actions,
+  #command-dock,
+  #left-panel-stack > *,
+  #right-context-rail > *,
+  #key-setup-chip,
+  #adam-ops-rail,
+  #adam-ops-flyout,
+  #adam-sky,
+  .shp-room,
+  .adam-last-tracked,
+  .adam-pin-rail,
+  .adam-ctx,
+  .adam-scale-pop
+) {
+  zoom: var(--adam-ui-scale);
+}
+
+/* ── Capture buttons ───────────────────────────────────────────────────── */
+.adam-cap-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 2px;
+  background: var(--glass-border);
+}
+
+#top-center-actions .adam-rec-btn {
+  position: relative;
+}
+
+#top-center-actions .adam-rec-btn .material-symbols-outlined {
+  color: var(--text-secondary);
+}
+
+#top-center-actions .adam-rec-btn.is-recording {
+  border-color: var(--accent-critical-edge);
+}
+
+#top-center-actions .adam-rec-btn.is-recording .material-symbols-outlined {
+  color: var(--accent-critical);
+  animation: adam-rec-pulse 1.2s ease-in-out infinite;
+}
+
+.adam-rec-time {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  translate: -50% 0;
+  padding: 1px 5px;
+  font: 500 var(--type-meta) / 1.4 var(--font-mono);
+  color: var(--accent-critical);
+  background: var(--glass-bg);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.adam-scale-pop {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 700;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+}
+
+.adam-scale-pop[hidden] {
+  display: none;
+}
+
+.adam-scale-opt {
+  padding: 5px 9px;
+  font: 400 var(--type-meta) var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--chip-radius, 999px);
+  cursor: pointer;
+}
+
+.adam-scale-opt[aria-pressed='true'],
+.adam-scale-opt:hover {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+}
+
+.adam-cap-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  pointer-events: none;
+  background: #fff;
+  opacity: 0;
+}
+
+.adam-cap-flash.is-on {
+  animation: adam-cap-flash 380ms ease-out;
+}
+
+@keyframes adam-cap-flash {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes adam-rec-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adam-cap-flash.is-on,
+  #top-center-actions .adam-rec-btn.is-recording .material-symbols-outlined {
+    animation: none;
+  }
+}
+
+/* Zoom multiplies an element's own offsets; keep the centre lane where it is. */
+#adam-ops-rail {
+  top: calc(92px / var(--adam-ui-scale));
+}
+
+#adam-ops-flyout,
+#adam-sky {
+  top: calc(132px / var(--adam-ui-scale));
+}
+
+.adam-scale-pop {
+  top: calc(76px / var(--adam-ui-scale));
+}
+
+@media (max-width: 760px) {
+  #adam-ops-rail,
+  #adam-ops-flyout,
+  #adam-sky {
+    top: auto;
+  }
+}

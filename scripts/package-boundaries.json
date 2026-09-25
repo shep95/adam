@@ -2013,7 +2013,10 @@
       "src/ui/adam/mapInteraction.js",
       "src/ui/adam/mapInteraction.css",
       "src/ui/adam/displayPolicy.js",
-      "src/ui/adam/displayPolicy.css"
+      "src/ui/adam/displayPolicy.css",
+      "src/ui/adam/captureTools.js",
+      "src/ui/adam/captureMath.js",
+      "src/ui/adam/captureTools.css"
     ],
     "external": [
       "tz-lookup",
