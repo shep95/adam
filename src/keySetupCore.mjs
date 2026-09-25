@@ -22,8 +22,8 @@ export const KEY_SETUP_APPEND_HEADER =
   '# Keys added by the in-app POWER UP panel';
 
 /**
- * Provider credentials, in display order — most magic per
- * minute first. `tier` mirrors the README's color legend: 'metered' (🔴) is a
+ * Provider credentials. `priority` orders the panel: 1 essential (the planet,
+ * voice, Shepherd), 2 recommended, 3 optional; ties keep this order. `tier` mirrors the README's color legend: 'metered' (🔴) is a
  * billing-enabled account, 'free' (🟡) is a register-and-paste key.
  * `clientExposed` marks the two keys that are injected into the browser
  * bundle by design (restrict them at the provider, per SECURITY.md).
@@ -32,6 +32,7 @@ export const KEY_SETUP_APPEND_HEADER =
 export const KEY_SETUP_KEYS = Object.freeze([
   Object.freeze({
     id: 'google-maps',
+    priority: 1,
     title: 'GOOGLE MAPS',
     unlocks: 'The photorealistic 3D planet + place search',
     getUrl: 'https://developers.google.com/maps/documentation/tile/get-api-key',
@@ -41,6 +42,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'google-maps-server',
+    priority: 3,
     title: 'GOOGLE MAPS — SERVER',
     unlocks: 'Places context + Street View fallback; optional separate key',
     getUrl:
@@ -51,6 +53,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'openai',
+    priority: 1,
     title: 'OPENAI',
     unlocks: 'Voice control — talk to the planet',
     getUrl: 'https://platform.openai.com/api-keys',
@@ -58,7 +61,45 @@ export const KEY_SETUP_KEYS = Object.freeze([
     tier: 'metered',
   }),
   Object.freeze({
+    id: 'anthropic',
+    priority: 1,
+    title: 'CLAUDE (ANTHROPIC)',
+    unlocks:
+      'Shepherd, the text analyst — chat, OSINT overlays, photo geolocation',
+    getUrl: 'https://console.anthropic.com/settings/keys',
+    envVars: Object.freeze(['ANTHROPIC_API_KEY']),
+    tier: 'metered',
+  }),
+  Object.freeze({
+    id: 'gemini',
+    priority: 2,
+    title: 'GEMINI',
+    unlocks: 'Shepherd provider + fast photo geolocation',
+    getUrl: 'https://aistudio.google.com/apikey',
+    envVars: Object.freeze(['GEMINI_API_KEY']),
+    tier: 'free',
+  }),
+  Object.freeze({
+    id: 'venice',
+    priority: 2,
+    title: 'VENICE',
+    unlocks: 'Shepherd on private inference — 100+ models',
+    getUrl: 'https://venice.ai/settings/api',
+    envVars: Object.freeze(['VENICE_API_KEY']),
+    tier: 'metered',
+  }),
+  Object.freeze({
+    id: 'openrouter',
+    priority: 3,
+    title: 'OPENROUTER',
+    unlocks: 'Shepherd through any OpenRouter model',
+    getUrl: 'https://openrouter.ai/keys',
+    envVars: Object.freeze(['OPENROUTER_API_KEY']),
+    tier: 'metered',
+  }),
+  Object.freeze({
     id: 'aisstream',
+    priority: 2,
     title: 'AISSTREAM',
     unlocks: 'Live ships, worldwide',
     getUrl: 'https://aisstream.io',
@@ -67,6 +108,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'firms',
+    priority: 2,
     title: 'NASA FIRMS',
     unlocks: 'Live active-fire detections',
     getUrl: 'https://firms.modaps.eosdis.nasa.gov/api/map_key/',
@@ -75,6 +117,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'tomtom',
+    priority: 3,
     title: 'TOMTOM',
     unlocks: 'Real live traffic (keyless runs a simulation)',
     getUrl: 'https://developer.tomtom.com',
@@ -83,6 +126,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'cesium-ion',
+    priority: 2,
     title: 'CESIUM ION',
     unlocks: 'Bing imagery map stacks + world terrain',
     getUrl: 'https://ion.cesium.com/tokens',
@@ -92,6 +136,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'opensky',
+    priority: 3,
     title: 'OPENSKY',
     unlocks: 'More flight-polling credits (anonymous works without)',
     getUrl: 'https://opensky-network.org',
@@ -100,6 +145,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'launch-library',
+    priority: 3,
     title: 'LAUNCH LIBRARY',
     unlocks: 'Higher space-missions request allowance',
     getUrl: 'https://thespacedevs.com',
@@ -107,6 +153,23 @@ export const KEY_SETUP_KEYS = Object.freeze([
     tier: 'free',
   }),
 ]);
+
+export const KEY_PRIORITY_LABELS = Object.freeze({
+  1: 'ESSENTIAL',
+  2: 'RECOMMENDED',
+  3: 'OPTIONAL',
+});
+
+/** Keys in panel order: priority first, registry order within a tier. */
+export function keysByPriority(keys = KEY_SETUP_KEYS) {
+  return keys
+    .map((key, index) => ({ key, index }))
+    .sort(
+      (a, b) =>
+        (a.key.priority || 3) - (b.key.priority || 3) || a.index - b.index,
+    )
+    .map(({ key }) => key);
+}
 
 /** Hostnames a Provider Settings request may arrive under or originate from. */
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
@@ -365,7 +428,9 @@ export function isKeySetupExternallyManaged({
  * @param {Record<string, string|undefined>} env e.g. process.env
  */
 export function keySetupStatus(env = {}) {
-  const keys = KEY_SETUP_KEYS.filter((entry) => !entry.hidden).map((entry) => {
+  const keys = keysByPriority(
+    KEY_SETUP_KEYS.filter((entry) => !entry.hidden),
+  ).map((entry) => {
     const values = entry.envVars.map((name) => String(env[name] ?? '').trim());
     const set = values.every((value) => value.length > 0);
     return {
@@ -375,6 +440,7 @@ export function keySetupStatus(env = {}) {
       getUrl: entry.getUrl,
       envVars: [...entry.envVars],
       tier: entry.tier,
+      priority: entry.priority || 3,
       clientExposed: Boolean(entry.clientExposed),
       set,
     };

@@ -1028,3 +1028,38 @@
 .sdr-feed-status[hidden] {
   display: none;
 }
+
+/* Band chips (ADAM #25): FM · AM · DAB · Shortwave · Web only. */
+.radio-band-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 2px;
+}
+
+.radio-band-chips[hidden] {
+  display: none;
+}
+
+.radio-band-chip {
+  padding: 3px 9px;
+  font: 400 var(--type-meta, 10px) var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--chip-radius, 999px);
+  cursor: pointer;
+}
+
+.radio-band-chip:hover:not(:disabled),
+.radio-band-chip[aria-pressed='true'] {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+}
+
+.radio-band-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

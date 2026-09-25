@@ -1,5 +1,34 @@
 import { MUSIC_GENRES, CATEGORY_MATCHERS } from './policy.js';
 
+/** Bands offered as chips, in dial order. */
+export const RADIO_BANDS = Object.freeze([
+  ['fm', 'FM'],
+  ['am', 'AM'],
+  ['dab', 'DAB'],
+  ['sw', 'Shortwave'],
+  ['web', 'Web only'],
+]);
+
+const FM_FREQ = /(?:^|[^\d.])(8[7-9]|9\d|10[0-8])[.,]\d{1,2}(?![\d])/;
+const AM_FREQ =
+  /(?:^|[^\d.])(5[3-9]\d|[6-9]\d\d|1[0-6]\d\d|17[0-9]\d)\s*(?:am|khz)\b/i;
+
+/**
+ * Band from a station's name and normalized tags: an FM dial frequency
+ * (87.5–108), an AM frequency written with AM/kHz, DAB or shortwave tags;
+ * anything else streams online only.
+ */
+export function radioStationBand(station, tags = []) {
+  const name = String(station?.name ?? '');
+  const has = (needle) =>
+    tags.some((tag) => tag === needle || tag.split(' ').includes(needle));
+  if (has('dab') || /\bdab\+?\b/i.test(name)) return 'dab';
+  if (has('shortwave') || has('sw') || /\bshortwave\b/i.test(name)) return 'sw';
+  if (FM_FREQ.test(name) || has('fm')) return 'fm';
+  if (AM_FREQ.test(name) || has('am')) return 'am';
+  return 'web';
+}
+
 export function createCategories({
   state: layerState,
   services,
@@ -39,10 +68,18 @@ export function createCategories({
     );
   }
 
+  /** Broadcast band a station airs on, read from its name and tags. */
+
+  function stationBand(station) {
+    return radioStationBand(station, stationTags(station));
+  }
+
   /** Return whether a station belongs in a station-tag category. */
 
   function stationMatchesRadioCategory(station, categoryId) {
     if (categoryId === 'all') return true;
+    if (categoryId.startsWith('band:'))
+      return stationBand(station) === categoryId.slice('band:'.length);
     if (categoryId.startsWith('genre:')) {
       return detectedGenres(station).includes(
         categoryId.slice('genre:'.length),
@@ -70,6 +107,9 @@ export function createCategories({
     const rows = Array.isArray(stations) ? stations : [];
     const categories = [
       { id: 'all', label: 'All' },
+      ...RADIO_BANDS.filter(([band]) =>
+        rows.some((station) => stationBand(station) === band),
+      ).map(([band, label]) => ({ id: `band:${band}`, label })),
       { id: 'news', label: 'News' },
       { id: 'talk', label: 'Talk' },
       { id: 'weather', label: 'Weather / Emergency' },
@@ -119,6 +159,7 @@ export function createCategories({
     });
   }
   return {
+    stationBand,
     normalizeRadioTag,
     stationTags,
     hasTag,

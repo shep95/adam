@@ -404,3 +404,26 @@ body.scene-playback-mode #key-setup {
   border-color: rgba(255, 170, 150, 0.65);
   outline: none;
 }
+
+/* Priority tier on each key row (ADAM #29). */
+.key-setup-priority {
+  margin-left: auto;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.08rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.8;
+}
+
+.key-setup-priority.is-p1 {
+  color: var(--accent-primary, #00d4ff);
+}
+
+.key-setup-priority.is-p2 {
+  color: var(--accent-alert, #f5a623);
+}
+
+.key-setup-priority.is-p3 {
+  color: var(--text-dim, #6b7c88);
+}

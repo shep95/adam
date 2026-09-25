@@ -11,6 +11,13 @@ import {
   selectSceneDocument,
 } from '../director/authoring.js';
 import { createSceneDialog, mountSceneSharing } from '../ui/sceneSharing.js';
+import {
+  SCENE_LINK_MAX_CHARS,
+  decodeSceneLink,
+  encodeSceneLink,
+  sceneLinkUrl,
+  scenePayloadFromHash,
+} from './sceneLink.js';
 import { PACK_LIMITS } from '../director/packs/manifest.js';
 
 function download(text, name) {
@@ -325,6 +332,19 @@ export function createSceneSharing(director) {
     dialog.button('Download scene JSON', () => {
       if (alive(owner)) download(stringifySceneDocument(project), 'scene.json');
     });
+    dialog.button('Copy scene link', () =>
+      run(owner, async () => {
+        const payload = await encodeSceneLink(stringifySceneDocument(project));
+        if (payload.length > SCENE_LINK_MAX_CHARS)
+          throw new Error(
+            'Scene is too large for a link — download the JSON instead',
+          );
+        await navigator.clipboard.writeText(sceneLinkUrl(payload));
+        if (alive(owner))
+          dialog.status.textContent =
+            'Link copied. It carries the scene itself, not asset files; recipients review it before anything is applied.';
+      }),
+    );
     const files = dialog.input('Choose data-pack files', '', { type: 'file' });
     files.multiple = true;
     const folder = dialog.input('Or choose a data-pack folder', '', {
@@ -381,8 +401,31 @@ export function createSceneSharing(director) {
   }
   const unmount = () => {};
   let removeToolbar = unmount;
+  /** Open a `#scene=` link in the import review (nothing applies until Apply). */
+  async function previewFromLocation(loc = globalThis.location) {
+    const payload = scenePayloadFromHash(loc?.hash);
+    if (!payload) return false;
+    try {
+      const text = await decodeSceneLink(payload);
+      globalThis.history?.replaceState?.(
+        null,
+        '',
+        `${loc.pathname}${loc.search}`,
+      );
+      await preview(
+        new File([text], 'shared-scene.json', { type: 'application/json' }),
+      );
+      return true;
+    } catch (error) {
+      director._updateStatus?.(
+        `Scene link could not be read: ${error.message}`,
+      );
+      return false;
+    }
+  }
   return {
     preview,
+    previewFromLocation,
     edit,
     share,
     close,

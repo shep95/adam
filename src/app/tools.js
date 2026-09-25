@@ -43,6 +43,8 @@ export function createApplicationTools({
     ?.module.attachSceneController(sceneDirector);
   defer(() => sceneDirector.destroy());
   onSceneDirector?.(sceneDirector);
+  // A `#scene=` share link opens straight into the import review.
+  void sceneDirector._sharing?.previewFromLocation?.();
   const annotations = initAnnotations({
     viewer,
     tileset,

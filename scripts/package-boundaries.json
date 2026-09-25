@@ -720,6 +720,7 @@
       "src/director/sharing/lifetime.js",
       "src/director/authoring.js",
       "src/scenes/sharing.js",
+      "src/scenes/sceneLink.js",
       "src/ui/sceneSharing.js"
     ],
     "external": ["cesium"]
@@ -1935,6 +1936,7 @@
       "src/director/sharing/lifetime.js",
       "src/director/authoring.js",
       "src/scenes/sharing.js",
+      "src/scenes/sceneLink.js",
       "src/ui/sceneSharing.js",
       "src/layers/weather/imageryOrder.js",
       "src/layers/weather/imageryHost.js",

@@ -61,6 +61,11 @@ export function stripKeylessBasemapFromHash(hash) {
 
 // Tier is shown as a coloured dot (CSS), not an emoji.
 const TIER_CLASS = Object.freeze({ metered: 'is-metered', free: 'is-free' });
+const PRIORITY_LABELS = Object.freeze({
+  1: 'ESSENTIAL',
+  2: 'RECOMMENDED',
+  3: 'OPTIONAL',
+});
 
 /** Build one key row. All content is our own registry text, set via textContent. */
 function buildRow(documentRef, key) {
@@ -84,7 +89,10 @@ function buildRow(documentRef, key) {
     key.tier === 'metered'
       ? 'Metered — a billing-enabled account'
       : 'Free key — register, paste, done';
-  head.append(led, title, tier);
+  const priority = documentRef.createElement('span');
+  priority.className = `key-setup-priority is-p${key.priority || 3}`;
+  priority.textContent = PRIORITY_LABELS[key.priority] || PRIORITY_LABELS[3];
+  head.append(led, title, tier, priority);
   if (key.clientExposed) {
     const exposed = documentRef.createElement('span');
     exposed.className = 'key-setup-exposed';

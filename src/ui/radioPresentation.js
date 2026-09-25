@@ -145,6 +145,7 @@ export function renderRadioState(state) {
     );
     this._radioFilter.style.color = activeCategory?.color || '';
     this._radioFilter.disabled = !interactive || !state.stationCount;
+    renderRadioBandChips(this._radioFilter, state, interactive);
   }
 
   const tunerAvailable = interactive && state.filteredCount > 0;
@@ -364,4 +365,50 @@ export function renderRadioState(state) {
     this.actions.setPanelCollapsed('radio-panel', true);
   }
   this.actions.scheduleLayout();
+}
+
+/**
+ * Band chips (FM · AM · DAB · Shortwave · Web only) beside the station-tag
+ * select. A chip drives the same select, so selection, share state and the
+ * tuner follow exactly as if the band were picked from the list.
+ */
+function renderRadioBandChips(select, state, interactive) {
+  const row = select.closest('.radio-directory-row');
+  if (!row) return;
+  let chips = row.parentElement?.querySelector(':scope > .radio-band-chips');
+  if (!chips) {
+    chips = document.createElement('div');
+    chips.className = 'radio-band-chips';
+    chips.setAttribute('role', 'group');
+    chips.setAttribute('aria-label', 'Filter stations by band');
+    row.after(chips);
+  }
+  const bands = state.categories.filter((c) => c.id.startsWith('band:'));
+  const signature = bands.map((b) => `${b.id}:${b.count}`).join('|');
+  if (chips.dataset.signature !== signature) {
+    chips.dataset.signature = signature;
+    chips.replaceChildren(
+      ...bands.map((band) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'radio-band-chip';
+        chip.dataset.band = band.id;
+        chip.textContent = `${band.label} ${band.count}`;
+        chip.addEventListener('click', () => {
+          const next = select.value === band.id ? 'all' : band.id;
+          select.value = next;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        return chip;
+      }),
+    );
+  }
+  chips.hidden = bands.length === 0;
+  for (const chip of chips.children) {
+    chip.setAttribute(
+      'aria-pressed',
+      String(chip.dataset.band === state.filter),
+    );
+    chip.disabled = !interactive || !state.stationCount;
+  }
 }

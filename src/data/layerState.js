@@ -40,6 +40,13 @@ const RADIO_FILTER_CODES = Object.freeze({
   'traffic-transit': 'x',
   music: 'm',
   other: 'o',
+  // Band chips (ADAM): two-letter codes, disjoint from the one-letter
+  // categories and the g- genre prefix.
+  'band:fm': 'bf',
+  'band:am': 'ba',
+  'band:dab': 'bd',
+  'band:sw': 'bs',
+  'band:web': 'bw',
 });
 const RADIO_CODE_FILTERS = Object.freeze(
   Object.fromEntries(

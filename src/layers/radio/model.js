@@ -9,7 +9,11 @@ export function createModel({ state: layerState, services, parts, source }) {
 
   function radioCategoryColor(categoryId = 'other') {
     const normalized = String(categoryId || 'other');
-    const canonical = normalized.startsWith('genre:') ? 'music' : normalized;
+    const canonical = normalized.startsWith('genre:')
+      ? 'music'
+      : normalized.startsWith('band:')
+        ? 'all'
+        : normalized;
     return RADIO_CATEGORY_COLORS[canonical] || RADIO_CATEGORY_COLORS.other;
   }
 
@@ -26,8 +30,9 @@ export function createModel({ state: layerState, services, parts, source }) {
   /** Choose the category advertised by a cluster in the active station-tag view. */
 
   function radioClusterCategoryId(stations, activeFilter = 'all') {
+    // A band filter narrows by dial, not content; markers keep content colours.
     const filter = String(activeFilter || 'all');
-    if (filter !== 'all') {
+    if (filter !== 'all' && !filter.startsWith('band:')) {
       if (
         filter.startsWith('genre:') ||
         RADIO_MARKER_CATEGORY_ORDER.includes(filter) ||
