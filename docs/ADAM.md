@@ -123,7 +123,7 @@ is remembered in the browser.
   IPCC AR6 presets: 2050 (+0.2 m), 2100 low / middle / high emissions
   (+0.44 / +0.56 / +0.77 m), 2100 and 2150 ice-sheet collapse (+2 / +5 m),
   all of Greenland (+7.4 m), all land ice (+70 m). It drives two layers:
-  *sea level rise · world*, computed in the browser from global elevation
+  _sea level rise · world_, computed in the browser from global elevation
   tiles (land above today's sea and below the new one, shaded by depth; a
   bathtub model with no connectivity, defences, subsidence or tides), and
   NOAA's US projection (0–10 ft, connected areas).
@@ -205,6 +205,44 @@ inside the cloud the view whites out to a few hundred metres with flashes;
 above the tops the air clears and lightning glows below. Outside radar
 coverage the point observation still drives the rain.
 
+## More panels on the ops rail
+
+Each is a chip on the rail (they wrap onto a second row on narrow screens),
+each can be popped out into its own window with ⧉, and each has a Shepherd
+tool of the same name.
+
+| Chip      | What it does                                                                                                                                           | Sources                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| maps      | Stack other map sources and imports (XYZ, ArcGIS, WMS) with opacity and order; sea-level rise; heat layers and the thermal (ironbow) filter            | NASA GIBS, Esri, OSM, others as listed                  |
+| volcanoes | 66 notable volcanoes (17 undersea) with VEI hazard rings, plus currently elevated volcanoes                                                            | Smithsonian GVP, USGS HANS                              |
+| space     | Planets and the asteroid belt in the sky, near-Earth close approaches with impact-effect estimates                                                     | JPL elements, JPL CNEOS                                 |
+| spectrum  | Frequency lookup (who uses a band), public SDR receivers, transmitters in view                                                                         | ITU allocations, KiwiSDR list, OpenStreetMap            |
+| symbols   | Religious and esoteric landmarks and road geometry (crosses, stars, circles) in view                                                                   | OpenStreetMap                                           |
+| crime     | Street-level incident heat map where police publish it, homicide rates by country, organized-crime reported activity by region (not territory)         | data.police.uk, city open data, World Bank/UNODC, ACLED |
+| history   | War timeline from today back to antiquity, colour-coded by era, playable; battles on the globe                                                         | curated list, Wikidata                                  |
+| resources | Richest countries by resource (oil, gas, coal, minerals, forests, gold and FX reserves, water, arable land); mines, wells, refineries, storage in view | World Bank, OpenStreetMap                               |
+| leaders   | Chain of areas over any point (nation → state → county → city) with current heads of state and government; subdivisions of any area                    | OpenStreetMap boundaries, Wikidata                      |
+| live      | Multi-operator session: share the view, pins, notes and overlays with other operators                                                                  | this server (memory or Upstash)                         |
+| settings  | Fonts, lowercase or as-written text, language (23), your own logo image, fade hints, panel sizes                                                       | —                                                       |
+
+NATIONS adds telecom links (cables, landing stations, IXPs) and **who owns
+it** (ports, airports, power, dams, refineries by state, foreign or private
+owner — institutions only). The aircraft card adds route and ETA, COCKPIT
+and AHEAD (projected path), and SANCTIONS when OpenSanctions is keyed.
+REWIND can reach 24 h back from the browser's own track archive.
+
+**Cameras load faster.** The camera catalog answers from memory while it
+refreshes in the background, a cold server serves whichever agency catalogs
+answered within 5 s and merges the rest as they land, and a last-good
+catalog on disk makes restarts instant. NYC DOT and the Hong Kong Transport
+Department join the agency packs (Austin, Caltrans, TxDOT, DelDOT, TfL,
+Ontario, DriveBC, Calgary, Fintraffic, Estonia, Warendorf, NSW). Only public
+agency cameras are used; sharing or rotating one agency's key across
+requests to get round its limits is not done.
+
+Upstreams these panels read were not reachable from the build sandbox, so
+they were tested against recorded payloads; check them once on your deploy.
+
 ## NATIONS
 
 Profiles for 250 states (bundled from `world-countries`, ODbL), capital
@@ -228,6 +266,11 @@ never printed.
 | `ADAM_ACCESS_ROLES`                                                                                 | Named roles, each with its own token and allowed `/api` prefixes; paid routes are audited to the server log (identity, route, outcome — never the token) |
 | `ADAM_VOICE_SESSIONS_PER_DAY` / `VITE_ADAM_VOICE_DAILY_CAP_USD`                                     | Voice spend ceilings: server sessions per day (429 past it) and a per-browser daily USD cap (default 20)                                                 |
 | `GOOGLE_MAPS_API_KEY` or `CESIUM_ION_TOKEN`                                                         | Photoreal 3D tiles (browser-exposed by design — restrict by referrer)                                                                                    |
+| `FAA_NOTAM_CLIENT_ID` / `FAA_NOTAM_CLIENT_SECRET`                                                   | NOTAMs (Shepherd `notams`)                                                                                                                               |
+| `ACLED_USERNAME` / `ACLED_PASSWORD` (or `ACLED_KEY` / `ACLED_EMAIL`)                                | Conflict events and CRIME → organized crime                                                                                                              |
+| `OPENSANCTIONS_API_KEY`                                                                             | Sanctions checks on vessels, aircraft and companies                                                                                                      |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`                                               | Live sessions shared across serverless instances                                                                                                         |
+| `ADAM_SSO_*`                                                                                        | Sign-on with any OIDC provider (see `.env.example`)                                                                                                      |
 
 Without an access token on Vercel, the paid routes (`/api/shepherd`,
 `/api/openai`, `/api/realtime`, `/api/google`) refuse to run, so a leaked URL

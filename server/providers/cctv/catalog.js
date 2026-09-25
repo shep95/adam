@@ -1,4 +1,6 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { DEFAULT_CCTV_SOURCE_FILE, CCTV_SOURCE_CACHE_MS } from './constants.js';
 import { allocateSourceCap, resolveCatalogCap } from './cap.js';
@@ -19,6 +21,10 @@ import {
   loadCalgarySourcesFromOpenData,
   loadDelDOTSourcesFromOpenData,
 } from './sources.js';
+import {
+  loadHongKongSourcesFromOpenData,
+  loadNycSourcesFromOpenData,
+} from './worldPacks.js';
 
 /** Env kill switch: unset or anything but "0" means enabled. */
 const envEnabled = (name) => String(process.env[name] || '1').trim() !== '0';
@@ -92,6 +98,16 @@ const LIVE_PACKS = [
     enabled: () => envEnabled('CCTV_DELDOT_ENABLED'),
     load: loadDelDOTSourcesFromOpenData,
   },
+  {
+    name: 'nyc',
+    enabled: () => envEnabled('CCTV_NYC_ENABLED'),
+    load: () => loadNycSourcesFromOpenData(),
+  },
+  {
+    name: 'hongkong',
+    enabled: () => envEnabled('CCTV_HONGKONG_ENABLED'),
+    load: () => loadHongKongSourcesFromOpenData(),
+  },
 ];
 /**
  * Load CCTV sources from a local JSON file (CCTV_SOURCES_FILE env or default).
@@ -134,8 +150,62 @@ function loadSourcesFromEnv() {
   }
 }
 
+/** How long a cold refresh waits for slow packs before serving what arrived.
+ * Late packs merge into the catalog when they land. */
+const FIRST_WAVE_MS = Math.max(
+  1000,
+  Number(process.env.CCTV_FIRST_WAVE_MS) || 5000,
+);
+/** A last-good catalog on local disk serves a restarted process instantly. */
+const SNAPSHOT_MAX_AGE_MS = 24 * 3600_000;
+
+function snapshotFile(sourceRoot) {
+  const key = crypto
+    .createHash('sha1')
+    .update(`${sourceRoot}|${process.env.CCTV_MAX_SOURCES || ''}`)
+    .digest('hex')
+    .slice(0, 12);
+  return path.join(os.tmpdir(), `adam-cctv-catalog-${key}.json`);
+}
+
+function snapshotsEnabled() {
+  // Never under the test runner, where every case builds its own catalog.
+  return (
+    !process.env.NODE_TEST_CONTEXT &&
+    String(process.env.CCTV_SNAPSHOT || '1').trim() !== '0'
+  );
+}
+
+function readSnapshot(sourceRoot) {
+  if (!snapshotsEnabled()) return null;
+  try {
+    const file = snapshotFile(sourceRoot);
+    const stat = fs.statSync(file);
+    if (Date.now() - stat.mtimeMs > SNAPSHOT_MAX_AGE_MS) return null;
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return Array.isArray(parsed) && parsed.length ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSnapshot(sourceRoot, sources) {
+  if (!snapshotsEnabled() || !sources.length) return;
+  try {
+    const file = snapshotFile(sourceRoot);
+    fs.writeFileSync(`${file}.tmp`, JSON.stringify(sources));
+    fs.renameSync(`${file}.tmp`, file);
+  } catch {
+    // Read-only or full disk: the in-memory catalog still works.
+  }
+}
+
 /** Create an independent catalog rooted in the consuming application. */
-export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
+export function createCctvCatalog({
+  sourceRoot = process.cwd(),
+  packs: livePacks = LIVE_PACKS,
+  firstWaveMs = FIRST_WAVE_MS,
+} = {}) {
   /** @type {Array<object>} Cached merged + normalized CCTV source list. */
   let _cctvSourceCache = [];
   /** @type {number} Epoch-ms when the source cache was last refreshed. */
@@ -145,11 +215,14 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
   let _cctvSourceInflight = null;
 
   /**
-   * Assemble and cache the merged CCTV source list.
+   * The merged CCTV source list, fast:
    *
-   * Merges every source pack (live open-data packs, local file, env
-   * variable), deduplicates by ID, shares the catalog cap fairly across
-   * packs, and caches for CCTV_SOURCE_CACHE_MS.
+   *  - fresh cache → returned as is;
+   *  - expired cache → returned as is while ONE background refresh runs
+   *    (stale-while-revalidate), so no request waits on upstream catalogs;
+   *  - cold start → a last-good disk snapshot if there is one (refreshed in
+   *    the background), else a refresh that answers after the first wave of
+   *    packs and merges late packs in when they land.
    *
    * @returns {Promise<Array<object>>} Deduplicated, capped source list.
    */
@@ -161,13 +234,26 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
     ) {
       return _cctvSourceCache;
     }
+    if (!_cctvSourceCache.length && !_cctvSourceCacheAt) {
+      const snap = readSnapshot(sourceRoot);
+      if (snap) {
+        _cctvSourceCache = snap;
+        // Treat the snapshot as expired so the refresh below starts now.
+        _cctvSourceCacheAt = 1;
+      }
+    }
     // Single-flight: a burst of requests arriving past the TTL shares ONE refresh
     // instead of each launching the full multi-provider refetch. The `.finally`
     // clears the ref so the next post-TTL cycle starts fresh.
-    if (_cctvSourceInflight) return _cctvSourceInflight;
-    _cctvSourceInflight = refreshCctvSources().finally(() => {
-      _cctvSourceInflight = null;
-    });
+    if (!_cctvSourceInflight) {
+      _cctvSourceInflight = refreshCctvSources().finally(() => {
+        _cctvSourceInflight = null;
+      });
+    }
+    if (_cctvSourceCache.length) {
+      _cctvSourceInflight.catch(() => {});
+      return _cctvSourceCache;
+    }
     return _cctvSourceInflight;
   }
 
@@ -175,6 +261,8 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
    * Assemble and cache the merged CCTV source list from file/env + live packs.
    * Always resolves (loaders self-catch to []); on a fully-empty refresh with a
    * good prior catalog it serves stale rather than blanking the CCTV layer.
+   * Resolves once every pack settles or FIRST_WAVE_MS passes, whichever is
+   * first; packs still loading then are merged in when they finish.
    *
    * @returns {Promise<Array<object>>} Deduplicated, capped source list.
    */
@@ -191,70 +279,98 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
     // now governs every entry in LIVE_PACKS.
     const needsLiveSources =
       forceAustin || (fromFile.length + fromEnv.length === 0 && preferAustin);
-    const liveResults = needsLiveSources
-      ? await Promise.allSettled(
+    const maxCount = resolveCatalogCap(process.env.CCTV_MAX_SOURCES);
+    /** @type {Array<Array<object>|undefined>} Per-pack results as they land. */
+    const liveValues = livePacks.map(() => (needsLiveSources ? undefined : []));
+    const settledAll = needsLiveSources
+      ? Promise.allSettled(
           // Invoked inside the promise so a loader that throws synchronously
           // (a file-based pack on a malformed row) is isolated like any other
           // failed pack instead of rejecting the whole refresh.
-          LIVE_PACKS.map((pack) =>
-            Promise.resolve().then(() =>
-              pack.enabled() ? pack.load({ sourceRoot }) : [],
-            ),
+          livePacks.map((pack, index) =>
+            Promise.resolve()
+              .then(() => (pack.enabled() ? pack.load({ sourceRoot }) : []))
+              .then(
+                (value) => {
+                  liveValues[index] = Array.isArray(value) ? value : [];
+                },
+                () => {
+                  liveValues[index] = [];
+                },
+              ),
           ),
         )
-      : [];
+      : Promise.resolve();
+
     // Live packs first so file/env overrides win on duplicate IDs; each pack
     // keeps its own priority order and the catalog cap is shared fairly.
     const normalizePack = (name, items) => ({
       name,
-      sources: items
+      sources: (items || [])
         .filter((item) => item && typeof item === 'object')
         .map((item) => normalizeSourceItem(item))
         .filter((item) => item.id),
     });
-    const packs = [
-      ...LIVE_PACKS.map((pack, index) =>
-        normalizePack(
-          pack.name,
-          liveResults[index]?.status === 'fulfilled'
-            ? liveResults[index].value
-            : [],
+    const assemble = ({ final }) => {
+      const packs = [
+        ...livePacks.map((pack, index) =>
+          normalizePack(pack.name, liveValues[index]),
         ),
-      ),
-      normalizePack('file', fromFile),
-      normalizePack('env', fromEnv),
-    ];
-    const maxCount = resolveCatalogCap(process.env.CCTV_MAX_SOURCES);
-    const allocation = allocateSourceCap(packs, maxCount);
-    // Shipped ground heights (src/data/local_data/cctv_ground_heights/, produced by
-    // scripts/precompute-cctv-heights.mjs) ride along on the served source so
-    // the client can place a camera and its monitor plane with zero sampling.
-    const capped = joinGroundHeights(
-      allocation.sources,
-      loadGroundHeights(sourceRoot),
-    );
-    const trimmed = allocation.packs.filter((pack) => pack.kept < pack.offered);
-    if (trimmed.length) {
-      const detail = trimmed
-        .map((pack) => `${pack.name} ${pack.kept}/${pack.offered}`)
-        .join(', ');
-      console.warn(
-        `[CCTV] source catalog exceeds cap ${maxCount}; shared round-robin across packs (${detail}). Raise CCTV_MAX_SOURCES or lower a per-pack cap to change the mix.`,
+        normalizePack('file', fromFile),
+        normalizePack('env', fromEnv),
+      ];
+      const allocation = allocateSourceCap(packs, maxCount);
+      // Shipped ground heights (src/data/local_data/cctv_ground_heights/, produced by
+      // scripts/precompute-cctv-heights.mjs) ride along on the served source so
+      // the client can place a camera and its monitor plane with zero sampling.
+      const capped = joinGroundHeights(
+        allocation.sources,
+        loadGroundHeights(sourceRoot),
       );
-    }
-    if (capped.length > 0 || _cctvSourceCache.length === 0) {
-      _cctvSourceCache = capped;
-    } else {
-      // Every source came back empty (all live packs timed out / upstream outage)
-      // but a good catalog is already cached — serve it stale rather than blanking
-      // every CCTV route. Advancing the timestamp waits one TTL before retrying,
-      // which (with single-flight) bounds load on a persistently-down upstream.
-      console.warn(
-        `[CCTV] source refresh returned empty; serving ${_cctvSourceCache.length} stale cameras`,
+      const trimmed = allocation.packs.filter(
+        (pack) => pack.kept < pack.offered,
       );
-    }
-    _cctvSourceCacheAt = Date.now();
-    return _cctvSourceCache;
+      if (final && trimmed.length) {
+        const detail = trimmed
+          .map((pack) => `${pack.name} ${pack.kept}/${pack.offered}`)
+          .join(', ');
+        console.warn(
+          `[CCTV] source catalog exceeds cap ${maxCount}; shared round-robin across packs (${detail}). Raise CCTV_MAX_SOURCES or lower a per-pack cap to change the mix.`,
+        );
+      }
+      if (capped.length > 0 || _cctvSourceCache.length === 0) {
+        // A partial first wave never replaces a fuller catalog.
+        if (final || capped.length >= _cctvSourceCache.length) {
+          _cctvSourceCache = capped;
+          if (final && needsLiveSources) writeSnapshot(sourceRoot, capped);
+        }
+      } else if (final) {
+        // Every source came back empty (all live packs timed out / upstream outage)
+        // but a good catalog is already cached — serve it stale rather than blanking
+        // every CCTV route. Advancing the timestamp waits one TTL before retrying,
+        // which (with single-flight) bounds load on a persistently-down upstream.
+        console.warn(
+          `[CCTV] source refresh returned empty; serving ${_cctvSourceCache.length} stale cameras`,
+        );
+      }
+      _cctvSourceCacheAt = Date.now();
+      return _cctvSourceCache;
+    };
+
+    let timer = null;
+    const firstWave = new Promise((resolve) => {
+      timer = setTimeout(() => resolve('deadline'), firstWaveMs);
+    });
+    const outcome = await Promise.race([
+      settledAll.then(() => 'all'),
+      firstWave,
+    ]);
+    clearTimeout(timer);
+    if (outcome === 'all') return assemble({ final: true });
+    const partial = assemble({ final: false });
+    // Late packs: merge them in when they land (the next request sees them).
+    settledAll.then(() => assemble({ final: true })).catch(() => {});
+    return partial;
   }
 
   return getCctvSources;
