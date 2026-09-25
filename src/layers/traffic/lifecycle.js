@@ -187,6 +187,10 @@ export function createLifecycle({
       }
       parts.rendering.removeHeatLines();
       layerState._tileCache.clear();
+      layerState._roadCells?.clear();
+      clearTimeout(layerState._prefetchTimer);
+      layerState._prefetchAbort?.abort();
+      layerState._prefetchAbort = null;
       resetFlowTileCache();
       layerState._count = 0;
       layerState._lastUpdate = null;

@@ -4,6 +4,9 @@ import {
   TILE_CACHE_MAX_ENTRIES,
   FAST_FETCH_ALTITUDE,
 } from './policy.js';
+import { ringBounds } from './roadCells.js';
+
+const PREFETCH_IDLE_MS = 600;
 
 export function createIngestion({
   state: layerState,
@@ -242,20 +245,25 @@ export function createIngestion({
           return;
         renderedSomething = true;
       } else {
+        // Prefetch ring hit: every grid cell under this window is cached.
+        const ringHit = layerState._roadCells?.lookup(clamped);
         // Fetch major roads first (smaller payload, faster response)
-        console.log(`[Data:Traffic] Fast fetch major roads [${cacheKey}]`);
-        const majorData = await fetchRoads(
-          clamped.south,
-          clamped.west,
-          clamped.north,
-          clamped.east,
-          {
-            majorOnly: true,
-            timeoutSec: 12,
-            signal: requestSignal,
-          },
-          trace,
-        );
+        if (!ringHit)
+          console.log(`[Data:Traffic] Fast fetch major roads [${cacheKey}]`);
+        const majorData = ringHit
+          ? { roads: ringHit }
+          : await fetchRoads(
+              clamped.south,
+              clamped.west,
+              clamped.north,
+              clamped.east,
+              {
+                majorOnly: true,
+                timeoutSec: 12,
+                signal: requestSignal,
+              },
+              trace,
+            );
         // Discard stale response if a newer load was triggered while waiting
         if (generation !== layerState._loadGeneration) return;
         cache.major = layerState._parseRoads(majorData, trace);
@@ -272,6 +280,7 @@ export function createIngestion({
           return;
         renderedSomething = true;
       }
+      schedulePrefetch(clamped, generation);
 
       // At higher altitude, major roads provide sufficient motion density
       if (altitude > FAST_FETCH_ALTITUDE) return;
@@ -339,6 +348,48 @@ export function createIngestion({
       // never clear the controller belonging to a newer destination.
     }
   }
+  /**
+   * Warm the 3×3 ring of grid cells around a loaded window with one idle
+   * major-roads request, so the next pan renders from memory. Never competes
+   * with a foreground load: it waits for idle, runs one at a time and drops
+   * its result if the layer was turned off meanwhile.
+   */
+  function schedulePrefetch(clamped, generation) {
+    const cells = layerState._roadCells;
+    if (!cells || layerState._prefetchAbort) return;
+    const center = parts.viewport.getBoundsCenter(clamped);
+    const ring = ringBounds(center);
+    if (!cells.missing(ring)) return;
+    clearTimeout(layerState._prefetchTimer);
+    layerState._prefetchTimer = setTimeout(async () => {
+      layerState._prefetchTimer = null;
+      if (
+        !layerState._enabled ||
+        layerState._fetching ||
+        generation !== layerState._loadGeneration
+      )
+        return;
+      const abort = new AbortController();
+      layerState._prefetchAbort = abort;
+      try {
+        const data = await fetchRoads(
+          ring.south,
+          ring.west,
+          ring.north,
+          ring.east,
+          { majorOnly: true, timeoutSec: 15, signal: abort.signal },
+        );
+        if (layerState._enabled && !abort.signal.aborted)
+          cells.ingest(ring, data.roads);
+      } catch {
+        /* prefetch is best-effort */
+      } finally {
+        if (layerState._prefetchAbort === abort)
+          layerState._prefetchAbort = null;
+      }
+    }, PREFETCH_IDLE_MS);
+  }
+
   const methods = {
     /**
      * No-op — traffic updates are entirely camera-driven, not timer-driven.

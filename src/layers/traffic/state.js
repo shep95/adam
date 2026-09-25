@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { FLOW_BUCKET_COLORS, TRAFFIC_TIMING_ENABLED } from './policy.js';
+import { createRoadCellCache } from './roadCells.js';
 
 export function createState({ services }) {
   const layerState = {};
@@ -258,6 +259,11 @@ export function createState({ services }) {
    */
 
   layerState._tileCache = new Map();
+
+  /** Prefetch ring: major roads snapped to a 0.05° grid (see roadCells.js). */
+  layerState._roadCells = createRoadCellCache();
+  layerState._prefetchAbort = null;
+  layerState._prefetchTimer = null;
 
   /** Reusable scratch Cartesian3 to avoid per-frame allocation / GC pressure */
 
