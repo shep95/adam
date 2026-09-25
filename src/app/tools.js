@@ -326,12 +326,14 @@ export function createApplicationTools({
   let globeSky = null;
   let weatherFx = null;
   let nightLights = null;
+  let storm = null;
   Promise.all([
     import('../environment/liveEnvironment.js'),
     import('../ui/adam/skyPanel.js'),
     import('../environment/globeSky.js'),
     import('../environment/weatherFx.js'),
     import('../environment/nightLights.js'),
+    import('../environment/stormImmersion.js'),
   ])
     .then(
       ([
@@ -340,6 +342,7 @@ export function createApplicationTools({
         { createGlobeSky },
         { createWeatherFx },
         { createNightLights },
+        { createStormImmersion },
       ]) => {
         if (signal?.aborted) return;
         environment = createLiveEnvironment({ viewer });
@@ -356,6 +359,8 @@ export function createApplicationTools({
           getTileset: () => tileset,
         });
         debug.nightLights = nightLights;
+        storm = createStormImmersion({ viewer, weatherFx, globeSky });
+        debug.storm = storm;
         skyPanel = installSkyPanel({
           viewer,
           environment,
@@ -374,6 +379,7 @@ export function createApplicationTools({
     );
   defer(() => {
     skyPanel?.destroy();
+    storm?.destroy();
     weatherFx?.destroy();
     nightLights?.destroy();
     globeSky?.destroy();

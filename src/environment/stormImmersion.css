@@ -1,0 +1,76 @@
+/* ── Storm immersion layers: over the globe, under every instrument ──────
+   The weather canvas sits at z 90; these sit just beneath it so rain falls
+   through the veil and the whiteout. Opacity is driven per frame. */
+.adam-storm-veil,
+.adam-storm-cloud,
+.adam-storm-bolt {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* The light dropping under a cell: cold blue-grey, heavier at the top of
+   the frame where the cloud base is. */
+.adam-storm-veil {
+  z-index: 87;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 16, 24, 0.95) 0%,
+    rgba(18, 26, 36, 0.8) 55%,
+    rgba(24, 32, 40, 0.62) 100%
+  );
+}
+
+/* Inside the cloud: diffuse grey that closes from the edges. */
+.adam-storm-cloud {
+  z-index: 88;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    rgba(150, 160, 170, 0.78) 0%,
+    rgba(120, 130, 142, 0.92) 55%,
+    rgba(96, 106, 118, 0.98) 100%
+  );
+}
+
+.adam-storm-bolt {
+  z-index: 89;
+  background: rgba(225, 232, 255, 0.55);
+}
+
+/* From above the tops the flash lights the cloud deck below you. */
+.adam-storm-bolt[data-layer='above'] {
+  background: radial-gradient(
+    ellipse at 50% 85%,
+    rgba(210, 222, 255, 0.55) 0%,
+    rgba(210, 222, 255, 0) 60%
+  );
+}
+
+.adam-storm-bolt.is-on {
+  animation: adam-storm-bolt 420ms ease-out;
+}
+
+@keyframes adam-storm-bolt {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 0.25;
+  }
+  26% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adam-storm-bolt.is-on {
+    animation: none;
+  }
+}

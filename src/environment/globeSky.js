@@ -103,6 +103,9 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
   viewer.dataSources.add(source);
   const state = { terminator: true, grade: true, markers: true };
   let visibilityM = null;
+  /** Radar-derived visibility at the camera (stormImmersion); fog uses the
+   * lower of this and the reported observation. */
+  let stormVisibilityM = null;
 
   // Colour grade.
   const uniforms = {
@@ -248,17 +251,19 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
       uniforms.tint = new Cesium.Cartesian3(...g.tint);
       uniforms.tintAmount = g.tintAmount * f;
     }
-    if (scene.fog) {
-      scene.fog.enabled = true;
-      scene.fog.density =
-        visibilityM != null && visibilityM < 10_000
-          ? Math.min(0.004, 12 / Math.max(200, visibilityM) / 100)
-          : 2.0e-4;
-    }
+    applyFog();
     governorRequestRender('adam-sky');
   }
 
   const unsubscribeBudget = subscribeEffectsBudget(() => update());
+  function applyFog() {
+    if (!scene.fog) return;
+    const vis = Math.min(visibilityM ?? Infinity, stormVisibilityM ?? Infinity);
+    scene.fog.enabled = true;
+    scene.fog.density =
+      vis < 10_000 ? Math.min(0.004, 12 / Math.max(200, vis) / 100) : 2.0e-4;
+  }
+
   let timer = null;
   function schedule() {
     clearInterval(timer);
@@ -274,6 +279,11 @@ export function createGlobeSky({ viewer, environment, getCenter }) {
 
   return {
     update,
+    setStormVisibility(m) {
+      stormVisibilityM = Number.isFinite(m) ? m : null;
+      applyFog();
+      governorRequestRender('adam-storm-fog');
+    },
     setWeather(weather) {
       visibilityM = Number.isFinite(weather?.visibilityM)
         ? weather.visibilityM

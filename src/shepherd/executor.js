@@ -426,6 +426,7 @@ export function createShepherdExecutor({
             error: l.stats?.error || null,
           })),
           health: c.opsDeck?.readHealth?.() || null,
+          storm: c.storm?.state?.() || null,
           recording: Boolean(doc.documentElement?.dataset?.adamRecordingSince),
           uiScale: Number(doc.documentElement?.dataset?.uiScale || 1),
           view: doc.documentElement?.dataset?.adamView || null,

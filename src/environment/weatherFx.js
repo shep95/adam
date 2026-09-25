@@ -66,7 +66,12 @@ export function createWeatherFx({ viewer, doc = document }) {
   });
   doc.body.append(canvas);
   const ctx = canvas.getContext('2d');
-  let precip = { kind: 'none', intensity: 0, thunder: false };
+  let observed = { kind: 'none', intensity: 0, thunder: false };
+  let precip = observed;
+  /** Radar-driven precipitation (stormImmersion); wins over the point
+   * observation wherever the radar covers the camera. */
+  let override = null;
+  let flashRate = 0.004;
   let windDeg = 0;
   let windKph = 0;
   let enabled = true;
@@ -147,7 +152,7 @@ export function createWeatherFx({ viewer, doc = document }) {
       }
     }
     if (precip.thunder) {
-      if (flash <= 0 && Math.random() < 0.004) flash = 1;
+      if (flash <= 0 && Math.random() < flashRate) flash = 1;
       if (flash > 0) {
         ctx.fillStyle = `rgba(220, 230, 255, ${0.35 * flash})`;
         ctx.fillRect(0, 0, w, h);
@@ -177,9 +182,48 @@ export function createWeatherFx({ viewer, doc = document }) {
   const onVisibility = () => refresh();
   doc.addEventListener('visibilitychange', onVisibility);
 
+  function applyPrecip(next) {
+    const changed =
+      next.kind !== precip.kind ||
+      Math.abs(next.intensity - precip.intensity) > 0.05;
+    precip = next;
+    if (changed) seed();
+    refresh();
+  }
+
   return {
+    /**
+     * Radar-driven precipitation: {kind, intensity, thunder, lightning} or
+     * null to fall back to the observation. Intensity changes continuously.
+     */
+    setOverride(next) {
+      override = next
+        ? {
+            kind:
+              next.kind === 'snow'
+                ? 'snow'
+                : next.intensity > 0.01
+                  ? 'rain'
+                  : 'none',
+            intensity: Math.max(0, Math.min(1, next.intensity || 0)),
+            thunder: Boolean(next.thunder),
+          }
+        : null;
+      flashRate = next?.thunder
+        ? 0.002 + 0.03 * Math.max(0, Math.min(1, next.lightning || 0))
+        : 0.004;
+      applyPrecip(override || observed);
+      return precip;
+    },
+    observedKind: () => observed.kind,
     setWeather(weather) {
       const next = precipitationFor(weather);
+      observed = next;
+      if (override) {
+        windDeg = Number(weather?.windDirectionDeg) || 0;
+        windKph = Number(weather?.windKph) || 0;
+        return precip;
+      }
       const changed =
         next.kind !== precip.kind ||
         Math.abs(next.intensity - precip.intensity) > 0.05;
@@ -194,7 +238,12 @@ export function createWeatherFx({ viewer, doc = document }) {
       enabled = Boolean(on);
       refresh();
     },
-    state: () => ({ ...precip, enabled, showing: active() }),
+    state: () => ({
+      ...precip,
+      source: override ? 'radar' : 'observation',
+      enabled,
+      showing: active(),
+    }),
     destroy() {
       cancelAnimationFrame(raf);
       removeMoveEnd();

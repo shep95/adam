@@ -94,6 +94,15 @@ shadow bearing and length, bright stars and weather, with a sun-path dial.
 Time can be scrubbed ±24 h, jumped to sunrise/noon/sunset/midnight, or played
 at 60–3600×. Live contacts always keep their real positions.
 
+**Flying into weather.** Below 30 km the console samples the radar
+(MRMS reflectivity, CONUS), the global infrared cloud mosaic and lightning
+density under the camera and on rings out to 25 km, every 400 ms as you
+move. Effects ramp with distance to a cell and ease continuously: under the
+cloud base the light drops, rain thickens and visibility closes to 1–2 km;
+inside the cloud the view whites out to a few hundred metres with flashes;
+above the tops the air clears and lightning glows below. Outside radar
+coverage the point observation still drives the rain.
+
 ## NATIONS
 
 Profiles for 250 states (bundled from `world-countries`, ODbL), capital
