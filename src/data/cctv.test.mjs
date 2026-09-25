@@ -1800,3 +1800,14 @@ test('the footprint lift is capped so a tower under the far edge cannot launch t
   assert.equal(hill.liftCapped, false);
   assert.ok(Math.abs(hill.liftM - (flat.liftM + 30)) < 1e-6);
 });
+
+test('card stream status: live, cached, stale, error', async () => {
+  const { cctvFrameStatus } = await import('./cctvCards.js');
+  const now = 1_000_000;
+  assert.equal(cctvFrameStatus({ stamp: 0, failCount: 0 }, 60_000, now), null);
+  assert.equal(cctvFrameStatus({ stamp: 0, failCount: 1 }, 60_000, now), 'ER');
+  assert.equal(cctvFrameStatus({ stamp: now - 30_000, failCount: 0 }, 60_000, now), 'LV');
+  assert.equal(cctvFrameStatus({ stamp: now - 100_000, failCount: 0 }, 60_000, now), 'CX');
+  assert.equal(cctvFrameStatus({ stamp: now - 500_000, failCount: 0 }, 60_000, now), 'ST');
+  assert.equal(cctvFrameStatus({ stamp: now - 1_000, failCount: 3 }, 60_000, now), 'ER');
+});

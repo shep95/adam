@@ -425,3 +425,22 @@ export function createCctvThumbnailOverlayEntry({
     thumbnailRadius: CCTV_THUMBNAIL_STYLE.radius,
   };
 }
+
+/**
+ * Two-letter stream status for a card (ADAM):
+ *   LV live   — last frame within the camera's own refresh cadence
+ *   CX cached — within 2× the cadence
+ *   ST stale  — older than that
+ *   ER error  — repeated failures, or none of the fetches has succeeded
+ * Null while the first frame is still loading.
+ */
+export function cctvFrameStatus(slot, refreshMs, nowMs = Date.now()) {
+  if (!slot) return null;
+  const cadence = Math.max(5_000, Number(refreshMs) || 60_000);
+  if (!(slot.stamp > 0)) return slot.failCount > 0 ? 'ER' : null;
+  if (slot.failCount >= 3) return 'ER';
+  const age = nowMs - slot.stamp;
+  if (age <= cadence * 1.1) return 'LV';
+  if (age <= cadence * 2) return 'CX';
+  return 'ST';
+}

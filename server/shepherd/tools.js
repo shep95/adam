@@ -245,6 +245,21 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'get_traffic_snapshot',
+    description:
+      'Structured road conditions in view from the live TomTom flow: the most congested segments (closures first) with road class, flow ratio (current/free-flow speed, 1 = free flowing), coordinates and length, plus coverage. Needs the traffic layer on; without a TomTom key the layer is a simulation and this returns live=false.',
+    parameters: obj({ limit: { type: 'number' } }),
+  },
+  {
+    name: 'export_fires',
+    description:
+      'Export the loaded NASA FIRMS hotspots (satellite, confidence, FRP, acquisition time, position), optionally only those in view, as a CSV or JSON download, and return a summary (count, strongest, newest, by satellite).',
+    parameters: obj({
+      format: { type: 'string', enum: ['csv', 'json'] },
+      inViewOnly: { type: 'boolean' },
+    }),
+  },
+  {
     name: 'list_alerts',
     description:
       'List the operator alert rules with their state (armed, tripped, last result).',

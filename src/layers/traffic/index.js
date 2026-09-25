@@ -54,6 +54,8 @@ export function createTrafficLayer({ services, source }) {
     parts.ingestion?.methods,
     {
       getTrafficTimingDiagnostics: parts.timing.getTrafficTimingDiagnostics,
+      /** Most congested in-view road segments with live flow (ADAM export). */
+      getFlowSnapshot: (options) => trafficFlowSnapshot(state, options),
       deriveTrafficFlowError: parts.flow.deriveTrafficFlowError,
       trafficFeedPresentation: parts.model.trafficFeedPresentation,
     },
@@ -61,3 +63,52 @@ export function createTrafficLayer({ services, source }) {
 }
 
 export { createTrafficSource } from './source.js';
+
+/**
+ * Structured congestion snapshot: the worst `limit` roads by TomTom flow
+ * ratio (current / free-flow speed; 1 = free flow), closures first, with a
+ * representative point, road class and length.
+ */
+export function trafficFlowSnapshot(state, { limit = 10 } = {}) {
+  const roads = Array.isArray(state?._roads) ? state._roads : [];
+  const withFlow = [];
+  for (const road of roads) {
+    const flow = road?.flow;
+    if (!flow) continue;
+    const level = Number(flow.level ?? flow.trafficLevel);
+    const closed = Boolean(flow.closure);
+    if (!closed && !Number.isFinite(level)) continue;
+    const coords = road.coordinates || [];
+    if (coords.length < 2) continue;
+    const mid = coords[Math.floor(coords.length / 2)];
+    let km = 0;
+    for (let i = 1; i < coords.length; i += 1) {
+      const [x1, y1] = coords[i - 1];
+      const [x2, y2] = coords[i];
+      const dx =
+        (x2 - x1) * 111.32 * Math.cos((((y1 + y2) / 2) * Math.PI) / 180);
+      const dy = (y2 - y1) * 110.57;
+      km += Math.hypot(dx, dy);
+    }
+    withFlow.push({
+      roadClass: road.type,
+      flowRatio: closed ? 0 : +level.toFixed(2),
+      closed,
+      lat: +mid[1].toFixed(5),
+      lon: +mid[0].toFixed(5),
+      lengthKm: +km.toFixed(2),
+    });
+  }
+  withFlow.sort(
+    (a, b) => Number(b.closed) - Number(a.closed) || a.flowRatio - b.flowRatio,
+  );
+  return {
+    live: withFlow.length > 0,
+    roadsInView: roads.length,
+    roadsWithFlow: withFlow.length,
+    coveragePct: Number.isFinite(state?._flowCoveragePct)
+      ? state._flowCoveragePct
+      : null,
+    mostCongested: withFlow.slice(0, Math.max(1, Math.min(50, limit))),
+  };
+}

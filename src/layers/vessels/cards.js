@@ -3,6 +3,9 @@ import {
   normalizeVesselType,
 } from '../../data/vesselLabels.js';
 
+/** Past this position age, speed and heading are shown as of the fix. */
+export const POSITION_UNCERTAIN_MS = 5 * 60_000;
+
 export function createCards({
   vesselState,
   services,
@@ -18,11 +21,17 @@ export function createCards({
 
     // Pinned vessels missing from recent refreshes get a stale marker
     const stale = (record.missedRefreshes || 0) > 0;
+    // Position age is the gap between the vessel's own GPS fix and now; past
+    // five minutes, speed and heading describe where it WAS, so qualify them.
+    const ageMs = positionAgeMs(record);
+    const uncertain = Number.isFinite(ageMs) && ageMs > POSITION_UNCERTAIN_MS;
+    const q = uncertain ? '≈' : '';
     el.classList.add('active');
+    el.classList.toggle?.('is-uncertain', uncertain);
     el.textContent = [
       `AIS: ${trimHudValue(record.name, 32)}`,
-      `${trimHudValue(record.type || 'VESSEL', 24)}  SPD: ${formatSpeed(record.speed)}  HDG: ${formatHeading(record.heading ?? record.course)}`,
-      `MMSI: ${record.mmsi || '--'}  ${formatPositionTime(record)}${stale ? '  · STALE' : ''}`,
+      `${trimHudValue(record.type || 'VESSEL', 24)}  SPD: ${q}${formatSpeed(record.speed)}  HDG: ${q}${formatHeading(record.heading ?? record.course)}${uncertain ? '  · AS OF FIX' : ''}`,
+      `MMSI: ${record.mmsi || '--'}  ${formatPositionTime(record)}${formatReceived(record)}${Number.isFinite(ageMs) ? `  AGE ${formatAge(ageMs)}` : ''}${stale ? '  · STALE' : ''}`,
     ].join('\n');
   }
 
@@ -162,6 +171,21 @@ export function createCards({
     return Number.isFinite(heading) ? `${Math.round(heading)}DEG` : '--DEG';
   }
 
+  function positionAgeMs(record, now = Date.now()) {
+    const t = Date.parse(record?.lastPositionUtc || '');
+    return Number.isFinite(t) ? Math.max(0, now - t) : null;
+  }
+
+  function formatAge(ms) {
+    const m = Math.floor(ms / 60_000);
+    return m < 60 ? `${m}M` : `${Math.floor(m / 60)}H${String(m % 60).padStart(2, '0')}M`;
+  }
+
+  function formatReceived(record) {
+    if (!Number.isFinite(record?.receivedAtMs)) return '';
+    return `  RCVD: ${new Date(record.receivedAtMs).toISOString().slice(11, 19)}Z`;
+  }
+
   function formatPositionTime(record) {
     if (!record.lastPositionUtc) return 'POS: LIVE';
     const date = new Date(record.lastPositionUtc);
@@ -181,5 +205,7 @@ export function createCards({
     formatSpeed,
     formatHeading,
     formatPositionTime,
+    positionAgeMs,
+    formatAge,
   };
 }

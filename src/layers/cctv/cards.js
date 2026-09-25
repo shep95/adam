@@ -7,10 +7,15 @@ import {
   CCTV_FRAME_CANVAS_W,
   CCTV_FRAME_CANVAS_H,
   applyFrameResult,
+  cctvFrameStatus,
 } from '../../data/cctvCards.js';
 import * as Cesium from 'cesium';
 import { horizonOccluder } from '../../data/iconOrientation.js';
-import { selectCctvLod, applyEvictionGrace } from '../../data/cctvLod.js';
+import {
+  selectCctvLod,
+  applyEvictionGrace,
+  staticFrameRefreshMs,
+} from '../../data/cctvLod.js';
 import {
   CCTV_OVERLAY_SOURCE_OPTIONS,
   CARD_VIEW_MARGIN,
@@ -218,7 +223,23 @@ export function createCards({ state: layerState, services, parts, source }) {
    * that keeps the pin while the gesture lasts.
    */
 
+  /** Card title prefixed with its stream status (LV / CX / ST / ER). */
+  function statusTitle(record, slot) {
+    const status = cctvFrameStatus(slot, staticFrameRefreshMs(record.camera));
+    return status ? `${status} · ${record.camera.name}` : record.camera.name;
+  }
+
   function pushAmbientCardEntries() {
+    // Keep the status prefixes current between camera moves.
+    if (layerState._enabled && !layerState._cardStatusTimer)
+      layerState._cardStatusTimer = setInterval(() => {
+        if (!layerState._enabled) {
+          clearInterval(layerState._cardStatusTimer);
+          layerState._cardStatusTimer = null;
+          return;
+        }
+        pushAmbientCardEntries();
+      }, 15_000);
     const entries = [];
     let rank = 0;
     const push = (id, { pinned = false, active = false } = {}) => {
@@ -229,7 +250,7 @@ export function createCards({ state: layerState, services, parts, source }) {
           id,
           position: record.position,
           gapPx: CARD_GAP_PX,
-          title: record.camera.name,
+          title: statusTitle(record, ensureCardFrameSlot(id)),
           frameSlot: ensureCardFrameSlot(id),
           rank: rank++,
           pinned,

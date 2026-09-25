@@ -410,6 +410,115 @@ export function createShepherdExecutor({
 
   const EXTRA = {
     console_command: consoleCommand,
+    get_traffic_snapshot: ({ limit } = {}) => {
+      const traffic = dataManager.layers?.get?.('traffic')?.module;
+      if (
+        !dataManager.isEnabled?.('traffic') ||
+        typeof traffic?.getFlowSnapshot !== 'function'
+      )
+        return {
+          ok: false,
+          error: 'the traffic layer is off — enable it first',
+        };
+      return {
+        ok: true,
+        ...traffic.getFlowSnapshot({ limit: Number(limit) || 10 }),
+      };
+    },
+    export_fires: ({ format = 'csv', inViewOnly = true } = {}) => {
+      const firms = dataManager.layers?.get?.('local-firms')?.module;
+      if (
+        !dataManager.isEnabled?.('local-firms') ||
+        typeof firms?.getAnalystRecords !== 'function'
+      )
+        return {
+          ok: false,
+          error: 'the FIRMS fire layer is off — enable it first',
+        };
+      let rows = firms.getAnalystRecords(50_000) || [];
+      const rect = inViewOnly ? viewer.camera?.computeViewRectangle?.() : null;
+      if (rect) {
+        const deg = (r) => (r * 180) / Math.PI;
+        const [w, s, e, n] = [
+          deg(rect.west),
+          deg(rect.south),
+          deg(rect.east),
+          deg(rect.north),
+        ];
+        rows = rows.filter(
+          (r) =>
+            r.lat >= s &&
+            r.lat <= n &&
+            (w <= e ? r.lon >= w && r.lon <= e : r.lon >= w || r.lon <= e),
+        );
+      }
+      const records = rows.map((r) => ({
+        id: r.id,
+        lat: r.lat,
+        lon: r.lon,
+        frp_mw: r.frp,
+        confidence: r.confidence,
+        satellite: r.satellite,
+        acquired_utc: Number.isFinite(r.acqTime)
+          ? new Date(r.acqTime).toISOString()
+          : null,
+      }));
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      if (format === 'json')
+        download(
+          doc,
+          `adam-firms-${stamp}.json`,
+          JSON.stringify(records, null, 2),
+          'application/json',
+        );
+      else {
+        const cols = [
+          'id',
+          'lat',
+          'lon',
+          'frp_mw',
+          'confidence',
+          'satellite',
+          'acquired_utc',
+        ];
+        const esc = (v) =>
+          v === null || v === undefined
+            ? ''
+            : /[",\n]/.test(String(v))
+              ? `"${String(v).replace(/"/g, '""')}"`
+              : String(v);
+        download(
+          doc,
+          `adam-firms-${stamp}.csv`,
+          [
+            cols.join(','),
+            ...records.map((r) => cols.map((c) => esc(r[c])).join(',')),
+          ].join('\n'),
+          'text/csv',
+        );
+      }
+      const bySat = {};
+      for (const r of records)
+        bySat[r.satellite || 'unknown'] =
+          (bySat[r.satellite || 'unknown'] || 0) + 1;
+      const strongest = records.reduce(
+        (a, b) => ((b.frp_mw ?? -1) > (a?.frp_mw ?? -1) ? b : a),
+        null,
+      );
+      const newest = records.reduce(
+        (a, b) => ((b.acquired_utc || '') > (a?.acquired_utc || '') ? b : a),
+        null,
+      );
+      return {
+        ok: true,
+        count: records.length,
+        format,
+        scope: rect ? 'in view' : 'all loaded',
+        bySatellite: bySat,
+        strongest,
+        newest,
+      };
+    },
     list_alerts: () => ({ ok: true, rules: intel?.alerts?.list?.() || [] }),
     remove_alert: ({ id, enabled }) => {
       if (typeof enabled === 'boolean')

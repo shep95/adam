@@ -98,9 +98,11 @@ export function buildIncidentCard(row, nowMs, { link = null } = {}) {
   const facts = [];
   if (Number.isFinite(row.acres))
     facts.push(`${Math.round(row.acres).toLocaleString('en-US')} ac`);
+  // Containment is only as current as its report; WFIGS can lag the field
+  // by 12–24 h, so the figure carries its report time.
   facts.push(
     Number.isFinite(row.containedPct)
-      ? `${Math.round(row.containedPct)}% contained`
+      ? `${Math.round(row.containedPct)}% contained${reportStamp(row.updatedTime, nowMs)}`
       : 'containment unknown',
   );
   if (row.state) facts.push(row.state);
@@ -154,4 +156,15 @@ export function buildIncidentCard(row, nowMs, { link = null } = {}) {
     verticalOnly: true,
     placement: 'above',
   };
+}
+
+/** " · updated 09:40Z" (today) or " · updated 24 Sep 09:40Z"; empty if unknown. */
+export function reportStamp(updatedMs, nowMs = Date.now()) {
+  if (!Number.isFinite(updatedMs) || updatedMs <= 0) return '';
+  const d = new Date(updatedMs);
+  const hm = d.toISOString().slice(11, 16);
+  const sameDay = new Date(nowMs).toISOString().slice(0, 10) === d.toISOString().slice(0, 10);
+  if (sameDay) return ` · updated ${hm}Z`;
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return ` · updated ${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${hm}Z`;
 }

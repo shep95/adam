@@ -46,7 +46,7 @@ test('a full incident row renders name, size, containment, and ages', () => {
   assert.equal(card.id, 'fire-perimeter-card:2026-NMGNF-000123');
   assert.equal(card.title, 'FIRE · Frijoles');
   assert.deepEqual(card.details, [
-    '15,956 ac · 74% contained · US-NM',
+    '15,956 ac · 74% contained · updated 03:20Z · US-NM',
     'Natural cause · Active · Type 3 Incident',
     '380 personnel · Sandoval County · $4.2M to date',
     'discovered 1d ago · updated 2h ago',
