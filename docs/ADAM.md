@@ -14,6 +14,7 @@ The ops rail sits in its own lane under the top action bar:
 | ALERTS    | A   | Alert triggers: contacts in a zone, speed in a zone                                                                            |
 | FILTER    | G   | Time window, region, altitude band, vessel class                                                                               |
 | HEALTH    | —   | Feeds down, stale or on fallback, degraded capabilities; pulses amber past one fault. Exports and imports the operator profile |
+| REWIND    | R   | Scrub the last ~45 min of held tracks: ghost positions with 5-min tails, play at 30×                                           |
 | SKY       | L   | Live environment at the view centre (see below)                                                                                |
 | NATIONS   | N   | State institutions, national infrastructure, summit venues                                                                     |
 | BUILDINGS | —   | 3D buildings: photoreal tiles with a key, OSM footprints without                                                               |

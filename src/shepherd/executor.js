@@ -390,6 +390,22 @@ export function createShepherdExecutor({
         for (const p of pins) intel.unpin(p.layerKey, p.value);
         return { ok: true, removed: pins.length };
       }
+      case 'rewind': {
+        if (!c.rewind?.seek)
+          return { ok: false, error: 'rewind is not loaded' };
+        const minutes =
+          value == null || value === 'live' ? null : Number(value);
+        if (minutes != null && !(minutes > 0 && minutes <= 45))
+          return { ok: false, error: 'rewind takes 1-45 minutes or live' };
+        const r = c.rewind.seek(minutes);
+        return {
+          ok: true,
+          at: r.at ? new Date(r.at).toISOString() : 'live',
+          heldMinutes: r.range
+            ? Math.round((r.range.to - r.range.from) / 60_000)
+            : 0,
+        };
+      }
       case 'profile_export':
         if (typeof c.opsDeck?.exportProfile !== 'function')
           return { ok: false, error: 'ops deck is not loaded' };

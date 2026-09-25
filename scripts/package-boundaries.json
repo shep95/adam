@@ -2032,6 +2032,8 @@
       "src/ui/adam/displayPolicy.css",
       "src/ui/adam/hudPolicy.js",
       "src/ui/adam/captureTools.js",
+      "src/ui/adam/rewind.js",
+      "src/ui/adam/rewind.css",
       "src/ui/adam/captureMath.js",
       "src/ui/adam/motion.js",
       "src/ui/adam/motionMath.js",

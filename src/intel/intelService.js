@@ -321,6 +321,12 @@ export function createIntelService({
 
     /** Behaviour patterns over the last ~45 min (orbits, AIS dark, meetings, jumps). */
     patterns: (options) => patterns.findings(options),
+    /** Held track history (~45 min) for rewind: range, positions at a time, one track. */
+    rewind: {
+      range: () => patterns.range(),
+      snapshotAt: (at) => patterns.snapshotAt(at),
+      trackOf: (layerKey, id) => patterns.trackOf(layerKey, id),
+    },
 
     /** Anomalous regions for every sampled layer, strongest first. */
     anomalies({ limit = 6 } = {}) {

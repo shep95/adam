@@ -140,3 +140,34 @@ test('sampling is decimated', () => {
     false,
   );
 });
+
+test('snapshotAt interpolates held tracks for rewind', () => {
+  const watch = createPatternWatch({ sampleEveryMs: 0 });
+  for (let i = 0; i < 3; i += 1)
+    watch.sample(
+      (key) =>
+        key === 'flights'
+          ? [
+              {
+                icao24: 'a1',
+                lat: i,
+                lon: 179.5 + i * 0.5,
+                lastSeenMs: i * MIN,
+              },
+            ]
+          : [],
+      i * MIN,
+    );
+  assert.deepEqual(watch.range(), { from: 0, to: 2 * MIN });
+  const mid = watch.snapshotAt(MIN / 2);
+  assert.equal(mid.length, 1);
+  assert.ok(Math.abs(mid[0].lat - 0.5) < 1e-9);
+  assert.ok(Math.abs(mid[0].lon - 179.75) < 1e-9);
+  const wrapped = watch.snapshotAt(1.5 * MIN);
+  assert.ok(
+    Math.abs(wrapped[0].lon - -179.75) < 1e-9,
+    'crosses the antimeridian',
+  );
+  assert.equal(watch.snapshotAt(20 * MIN).length, 0);
+  assert.equal(watch.trackOf('flights', 'a1').length, 3);
+});

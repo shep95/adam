@@ -317,6 +317,60 @@ export function createPatternWatch(options = {}) {
         .map((f) => ({ ...f, title: KIND_LABEL[f.kind] || f.kind }));
     },
     trackCount: () => tracks.size,
+    /** Oldest and newest sample times held, or null when empty. */
+    range() {
+      let from = Infinity;
+      let to = -Infinity;
+      for (const t of tracks.values()) {
+        if (!t.points.length) continue;
+        from = Math.min(from, t.points[0].t);
+        to = Math.max(to, t.points[t.points.length - 1].t);
+      }
+      return Number.isFinite(from) ? { from, to } : null;
+    },
+    /**
+     * Where every tracked contact was at time `at` (linear between samples;
+     * contacts with no sample within 3 min either side are left out).
+     */
+    snapshotAt(at, { maxGapMs = 3 * 60_000 } = {}) {
+      const out = [];
+      for (const t of tracks.values()) {
+        const pts = t.points;
+        if (!pts.length || at < pts[0].t - maxGapMs) continue;
+        if (at > pts[pts.length - 1].t + maxGapMs) continue;
+        let i = pts.findIndex((p) => p.t >= at);
+        let lat;
+        let lon;
+        let heading;
+        if (i === -1) ({ lat, lon, heading } = pts[pts.length - 1]);
+        else if (i === 0) ({ lat, lon, heading } = pts[0]);
+        else {
+          const a = pts[i - 1];
+          const b = pts[i];
+          if (b.t - a.t > 2 * maxGapMs) continue;
+          const f = (at - a.t) / (b.t - a.t || 1);
+          lat = a.lat + (b.lat - a.lat) * f;
+          const dLon = ((b.lon - a.lon + 540) % 360) - 180;
+          lon = ((a.lon + dLon * f + 540) % 360) - 180;
+          heading = f < 0.5 ? a.heading : b.heading;
+        }
+        out.push({
+          layerKey: t.layerKey,
+          id: t.id,
+          label: t.label,
+          lat,
+          lon,
+          heading,
+        });
+      }
+      return out;
+    },
+    /** A contact's held track, oldest first. */
+    trackOf(layerKey, id) {
+      return (tracks.get(`${layerKey}:${id}`)?.points || []).map((p) => ({
+        ...p,
+      }));
+    },
     clear() {
       tracks.clear();
       jumps.clear();

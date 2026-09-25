@@ -1,0 +1,83 @@
+/* ── REWIND bar: bottom centre, above the command dock ─────────────────── */
+.adam-rewind {
+  position: fixed;
+  left: 50%;
+  bottom: 118px;
+  translate: -50% 0;
+  z-index: 620;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(760px, calc(100vw - 32px));
+  padding: 8px 12px;
+  zoom: var(--adam-ui-scale, 1);
+}
+
+.adam-rewind[hidden] {
+  display: none;
+}
+
+.adam-rewind.is-rewound {
+  border-color: var(--accent-alert-edge);
+}
+
+.adam-rewind-title {
+  letter-spacing: 2px;
+  color: var(--accent-primary);
+}
+
+.adam-rewind.is-rewound .adam-rewind-title {
+  color: var(--accent-alert);
+}
+
+.adam-rewind-slider {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--accent-primary);
+}
+
+.adam-rewind-time {
+  min-width: 170px;
+  font: 500 var(--type-meta) var(--font-mono);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.adam-rewind-note {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .adam-rewind {
+    flex-wrap: wrap;
+    bottom: 96px;
+  }
+
+  .adam-rewind-note {
+    display: none;
+  }
+}
+
+.adam-rewind button {
+  padding: 4px 10px;
+  font: 500 var(--type-meta) var(--font-mono);
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--chip-radius, 999px);
+  cursor: pointer;
+}
+
+.adam-rewind button:hover {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+}
+
+.adam-rewind-time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}

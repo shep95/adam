@@ -291,6 +291,17 @@ export function createApplicationTools({
     );
   defer(() => captureTools?.destroy());
 
+  // REWIND: scrub the pattern watcher's held track history.
+  let rewind = null;
+  import('../ui/adam/rewind.js')
+    .then(({ installRewind }) => {
+      if (signal?.aborted) return;
+      rewind = installRewind({ viewer, intel });
+      debug.rewind = rewind;
+    })
+    .catch((error) => console.warn('[adam] rewind failed to load:', error));
+  defer(() => rewind?.destroy());
+
   // The Cesium ion mark is an attribution for ion-served data; without an
   // ion token nothing comes from ion, so the mark is not shown.
   const ionInUse = Boolean(mapStackController?.cesiumToken);

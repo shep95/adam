@@ -58,6 +58,12 @@ export const SHORTCUTS = Object.freeze([
     modes: ['globe', 'tracking'],
   },
   {
+    keys: ['R'],
+    action: 'Rewind: scrub the last 45 minutes of tracks',
+    group: 'ADAM',
+    modes: ['globe', 'tracking'],
+  },
+  {
     keys: ['Space'],
     action: 'Hold to talk to the voice analyst',
     group: 'Voice',
