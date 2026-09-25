@@ -36,9 +36,14 @@ uniform float tintAmount;
 in vec2 v_textureCoordinates;
 void main() {
   vec4 c = texture(colorTexture, v_textureCoordinates);
+  // Light sources stay lit: bright pixels (city lights, lamps, beacons) are
+  // spared the night exposure and the tint, so they glow instead of dimming.
+  float srcLuma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+  float keep = smoothstep(0.5, 0.85, srcLuma);
   vec3 graded = c.rgb * exposure;
   float luma = dot(graded, vec3(0.299, 0.587, 0.114));
   graded = mix(graded, luma * tint * 1.35, tintAmount);
+  graded = mix(graded, c.rgb * 1.1, keep * (1.0 - exposure));
   out_FragColor = vec4(graded, c.a);
 }`;
 

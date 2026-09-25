@@ -110,3 +110,22 @@ test('globe sky helpers and precipitation mapping', async () => {
   assert.equal(precipitationFor({ weatherCode: 0 }).kind, 'none');
   assert.equal(precipitationFor({ weatherCode: 45 }).kind, 'fog');
 });
+
+test('night lights: factor, bounded street query, parsing', async () => {
+  const { nightFactor, streetBox, streetLightQuery, parseStreetLights } = await import('./nightLights.js');
+  const { sanitizeOverpassBody } = await import('../../server/providers/overpass/query.js');
+  assert.equal(nightFactor(10), 0);
+  assert.equal(nightFactor(-10), 1);
+  assert.ok(nightFactor(-5) > 0.3 && nightFactor(-5) < 0.6);
+  const q = streetLightQuery(streetBox(30.27, -97.74, 3000));
+  assert.equal(sanitizeOverpassBody(`data=${encodeURIComponent(q)}`).ok, true);
+  const parsed = parseStreetLights({
+    elements: [
+      { type: 'node', lat: 30.27, lon: -97.74 },
+      { type: 'way', geometry: [{ lat: 30.27, lon: -97.74 }, { lat: 30.271, lon: -97.741 }] },
+      { type: 'way', geometry: [{ lat: 30.27, lon: -97.74 }] },
+    ],
+  });
+  assert.equal(parsed.lamps.length, 1);
+  assert.equal(parsed.ways.length, 1);
+});

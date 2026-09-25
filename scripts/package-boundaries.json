@@ -2010,6 +2010,7 @@
       "src/environment/liveEnvironment.js",
       "src/environment/globeSky.js",
       "src/environment/weatherFx.js",
+      "src/environment/nightLights.js",
       "src/ui/adam/skyPanel.js",
       "src/ui/adam/skyPanel.css",
       "src/ui/adam/mapInteraction.js",

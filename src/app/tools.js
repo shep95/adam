@@ -276,11 +276,13 @@ export function createApplicationTools({
   // the clock, with the SKY panel's time controls and local weather.
   let globeSky = null;
   let weatherFx = null;
+  let nightLights = null;
   Promise.all([
     import('../environment/liveEnvironment.js'),
     import('../ui/adam/skyPanel.js'),
     import('../environment/globeSky.js'),
     import('../environment/weatherFx.js'),
+    import('../environment/nightLights.js'),
   ])
     .then(
       ([
@@ -288,6 +290,7 @@ export function createApplicationTools({
         { installSkyPanel, viewCenter },
         { createGlobeSky },
         { createWeatherFx },
+        { createNightLights },
       ]) => {
         if (signal?.aborted) return;
         environment = createLiveEnvironment({ viewer });
@@ -297,6 +300,13 @@ export function createApplicationTools({
           getCenter: () => viewCenter(viewer),
         });
         weatherFx = createWeatherFx({ viewer });
+        nightLights = createNightLights({
+          viewer,
+          environment,
+          getCenter: () => viewCenter(viewer),
+          getTileset: () => tileset,
+        });
+        debug.nightLights = nightLights;
         skyPanel = installSkyPanel({
           viewer,
           environment,
@@ -316,6 +326,7 @@ export function createApplicationTools({
   defer(() => {
     skyPanel?.destroy();
     weatherFx?.destroy();
+    nightLights?.destroy();
     globeSky?.destroy();
     environment?.destroy();
   });
