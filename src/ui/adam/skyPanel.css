@@ -2,7 +2,7 @@
 
 .sky-card {
   position: fixed;
-  top: 132px;
+  top: calc(var(--adam-rail-bottom, 124px) + 8px);
   left: 50%;
   translate: -50% 0;
   z-index: 300;

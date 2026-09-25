@@ -651,6 +651,21 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'spectrum',
+    description:
+      "Spectrum awareness from public sources. action: lookup (frequency like '1090', '156.8 MHz', '2.4 GHz', '518 kHz' → allocation and common uses, simplified ITU), receivers (public KiwiSDR web receivers on the globe; anyone can tune them live), masts (broadcast, mobile and radar masts in the view from OpenStreetMap; needs a regional view), open.",
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: ['lookup', 'receivers', 'masts', 'open'],
+        },
+        frequency: { type: 'string' },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

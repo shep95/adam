@@ -1069,6 +1069,15 @@ export function createShepherdExecutor({
       }
       return sym.scan(lat, lon, { radiusKm: radius_km || 5 });
     },
+    spectrum: async ({ action, frequency } = {}) => {
+      const sp = getConsole().spectrum;
+      if (!sp) return { ok: false, error: 'spectrum panel is still loading' };
+      if (action === 'lookup') return sp.lookup(frequency);
+      if (action === 'receivers') return sp.showReceivers();
+      if (action === 'masts') return sp.showTransmitters();
+      sp.open();
+      return { ok: true };
+    },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;
       if (!maps) return { ok: false, error: 'map layers are still loading' };

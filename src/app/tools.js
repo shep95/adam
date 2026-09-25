@@ -416,23 +416,34 @@ export function createApplicationTools({
   // VOLCANOES and SPACE: eruptions and hazard reach; planets and asteroids.
   let volcanoes = null;
   let space = null;
+  let spectrum = null;
   Promise.all([
     import('../ui/adam/volcanoPanel.js'),
     import('../ui/adam/spacePanel.js'),
+    import('../ui/adam/spectrumPanel.js'),
   ])
-    .then(([{ installVolcanoPanel }, { installSpacePanel }]) => {
-      if (signal?.aborted) return;
-      volcanoes = installVolcanoPanel({ viewer });
-      space = installSpacePanel({ viewer });
-      debug.volcanoes = volcanoes;
-      debug.space = space;
-    })
+    .then(
+      ([
+        { installVolcanoPanel },
+        { installSpacePanel },
+        { installSpectrumPanel },
+      ]) => {
+        if (signal?.aborted) return;
+        volcanoes = installVolcanoPanel({ viewer });
+        space = installSpacePanel({ viewer });
+        spectrum = installSpectrumPanel({ viewer });
+        debug.volcanoes = volcanoes;
+        debug.space = space;
+        debug.spectrum = spectrum;
+      },
+    )
     .catch((error) =>
       console.warn('[adam] volcano/space panels failed to load:', error),
     );
   defer(() => {
     volcanoes?.destroy();
     space?.destroy();
+    spectrum?.destroy();
   });
 
   // SYMBOLS FROM THE SKY: sacred and esoteric sites, shapes from above.

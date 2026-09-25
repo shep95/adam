@@ -205,7 +205,7 @@
 /* ── Flyout ────────────────────────────────────────────────────────────── */
 .adam-ops-flyout {
   position: fixed;
-  top: 132px;
+  top: calc(var(--adam-rail-bottom, 124px) + 8px);
   left: 50%;
   translate: -50% 0;
   width: min(360px, calc(100vw - 32px));

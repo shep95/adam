@@ -8,10 +8,13 @@
  *   GET /api/space/close-approaches  asteroids passing within 0.05 AU in the
  *                                    next 60 days (JPL SBDB close-approach
  *                                    API) — 1 h cache
+ *   GET /api/spectrum/receivers      public KiwiSDR web receivers anyone can
+ *                                    tune in a browser — 1 h cache
  */
 import { makeRateLimiter } from './common/rate-limit.js';
 import { normalizeGvp, normalizeHans } from '../../src/intel/volcanoes.js';
 import { normalizeCloseApproaches } from '../../src/space/solarSystem.js';
+import { parseKiwiList } from '../../src/intel/spectrum.js';
 
 const GVP =
   'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=2.0.0&request=GetFeature&typeName=GVP-VOTW:Smithsonian_VOTW_Holocene_Volcanoes&outputFormat=application/json';
@@ -19,6 +22,7 @@ const HANS =
   'https://volcanoes.usgs.gov/hans-public/api/volcano/getElevatedVolcanoes';
 const CAD =
   'https://ssd-api.jpl.nasa.gov/cad.api?date-min=now&date-max=%2B60&dist-max=0.05&sort=dist&fullname=true';
+const KIWI = 'http://rx.linkfanel.net/kiwisdr_com.js';
 const UA = 'ADAM/1 (https://github.com/shep95/adam)';
 
 export function earthSpaceProxy({
@@ -83,6 +87,31 @@ export function earthSpaceProxy({
       } catch (error) {
         return send(res, 502, {
           error: `volcano feed unavailable (${error.message})`,
+        });
+      }
+    });
+    middlewares.use('/api/spectrum/receivers', async (req, res) => {
+      if (!limit('kiwi')) return send(res, 429, { error: 'rate limited' });
+      try {
+        return send(
+          res,
+          200,
+          await cached('kiwi', 3600_000, async () => {
+            const r = await fetchImpl(KIWI, {
+              headers: { 'User-Agent': UA },
+              signal: AbortSignal.timeout(30_000),
+            });
+            if (!r.ok) throw new Error(`upstream ${r.status}`);
+            return {
+              receivers: parseKiwiList(await r.text()),
+              source: 'KiwiSDR public list (rx.linkfanel.net)',
+              at: new Date(now()).toISOString(),
+            };
+          }),
+        );
+      } catch (error) {
+        return send(res, 502, {
+          error: `receiver list unavailable (${error.message})`,
         });
       }
     });

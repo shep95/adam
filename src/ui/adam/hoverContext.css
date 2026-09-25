@@ -3,8 +3,7 @@
   z-index: 640;
   max-width: 320px;
   padding: 6px 9px;
-  font: 400 12px/1.45
-    var(--font-condensed, 'ADAM Sans', sans-serif);
+  font: 400 12px/1.45 var(--font-condensed, 'ADAM Sans', sans-serif);
   color: var(--text-secondary);
   background: rgba(6, 10, 12, 0.86);
   border: 1px solid var(--glass-border);

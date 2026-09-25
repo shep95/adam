@@ -71,3 +71,29 @@
   font-size: 11px;
   color: var(--text-dim);
 }
+
+.adam-spectrum-result {
+  margin: 6px 0;
+}
+
+.adam-spectrum-band {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  grid-template-areas: 'range name' 'range uses';
+  gap: 0 8px;
+  padding: 5px 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.adam-spectrum-band:hover {
+  background: var(--accent-primary-dim);
+}
+
+.adam-spectrum-band > :first-child {
+  grid-area: range;
+  font-family: var(--adam-font-mono);
+}

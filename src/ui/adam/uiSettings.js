@@ -659,6 +659,33 @@ export function installUiSettings({
   doc.addEventListener('keydown', onKey);
   cleanups.push(() => doc.removeEventListener('keydown', onKey));
 
+  // Centre panels open just below the rail, however many rows it wraps to.
+  const trackRail = () => {
+    const rail = doc.getElementById('adam-ops-rail');
+    if (!rail || typeof ResizeObserver === 'undefined') return false;
+    const set = () =>
+      root.style.setProperty(
+        '--adam-rail-bottom',
+        `${Math.round(rail.getBoundingClientRect().bottom)}px`,
+      );
+    const ro = new ResizeObserver(set);
+    ro.observe(rail);
+    globalThis.addEventListener?.('resize', set);
+    cleanups.push(() => {
+      ro.disconnect();
+      globalThis.removeEventListener?.('resize', set);
+    });
+    set();
+    return true;
+  };
+  if (!trackRail()) {
+    let tries = 0;
+    const t = setInterval(() => {
+      if (trackRail() || (tries += 1) > 40) clearInterval(t);
+    }, 250);
+    cleanups.push(() => clearInterval(t));
+  }
+
   // Apply what is stored.
   applyScale();
   applyLettering();

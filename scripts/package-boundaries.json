@@ -2058,6 +2058,8 @@
       "src/ui/adam/volcanoPanel.js",
       "src/ui/adam/volcanoPanel.css",
       "src/ui/adam/spacePanel.js",
+      "src/ui/adam/spectrumPanel.js",
+      "src/intel/spectrum.js",
       "src/ui/adam/spacePanel.css",
       "src/intel/volcanoes.js",
       "src/space/solarSystem.js",
