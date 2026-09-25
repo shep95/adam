@@ -399,3 +399,62 @@ test('a public host with no access token fails closed for paid routes only', asy
     'ok',
   );
 });
+
+test('named roles: per-route allow lists, admin passes all, audit lines', async () => {
+  const lines = [];
+  const env = {
+    ADAM_ACCESS_TOKEN: 'admin-token-000',
+    ADAM_ACCESS_ROLES: JSON.stringify({
+      watch: {
+        token: 'watch-token-123',
+        allow: ['/cctv', '/api/flight-lookup'],
+      },
+    }),
+  };
+  const probe = {
+    name: 'probe',
+    configureServer(s) {
+      s.middlewares.use('/api', (_q, res) => res.end('ok'));
+    },
+  };
+  const plugins = [accessGate({ env, audit: (e) => lines.push(e) }), probe];
+  const login = await serve(plugins, '/api/access', {
+    method: 'POST',
+    body: '{"token":"watch-token-123"}',
+  });
+  assert.equal(JSON.parse(login.text).identity, 'watch');
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  assert.equal(
+    (await serve(plugins, '/api/cctv/list', { headers: { cookie } })).text,
+    'ok',
+  );
+  assert.equal(
+    (await serve(plugins, '/api/flight-lookup?q=x', { headers: { cookie } }))
+      .text,
+    'ok',
+  );
+  assert.equal(
+    (await serve(plugins, '/api/shepherd/status', { headers: { cookie } }))
+      .status,
+    403,
+  );
+  const admin = `adam_access=${accessCookieValue('admin-token-000')}`;
+  assert.equal(
+    (
+      await serve(plugins, '/api/shepherd/status', {
+        headers: { cookie: admin },
+      })
+    ).text,
+    'ok',
+  );
+  const forged = 'adam_access=watch.deadbeef';
+  assert.equal(
+    (await serve(plugins, '/api/cctv/list', { headers: { cookie: forged } }))
+      .status,
+    401,
+  );
+  assert.ok(
+    lines.some((l) => l.identity === 'watch' && l.outcome === 'denied-by-role'),
+  );
+  assert.ok(lines.every((l) => !JSON.stringify(l).includes('watch-token-123')));
+});

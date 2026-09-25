@@ -62,6 +62,41 @@ import {
 
 /** @constant {string} localStorage key for the serialized project */
 const STORAGE_KEY = 'godsEyeView.sceneProject.v2';
+const CONFLICT_KEY = `${STORAGE_KEY}.conflict`;
+const META_KEY = `${STORAGE_KEY}.meta`;
+
+/** `updatedAt` of a stored project payload, without full validation. */
+export function sceneUpdatedAt(raw) {
+  try {
+    const value = JSON.parse(raw || 'null')?.updatedAt;
+    return typeof value === 'string' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function readSceneMeta() {
+  try {
+    return JSON.parse(localStorage.getItem(META_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function writeSceneMeta(meta) {
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Who saved: the access identity when known, plus a per-window tag. */
+function sceneSessionLabel() {
+  const tag = Math.random().toString(36).slice(2, 6);
+  const identity = globalThis.document?.documentElement?.dataset?.adamIdentity;
+  return identity ? `${identity} · ${tag}` : `window ${tag}`;
+}
 const STORAGE_CHECKPOINT_KEY = 'godsEyeView.sceneProject.checkpoint.v1';
 /**
  * Orchestrates deterministic cinematic scene playback.
@@ -163,6 +198,18 @@ export class SceneDirector {
     this._lastRunJson = '';
 
     this._project = this._loadProject();
+    // Conflict detection (ADAM): remember which saved version this window
+    // started from, and hear saves from other windows as they happen.
+    this._baseUpdatedAt = this._project.updatedAt || null;
+    this._sessionLabel = sceneSessionLabel();
+    this._onStorage = (event) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      const meta = readSceneMeta();
+      this._toastStorageError(
+        `Scenes changed in another window${meta?.by ? ` (${meta.by})` : ''} — your next save keeps that version as a backup.`,
+      );
+    };
+    globalThis.addEventListener?.('storage', this._onStorage);
     this._selectedSceneId = this._project.scenes[0]?.id || null;
     this._selectedShotId = this._project.scenes[0]?.shots[0]?.id || null;
     /** @type {string|null} Scene whose layer state most recently landed. */
@@ -225,6 +272,7 @@ export class SceneDirector {
   destroy() {
     if (this._destroyPromise) return this._destroyPromise;
     this._destroyed = true;
+    globalThis.removeEventListener?.('storage', this._onStorage);
     this._sceneSeekGeneration++;
     this._visibilityUnsubscribe?.();
     this._cameraHandoffUnsubscribe?.();
@@ -317,11 +365,36 @@ export class SceneDirector {
       );
       return;
     }
+    try {
+      // Another window or session saved since this one loaded: keep theirs as
+      // a backup rather than overwriting it silently, and say who and when.
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const storedAt = sceneUpdatedAt(stored);
+      if (
+        stored &&
+        storedAt &&
+        this._baseUpdatedAt &&
+        storedAt !== this._baseUpdatedAt
+      ) {
+        localStorage.setItem(CONFLICT_KEY, stored);
+        const meta = readSceneMeta();
+        this._toastStorageError(
+          `Scene conflict: another window${meta?.by ? ` (${meta.by})` : ''} saved at ${storedAt.slice(11, 16)}Z — that version is kept as a backup; yours is saved.`,
+        );
+      }
+    } catch {
+      /* conflict check is best-effort; the save below still runs */
+    }
     this._project.updatedAt = new Date().toISOString();
     try {
       const payload = JSON.stringify(this._project);
       parseSceneDocument(payload);
       localStorage.setItem(STORAGE_KEY, payload);
+      this._baseUpdatedAt = this._project.updatedAt;
+      writeSceneMeta({
+        updatedAt: this._project.updatedAt,
+        by: this._sessionLabel,
+      });
     } catch (e) {
       // Private browsing / block-all-cookies / quota-exceeded throws here. The
       // in-memory project stays usable this session, but persistence failed —

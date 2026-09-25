@@ -612,3 +612,33 @@ test('reset clears totals and re-arms both latches for a new session', () => {
   assert.equal(cleared.capReached, false);
   assert.equal(tracker.record(dollarsOfUsage(2)).warnCrossed, true);
 });
+
+test('daily ledger lowers the session cap to the day\'s remaining budget', async () => {
+  const { createVoiceDailyLedger, dailyCapUsd } = await import('./voiceDailyLedger.js');
+  const store = new Map();
+  const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  let t = Date.parse('2026-09-25T10:00:00Z');
+  const ledger = createVoiceDailyLedger({ storage, cap: 10, now: () => t });
+  ledger.record('a', 4);
+  ledger.record('a', 6.5);
+  assert.equal(ledger.spentToday(), 6.5);
+  assert.deepEqual(ledger.clampLimits({ warnUsd: 2, capUsd: 5 }), { warnUsd: 2, capUsd: 3.5 });
+  ledger.record('b', 4);
+  assert.ok(ledger.clampLimits({ warnUsd: 2, capUsd: 5 }).capUsd <= 0.001);
+  t = Date.parse('2026-09-26T00:01:00Z');
+  assert.equal(ledger.spentToday(), 0);
+  assert.equal(dailyCapUsd('off'), Infinity);
+  assert.equal(dailyCapUsd(undefined), 20);
+});
+
+test('server session ceiling refuses past the daily limit', async () => {
+  const { sessionCeiling } = await import('../../server/providers/openai.js');
+  const mw = sessionCeiling({ env: { ADAM_VOICE_SESSIONS_PER_DAY: '2' }, now: () => Date.parse('2026-09-25T10:00:00Z') });
+  const run = () => {
+    let status = 200;
+    let passed = false;
+    mw({ method: 'POST' }, { writeHead: (s) => (status = s), end() {} }, () => (passed = true));
+    return passed ? 'next' : status;
+  };
+  assert.deepEqual([run(), run(), run()], ['next', 'next', 429]);
+});

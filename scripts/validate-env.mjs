@@ -9,6 +9,7 @@
  * never printed — only whether each is set.
  */
 import { existsSync, readFileSync } from 'node:fs';
+import { parseAccessRoles } from '../server/providers/accessGate.js';
 
 export function parseDotenv(text) {
   const out = {};
@@ -102,6 +103,22 @@ export function assessEnv(env) {
     warnings.push(
       'ADAM_ACCESS_TOKEN is short; use at least 24 random characters (openssl rand -hex 32).',
     );
+
+  const rolesRaw = String(env.ADAM_ACCESS_ROLES || '').trim();
+  if (rolesRaw) {
+    const roles = parseAccessRoles(rolesRaw);
+    row(roles.size > 0, 'named roles', `${roles.size} role(s), audited`);
+    if (!roles.size)
+      errors.push(
+        'ADAM_ACCESS_ROLES is set but holds no valid role (JSON object; tokens of 12+ characters).',
+      );
+  }
+  const sessions = Number(env.ADAM_VOICE_SESSIONS_PER_DAY);
+  row(
+    true,
+    'voice ceiling',
+    `${Number.isFinite(sessions) && sessions > 0 ? `${sessions} sessions/day` : 'no server session cap'} · browser cap ${String(env.VITE_ADAM_VOICE_DAILY_CAP_USD || '20').trim()} USD/day`,
+  );
 
   for (const name of ['GOOGLE_MAPS_API_KEY', 'CESIUM_ION_TOKEN'])
     if (set(env, name))

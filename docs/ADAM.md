@@ -8,16 +8,16 @@ deploy it privately, and what it deliberately will not do.
 
 The ops rail sits in its own lane under the top action bar:
 
-| Chip | Key | What it does |
-| --- | --- | --- |
-| BRIEF | B | Situational brief across every loaded layer, with baseline deviations |
-| ALERTS | A | Alert triggers: contacts in a zone, speed in a zone |
-| FILTER | G | Time window, region, altitude band, vessel class |
-| SKY | L | Live environment at the view centre (see below) |
-| NATIONS | N | State institutions, national infrastructure, summit venues |
-| BUILDINGS | — | 3D buildings: photoreal tiles with a key, OSM footprints without |
-| KEYS | ? | Every shortcut live in the current mode |
-| SHEPHERD | S | The text analyst |
+| Chip      | Key | What it does                                                          |
+| --------- | --- | --------------------------------------------------------------------- |
+| BRIEF     | B   | Situational brief across every loaded layer, with baseline deviations |
+| ALERTS    | A   | Alert triggers: contacts in a zone, speed in a zone                   |
+| FILTER    | G   | Time window, region, altitude band, vessel class                      |
+| SKY       | L   | Live environment at the view centre (see below)                       |
+| NATIONS   | N   | State institutions, national infrastructure, summit venues            |
+| BUILDINGS | —   | 3D buildings: photoreal tiles with a key, OSM footprints without      |
+| KEYS      | ?   | Every shortcut live in the current mode                               |
+| SHEPHERD  | S   | The text analyst                                                      |
 
 The top action bar adds **snapshot** (PNG of the view with a caption strip),
 **record** (the whole tab via screen capture, falling back to the globe canvas;
@@ -76,12 +76,14 @@ Copy `.env.example` to `.env` (or set them in Vercel → Settings → Environmen
 Variables). Run `npm run validate:env` to see what each enables — values are
 never printed.
 
-| Variable | Enables |
-| --- | --- |
-| `ADAM_ACCESS_TOKEN` | **Required on any public host.** Locks every `/api` route behind a cookie issued after entering the token |
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` / `VENICE_API_KEY` / `OPENROUTER_API_KEY` | Shepherd (any one) |
-| `OPENAI_API_KEY` | Voice analyst |
-| `GOOGLE_MAPS_API_KEY` or `CESIUM_ION_TOKEN` | Photoreal 3D tiles (browser-exposed by design — restrict by referrer) |
+| Variable                                                                                            | Enables                                                                                                                                                  |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ADAM_ACCESS_TOKEN`                                                                                 | **Required on any public host.** Locks every `/api` route behind a cookie issued after entering the token                                                |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` / `VENICE_API_KEY` / `OPENROUTER_API_KEY` | Shepherd (any one)                                                                                                                                       |
+| `OPENAI_API_KEY`                                                                                    | Voice analyst                                                                                                                                            |
+| `ADAM_ACCESS_ROLES`                                                                                 | Named roles, each with its own token and allowed `/api` prefixes; paid routes are audited to the server log (identity, route, outcome — never the token) |
+| `ADAM_VOICE_SESSIONS_PER_DAY` / `VITE_ADAM_VOICE_DAILY_CAP_USD`                                     | Voice spend ceilings: server sessions per day (429 past it) and a per-browser daily USD cap (default 20)                                                 |
+| `GOOGLE_MAPS_API_KEY` or `CESIUM_ION_TOKEN`                                                         | Photoreal 3D tiles (browser-exposed by design — restrict by referrer)                                                                                    |
 
 Without an access token on Vercel, the paid routes (`/api/shepherd`,
 `/api/openai`, `/api/realtime`, `/api/google`) refuse to run, so a leaked URL

@@ -74,13 +74,107 @@ function isHttps(req) {
   );
 }
 
-export function accessGate({ env = process.env } = {}) {
+/**
+ * Named roles from ADAM_ACCESS_ROLES (JSON). Either
+ *   {"analyst": {"token": "…", "allow": ["/shepherd", "/flight-lookup"]}}
+ * or the short form {"<token>": ["/api/shepherd", "/api/cctv"]}.
+ * `allow` lists /api route prefixes ("*" = everything). The admin token
+ * (ADAM_ACCESS_TOKEN) always allows everything.
+ * @returns {Map<string, {token: string, allow: string[]}>}
+ */
+export function parseAccessRoles(raw) {
+  const roles = new Map();
+  if (!raw) return roles;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return roles;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+    return roles;
+  const norm = (prefix) => {
+    const p = String(prefix || '').trim();
+    if (p === '*') return '*';
+    const stripped = p.replace(/^\/?api(?=\/|$)/, '');
+    return stripped.startsWith('/')
+      ? stripped.replace(/\/+$/, '')
+      : `/${stripped.replace(/\/+$/, '')}`;
+  };
+  for (const [key, value] of Object.entries(parsed)) {
+    let name;
+    let token;
+    let allow;
+    if (Array.isArray(value)) {
+      token = key;
+      allow = value;
+      name = `role-${crypto.createHash('sha256').update(key).digest('hex').slice(0, 8)}`;
+    } else if (value && typeof value === 'object') {
+      name = key;
+      token = value.token;
+      allow = value.allow;
+    }
+    token = String(token || '').trim();
+    if (
+      !/^[A-Za-z0-9._-]{1,40}$/.test(name || '') ||
+      token.length < 12 ||
+      !Array.isArray(allow)
+    )
+      continue;
+    roles.set(name, { token, allow: allow.map(norm).filter(Boolean) });
+  }
+  return roles;
+}
+
+export function roleAllows(role, path) {
+  if (!role) return false;
+  return role.allow.some(
+    (p) => p === '*' || path === p || path.startsWith(`${p}/`),
+  );
+}
+
+function roleCookieValue(name, token) {
+  return `${name}.${crypto.createHmac('sha256', String(token)).update(`adam-role-v1:${name}`).digest('hex')}`;
+}
+
+/** Which identity a request's cookie proves: 'admin', a role name, or null. */
+export function identifyRequest(req, adminToken, roles) {
+  const cookie = readCookie(req.headers?.cookie, COOKIE);
+  if (!cookie) return null;
+  if (adminToken && safeEqual(cookie, accessCookieValue(adminToken)))
+    return 'admin';
+  const dot = cookie.indexOf('.');
+  if (dot > 0) {
+    const name = cookie.slice(0, dot);
+    const role = roles.get(name);
+    if (role && safeEqual(cookie, roleCookieValue(name, role.token)))
+      return name;
+  }
+  return null;
+}
+
+/** Routes worth an audit line (cost-bearing or sensitive). */
+const AUDITED = [
+  '/shepherd',
+  '/openai',
+  '/realtime',
+  '/google',
+  '/cctv',
+  '/flight-lookup',
+  '/access',
+];
+
+export function accessGate({
+  env = process.env,
+  audit = (entry) => console.log(JSON.stringify(entry)),
+} = {}) {
   const attempts = makeRateLimiter({
     windowMs: 15 * 60_000,
     max: 10,
     globalMax: 200,
   });
   const token = () => String(env.ADAM_ACCESS_TOKEN || '').trim();
+  const roles = () => parseAccessRoles(env.ADAM_ACCESS_ROLES);
 
   const send = (res, status, payload, headers = {}) => {
     res.writeHead(status, {
@@ -92,17 +186,40 @@ export function accessGate({ env = process.env } = {}) {
     res.end(JSON.stringify(payload));
   };
 
+  const log = (req, path, identity, outcome) => {
+    if (!AUDITED.some((p) => path === p || path.startsWith(`${p}/`))) return;
+    try {
+      audit({
+        audit: 'adam-access',
+        at: new Date().toISOString(),
+        identity: identity || 'anonymous',
+        method: req.method,
+        path: `/api${path}`,
+        outcome,
+      });
+    } catch {
+      /* audit must never break a request */
+    }
+  };
+
   function install(middlewares) {
     middlewares.use('/api', async (req, res, next) => {
       const path = String(req.url || '/').split('?')[0];
       const secret = token();
+      const roleMap = roles();
+      const gated = Boolean(secret) || roleMap.size > 0;
       if (path === '/access' || path === '/access/') {
+        const identity = identifyRequest(req, secret, roleMap);
         if (req.method === 'GET')
           return send(res, 200, {
-            required: Boolean(secret),
-            granted: accessGranted(req, secret),
+            required: gated,
+            granted: !gated || Boolean(identity),
+            identity: identity || null,
+            allow:
+              identity === 'admin' ? ['*'] : roleMap.get(identity)?.allow || [],
           });
-        if (req.method === 'DELETE')
+        if (req.method === 'DELETE') {
+          log(req, path, identity, 'signed-out');
           return send(
             res,
             200,
@@ -111,9 +228,10 @@ export function accessGate({ env = process.env } = {}) {
               'Set-Cookie': `${COOKIE}=; Path=/api; HttpOnly; SameSite=Strict; Max-Age=0`,
             },
           );
+        }
         if (req.method !== 'POST')
           return send(res, 405, { error: 'method not allowed' });
-        if (!secret) return send(res, 200, { required: false, granted: true });
+        if (!gated) return send(res, 200, { required: false, granted: true });
         if (!attempts(clientKey(req)))
           return send(res, 429, {
             error: 'too many attempts; wait 15 minutes',
@@ -124,19 +242,37 @@ export function accessGate({ env = process.env } = {}) {
         } catch {
           body = {};
         }
-        if (!safeEqual(String(body.token || ''), secret))
-          return send(res, 401, { error: 'wrong access token' });
+        const offered = String(body.token || '');
         const secure = isHttps(req) ? '; Secure' : '';
-        return send(
-          res,
-          200,
-          { granted: true },
-          {
-            'Set-Cookie': `${COOKIE}=${accessCookieValue(secret)}; Path=/api; HttpOnly; SameSite=Strict; Max-Age=${MAX_AGE_S}${secure}`,
-          },
-        );
+        const cookieAttrs = `; Path=/api; HttpOnly; SameSite=Strict; Max-Age=${MAX_AGE_S}${secure}`;
+        if (secret && safeEqual(offered, secret)) {
+          log(req, path, 'admin', 'signed-in');
+          return send(
+            res,
+            200,
+            { granted: true, identity: 'admin' },
+            {
+              'Set-Cookie': `${COOKIE}=${accessCookieValue(secret)}${cookieAttrs}`,
+            },
+          );
+        }
+        for (const [name, role] of roleMap) {
+          if (safeEqual(offered, role.token)) {
+            log(req, path, name, 'signed-in');
+            return send(
+              res,
+              200,
+              { granted: true, identity: name, allow: role.allow },
+              {
+                'Set-Cookie': `${COOKIE}=${roleCookieValue(name, role.token)}${cookieAttrs}`,
+              },
+            );
+          }
+        }
+        log(req, path, null, 'denied-bad-token');
+        return send(res, 401, { error: 'wrong access token' });
       }
-      if (!secret) {
+      if (!gated) {
         // Fail closed for paid endpoints on a public host with no token:
         // otherwise anyone holding the URL spends the operator's AI keys.
         if (
@@ -150,8 +286,19 @@ export function accessGate({ env = process.env } = {}) {
           });
         return next();
       }
-      if (accessGranted(req, secret)) return next();
-      return send(res, 401, { error: 'access token required', access: true });
+      const identity = identifyRequest(req, secret, roleMap);
+      if (!identity) {
+        log(req, path, null, 'denied-no-session');
+        return send(res, 401, { error: 'access token required', access: true });
+      }
+      if (identity !== 'admin' && !roleAllows(roleMap.get(identity), path)) {
+        log(req, path, identity, 'denied-by-role');
+        return send(res, 403, {
+          error: `role ${identity} may not use /api${path}`,
+        });
+      }
+      log(req, path, identity, 'allowed');
+      return next();
     });
   }
 

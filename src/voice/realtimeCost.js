@@ -9,6 +9,7 @@ import {
   resolveVoiceModel,
   formatCostUsd,
 } from './voiceCost.js';
+import { createVoiceDailyLedger } from './voiceDailyLedger.js';
 
 /** Own next-session preferences and the immutable-model session cost meter. */
 export class RealtimeCost {
@@ -21,6 +22,8 @@ export class RealtimeCost {
       limits: this.voiceLimits,
     });
     this.costCapStopped = false;
+    this.dailyLedger = createVoiceDailyLedger();
+    this.sessionLedgerId = null;
   }
   get ui() {
     return this.readUi();
@@ -39,6 +42,8 @@ export class RealtimeCost {
    */
   syncCostUi() {
     const state = this.costTracker.state();
+    if (this.sessionLedgerId && Number.isFinite(state.totalUsd))
+      this.dailyLedger?.record(this.sessionLedgerId, state.totalUsd);
     const pendingTier = resolveVoiceModel(this.voiceTier).tier;
     const isMini = pendingTier === 'mini';
     if (this.ui?.tierButton) {
@@ -189,7 +194,11 @@ export class RealtimeCost {
 
   prepareSession() {
     this.voiceTier = readStoredVoiceTier();
-    this.voiceLimits = readStoredVoiceLimits();
+    // The day's remaining budget lowers this session's cap (voiceDailyLedger).
+    this.voiceLimits = this.dailyLedger
+      ? this.dailyLedger.clampLimits(readStoredVoiceLimits())
+      : readStoredVoiceLimits();
+    this.sessionLedgerId = `s${Date.now().toString(36)}`;
     this.costCapStopped = false;
     // Provisional meter (tier-priced) so the readout shows $0.00 while
     // connecting. It is REPLACED below with one bound to the model the server
