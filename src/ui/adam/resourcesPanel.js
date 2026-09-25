@@ -104,7 +104,9 @@ export function installResourcesPanel({
     } catch (error) {
       if (mine !== token) return { ok: false, error: 'superseded' };
       ranking = null;
-      rankNote = `resource ranking unavailable (${error.message})`;
+      rankNote = /unavailable/.test(error.message)
+        ? error.message
+        : `resource ranking unavailable (${error.message})`;
     }
     governorRequestRender('resources');
     render();
@@ -224,7 +226,9 @@ export function installResourcesPanel({
     body.append(
       el(doc, 'h3', 'adam-meta adam-ops-section', 'richest countries by'),
     );
-    const kinds = el(doc, 'div', 'adam-volc-kinds adam-space-controls');
+    const kinds = el(doc, 'div', 'adam-res-kinds');
+    kinds.style.cssText =
+      'display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px';
     for (const t of RESOURCE_TYPES) {
       const b = el(
         doc,
@@ -233,6 +237,7 @@ export function installResourcesPanel({
         t.label,
       );
       b.type = 'button';
+      b.style.whiteSpace = 'nowrap';
       b.addEventListener('click', () => void rank(t.id));
       kinds.append(b);
     }

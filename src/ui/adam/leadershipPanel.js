@@ -124,7 +124,9 @@ export function installLeadershipPanel({
       governorRequestRender('leadership');
     } catch (error) {
       if (mine !== token) return { ok: false, error: 'superseded' };
-      note = `leadership unavailable (${error.message})`;
+      note = /unavailable/.test(error.message)
+        ? error.message
+        : `leadership unavailable (${error.message})`;
       if (!chain.length || !chain[0].holders) chain = [];
     }
     render();
