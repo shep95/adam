@@ -24,6 +24,7 @@ import {
 import { governorRequestRender } from '../../renderGovernor.js';
 
 const LABEL_TITLE = 'space';
+const LABEL_TODAY = 'today';
 const RAD = 180 / Math.PI;
 
 function el(doc, tag, className, text) {
@@ -258,13 +259,13 @@ export function installSpacePanel({
       doc,
       'span',
       'adam-volc-note',
-      dayOffset ? `${dayOffset > 0 ? '+' : ''}${dayOffset} days` : 'today',
+      dayOffset ? `${dayOffset > 0 ? '+' : ''}${dayOffset} days` : LABEL_TODAY,
     );
     slider.addEventListener('input', () => {
       dayOffset = Number(slider.value);
       when.textContent = dayOffset
         ? `${dayOffset > 0 ? '+' : ''}${dayOffset} days`
-        : 'today';
+        : LABEL_TODAY;
       drawOrrery(canvas);
     });
     body.append(canvas, controls, slider, when);

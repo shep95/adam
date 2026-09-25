@@ -20,6 +20,7 @@ import {
 import { governorRequestRender } from '../../renderGovernor.js';
 
 const LABEL_TITLE = 'volcanoes';
+const LABEL_NOTABLE = 'notable';
 const ALERT_COLORS = {
   RED: '#FF3B30',
   ORANGE: '#FF8C1A',
@@ -434,7 +435,7 @@ export function installVolcanoPanel({
         : pool.filter((v) => v.source === 'notable').slice(0, 80);
       listHead.textContent = query.trim()
         ? `matches · ${hits.length}`
-        : 'notable';
+        : LABEL_NOTABLE;
       list.replaceChildren(...hits.map(row));
       if (!hits.length)
         list.append(el(doc, 'p', 'adam-volc-note', 'no volcano matches'));
