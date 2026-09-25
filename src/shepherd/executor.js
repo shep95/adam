@@ -89,6 +89,7 @@ export function createShepherdExecutor({
   getEnvironment = () => null,
   getSkyPanel = () => null,
   getNations = () => null,
+  getConsole = () => globalThis.__godsEyeView || {},
   memory = null,
   doc = globalThis.document,
 }) {
@@ -307,7 +308,118 @@ export function createShepherdExecutor({
     };
   }
 
+  function clickIfExists(id) {
+    const node = doc.getElementById?.(id);
+    if (!node) return false;
+    node.click();
+    return true;
+  }
+
+  function setPanel(panel, open) {
+    const c = getConsole();
+    switch (panel) {
+      case 'brief':
+      case 'alerts':
+      case 'filter':
+        c.opsDeck?.toggleView?.(panel === 'filter' ? 'filters' : panel, open);
+        return true;
+      case 'keys':
+        c.opsDeck?.toggleShortcuts?.(open);
+        return true;
+      case 'sky':
+        open ? c.skyPanel?.open?.() : c.skyPanel?.close?.();
+        return Boolean(c.skyPanel);
+      case 'nations':
+        open ? c.shepherd?.nations?.open?.() : c.shepherd?.nations?.close?.();
+        return Boolean(c.shepherd?.nations);
+      case 'shepherd':
+        open ? c.shepherd?.room?.open?.() : c.shepherd?.room?.close?.();
+        return true;
+      case 'display':
+        c.hudPolicy?.openDisplay?.(open);
+        return Boolean(c.hudPolicy);
+      case 'data_layers': {
+        const panelEl = doc.getElementById?.('data-panel');
+        const collapsed = panelEl?.classList?.contains('collapsed');
+        if (panelEl && collapsed === open)
+          panelEl.querySelector('.panel-collapse-btn')?.click();
+        return Boolean(panelEl);
+      }
+      default:
+        return false;
+    }
+  }
+
+  async function consoleCommand({ command, panel, value }) {
+    const c = getConsole();
+    switch (command) {
+      case 'open_panel':
+      case 'close_panel':
+        return { ok: setPanel(panel, command === 'open_panel'), panel };
+      case 'scope': {
+        const want = !/^(off|false|0)$/i.test(String(value ?? 'on'));
+        const btn = doc.getElementById?.('scope-toggle');
+        const isOn = btn?.getAttribute('aria-pressed') !== 'false';
+        if (btn && isOn !== want) btn.click();
+        return { ok: Boolean(btn), scope: want ? 'on' : 'off' };
+      }
+      case 'snapshot':
+        if (!c.capture) return { ok: false, error: 'capture tools not loaded' };
+        await c.capture.snapshot();
+        return { ok: true, saved: 'png' };
+      case 'record_start':
+        if (!c.capture) return { ok: false, error: 'capture tools not loaded' };
+        await c.capture.startRecording();
+        return { ok: true, recording: true };
+      case 'record_stop':
+        c.capture?.stopRecording?.();
+        return { ok: true, recording: false };
+      case 'ui_scale':
+        c.capture?.setScale?.(Number(value) || 1);
+        return { ok: Boolean(c.capture), scale: Number(value) || 1 };
+      case 'share_view':
+        return {
+          ok: clickIfExists('share-btn'),
+          note: 'share link copied to the clipboard',
+        };
+      case 'clear_overlays':
+        return overlay.clear();
+      case 'unpin_all': {
+        const pins = intel?.getPins?.() || [];
+        for (const p of pins) intel.unpin(p.layerKey, p.value);
+        return { ok: true, removed: pins.length };
+      }
+      case 'system_status': {
+        const layers = (dataManager.getAll?.() || []).filter((l) => l.enabled);
+        return {
+          ok: true,
+          layers: layers.map((l) => ({
+            id: l.id,
+            count: l.stats?.count ?? null,
+            error: l.stats?.error || null,
+          })),
+          recording: Boolean(doc.documentElement?.dataset?.adamRecordingSince),
+          uiScale: Number(doc.documentElement?.dataset?.uiScale || 1),
+          view: doc.documentElement?.dataset?.adamView || null,
+        };
+      }
+      default:
+        return { ok: false, error: `unknown command ${command}` };
+    }
+  }
+
   const EXTRA = {
+    console_command: consoleCommand,
+    list_alerts: () => ({ ok: true, rules: intel?.alerts?.list?.() || [] }),
+    remove_alert: ({ id, enabled }) => {
+      if (typeof enabled === 'boolean')
+        return {
+          ok: Boolean(intel?.alerts?.setEnabled?.(id, enabled)),
+          id,
+          enabled,
+        };
+      return { ok: Boolean(intel?.alerts?.remove?.(id)), id, removed: true };
+    },
     get_console_state: () =>
       readConsoleState({
         viewer,

@@ -320,3 +320,75 @@ test('ndjson reader tolerates torn and split lines', async () => {
   for await (const e of ndjsonEvents(body)) out.push(e.type);
   assert.deepEqual(out, ['text', 'done']);
 });
+
+test('console_command drives panels, scope, capture and alerts', async () => {
+  const calls = [];
+  const scopeBtn = {
+    attrs: { 'aria-pressed': 'true' },
+    getAttribute(k) {
+      return this.attrs[k];
+    },
+    click() {
+      calls.push('scope-click');
+    },
+  };
+  const doc = {
+    getElementById: (id) => (id === 'scope-toggle' ? scopeBtn : null),
+    documentElement: { dataset: { uiScale: '1.15', adamView: 'surface' } },
+  };
+  const consoleHandle = {
+    opsDeck: { toggleView: (id, open) => calls.push(`view:${id}:${open}`) },
+    capture: {
+      snapshot: async () => calls.push('snap'),
+      setScale: (s) => calls.push(`scale:${s}`),
+    },
+    hudPolicy: { openDisplay: (o) => calls.push(`display:${o}`) },
+  };
+  const removed = [];
+  const exec = createShepherdExecutor({
+    runGevAction: async () => ({ ok: true }),
+    viewer: {},
+    dataManager: {
+      isEnabled: () => true,
+      getAll: () => [{ id: 'flights', enabled: true, stats: { count: 12 } }],
+    },
+    intel: {
+      alerts: {
+        list: () => [{ id: 'r1' }],
+        remove: (id) => (removed.push(id), true),
+      },
+      getPins: () => [],
+    },
+    overlay: { clear: () => ({ ok: true }) },
+    buildings: {},
+    client: {},
+    getConsole: () => consoleHandle,
+    doc,
+  });
+  const run = async (args) =>
+    JSON.parse(await exec.run('console_command', args));
+  assert.equal(
+    (await run({ command: 'open_panel', panel: 'filter' })).ok,
+    true,
+  );
+  assert.equal((await run({ command: 'scope', value: 'off' })).scope, 'off');
+  assert.equal((await run({ command: 'snapshot' })).ok, true);
+  await run({ command: 'ui_scale', value: '1.3' });
+  await run({ command: 'open_panel', panel: 'display' });
+  const status = await run({ command: 'system_status' });
+  assert.deepEqual(calls, [
+    'view:filters:true',
+    'scope-click',
+    'snap',
+    'scale:1.3',
+    'display:true',
+  ]);
+  assert.equal(status.layers[0].count, 12);
+  assert.equal(status.uiScale, 1.15);
+  assert.equal(JSON.parse(await exec.run('list_alerts', {})).rules.length, 1);
+  assert.equal(
+    JSON.parse(await exec.run('remove_alert', { id: 'r1' })).ok,
+    true,
+  );
+  assert.deepEqual(removed, ['r1']);
+});

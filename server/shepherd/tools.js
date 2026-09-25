@@ -204,6 +204,60 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     parameters: obj({}),
   },
   {
+    name: 'console_command',
+    description:
+      'Command-centre control over every ADAM surface. open_panel/close_panel: brief, alerts, filter, sky, nations, shepherd, display, keys, data_layers. scope: on|off. snapshot: save a PNG of the view. record_start / record_stop: capture the view. ui_scale: 0.8-1.4. share_view: copy a share link of the current view. clear_overlays: remove Shepherd overlays and pins. unpin_all: clear the pinned-contact rail. system_status: layer health (on, count, feed state) plus AI, recording and scale state.',
+    parameters: obj(
+      {
+        command: {
+          type: 'string',
+          enum: [
+            'open_panel',
+            'close_panel',
+            'scope',
+            'snapshot',
+            'record_start',
+            'record_stop',
+            'ui_scale',
+            'share_view',
+            'clear_overlays',
+            'unpin_all',
+            'system_status',
+          ],
+        },
+        panel: {
+          type: 'string',
+          enum: [
+            'brief',
+            'alerts',
+            'filter',
+            'sky',
+            'nations',
+            'shepherd',
+            'display',
+            'keys',
+            'data_layers',
+          ],
+        },
+        value: { type: 'string' },
+      },
+      ['command'],
+    ),
+  },
+  {
+    name: 'list_alerts',
+    description:
+      'List the operator alert rules with their state (armed, tripped, last result).',
+    parameters: obj({}),
+  },
+  {
+    name: 'remove_alert',
+    description: 'Remove an alert rule by id, or disable/enable it.',
+    parameters: obj({ id: { type: 'string' }, enabled: { type: 'boolean' } }, [
+      'id',
+    ]),
+  },
+  {
     name: 'set_3d_buildings',
     description: 'Show or hide photorealistic 3D buildings and terrain.',
     parameters: obj({ enabled: { type: 'boolean' } }, ['enabled']),

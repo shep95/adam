@@ -115,6 +115,9 @@ export function installShepherd({
   return {
     agent,
     room,
+    get nations() {
+      return nations;
+    },
     overlay,
     buildings,
     executor,
