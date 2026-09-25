@@ -1,3 +1,4 @@
+import { userKeyHeaders } from '../shepherd/userKeys.js';
 import { DEFAULT_VOICE_TIER, resolveVoiceModel } from './voiceCost.js';
 
 /** Realtime-compatible token and SDP requests, independent of microphone/UI ownership. */
@@ -22,6 +23,9 @@ export function createRealtimeBackend({
       const url = `${tokenEndpoint}${separator}tier=${encodeURIComponent(resolveVoiceModel(tier).tier)}`;
       const response = await tokenTransport(url, {
         signal,
+        ...(Object.keys(userKeyHeaders()).length
+          ? { headers: userKeyHeaders() }
+          : {}),
         cache: 'no-store',
         redirect: 'error',
       });

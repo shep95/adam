@@ -269,6 +269,7 @@
       "server/providers/openai/instructions.js",
       "server/providers/openai/rate-limit.js",
       "server/providers/openai/realtime.js",
+      "server/shepherd/userKeys.js",
       "server/providers/openai/tools.js",
       "src/hudSummaryResponse.js",
       "src/data/layerSnapshot.js",
@@ -1237,6 +1238,7 @@
     "modules": [
       "src/voice/realtimeController.js",
       "src/voice/realtimeBackend.js",
+      "src/shepherd/userKeys.js",
       "src/voice/control.js",
       "src/voice/layerSummary.js",
       "src/voice/voiceCost.js",
@@ -2050,6 +2052,7 @@
       "src/ui/adam/placeDossier.js",
       "src/ui/adam/mapLayers.js",
       "src/ui/adam/uiSettings.js",
+      "src/shepherd/userKeys.js",
       "src/ui/adam/contextHints.js",
       "src/ui/adam/symbolsPanel.js",
       "src/ui/adam/symbolsPanel.css",

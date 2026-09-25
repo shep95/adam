@@ -107,3 +107,26 @@
     max-height: 60vh;
   }
 }
+
+/* AI keys */
+.adam-settings-key {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 10px;
+}
+.adam-settings-key-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.adam-settings-key-head a {
+  color: inherit;
+  text-decoration: underline;
+}
+.adam-settings-keyinput {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-family: 'ADAM Mono', monospace;
+}

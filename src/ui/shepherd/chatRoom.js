@@ -7,6 +7,7 @@
  */
 import './chatRoom.css';
 import { renderReply } from './renderText.js';
+import { USER_KEYS_EVENT } from '../../shepherd/userKeys.js';
 import {
   classifyFile,
   documentPrompt,
@@ -578,7 +579,7 @@ export function installShepherdRoom({
       : '· offline';
     if (status && !configured.length)
       addNote(
-        'no ai provider key is set on the server. add ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, VENICE_API_KEY or OPENROUTER_API_KEY to the deployment environment.',
+        'no ai key yet. open settings → ai keys and paste your own (saved in this browser only), or set ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, VENICE_API_KEY or OPENROUTER_API_KEY on the server.',
         'error',
       );
   }
@@ -591,7 +592,7 @@ export function installShepherdRoom({
     select.append(new Option('auto — best configured for the task', ''));
     for (const p of status?.providers || []) {
       const opt = new Option(
-        `${p.label}${p.configured ? '' : ` — set ${p.keyEnv}`}`,
+        `${p.label}${p.configured ? '' : ' — add a key in settings'}`,
         p.id,
       );
       opt.disabled = !p.configured;
@@ -838,6 +839,9 @@ export function installShepherdRoom({
     renderHistory();
     void loadStatus();
   });
+  // Keys saved or removed in settings → re-read which providers are live.
+  if (globalThis.addEventListener)
+    on(globalThis, USER_KEYS_EVENT, () => void loadStatus());
   setOpen(readLocal(OPEN_KEY) === '1');
 
   return {

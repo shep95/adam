@@ -254,6 +254,15 @@ host's site.
 
 ## Keys
 
+**Your own AI key, no server setup.** Open **settings → ai keys**, paste a
+Claude, OpenAI, Gemini, Venice or OpenRouter key and press save; **test**
+checks it. Keys are kept in this browser only (localStorage) and sent with
+each Shepherd or voice request; the server uses them for that request and
+never stores or logs them. A request carrying your keys never touches the
+deployment's own keys, so on a public host without `ADAM_ACCESS_TOKEN`
+Shepherd and voice still work with your key. Remove keys on shared machines.
+
+**Deployment keys.**
 Copy `.env.example` to `.env` (or set them in Vercel → Settings → Environment
 Variables). Run `npm run validate:env` to see what each enables — values are
 never printed.

@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 // uiSettings.js imports its CSS; test the pure helpers from source text.
-const src = readFileSync(
-  new URL('./uiSettings.js', import.meta.url),
-  'utf8',
-).replace("import './uiSettings.css';", '');
+const src = readFileSync(new URL('./uiSettings.js', import.meta.url), 'utf8')
+  .replace("import './uiSettings.css';", '')
+  .replace(
+    "'../../shepherd/userKeys.js'",
+    JSON.stringify(new URL('../../shepherd/userKeys.js', import.meta.url).href),
+  );
 const mod = await import(`data:text/javascript,${encodeURIComponent(src)}`);
 
 test('google font urls and the alias rewrite', () => {

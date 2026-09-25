@@ -12,13 +12,18 @@ import {
   OPENAI_REALTIME_CONTEXT_RETENTION_DEFAULT,
 } from './constants.js';
 import { realtimeInstructions } from './instructions.js';
+import { hasUserKeys, parseUserKeys } from '../../shepherd/userKeys.js';
 import { GEV_REALTIME_TOOLS } from './tools.js';
 
 function createRealtimeTokenHandler({
   annotationGuidance,
   endpoint = 'https://api.openai.com/v1/realtime/client_secrets',
   fetchImpl = (...args) => fetch(...args),
-  resolveApiKey = () => process.env.OPENAI_API_KEY,
+  resolveApiKey = (req) => {
+    // A key saved in the operator's browser wins, for this request only.
+    const own = parseUserKeys(req).openai;
+    return own || (hasUserKeys(req) ? '' : process.env.OPENAI_API_KEY);
+  },
   models = {},
 } = {}) {
   return async (req, res) => {
@@ -33,7 +38,7 @@ function createRealtimeTokenHandler({
     // Opt-in per-IP throttle (GEV_RATELIMIT_OPENAI_PER_MIN). No-op when unset.
     if (!enforceOptInRateLimit(openAiRateLimiter(), req, res)) return;
 
-    const apiKey = resolveApiKey();
+    const apiKey = resolveApiKey(req);
     if (!apiKey) {
       res.statusCode = 503;
       res.setHeader('Content-Type', 'application/json');

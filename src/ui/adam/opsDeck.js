@@ -28,6 +28,7 @@ import {
 import { layerSnapshots } from '../../data/layerSnapshot.js';
 import { capturePolygon } from '../../intel/polygonCapture.js';
 import { ALERT_LAYERS, HAZARD_RULE_LAYERS } from '../../intel/alertRules.js';
+import { userKeyHeaders } from '../../shepherd/userKeys.js';
 import {
   ALTITUDE_BANDS,
   TIME_WINDOWS,
@@ -933,6 +934,7 @@ export function installOpsDeck({
     try {
       const res = await globalThis.fetch('/api/shepherd/status', {
         credentials: 'same-origin',
+        headers: userKeyHeaders(),
       });
       if (!res.ok) throw new Error(String(res.status));
       const body = await res.json();

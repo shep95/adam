@@ -11,16 +11,30 @@
  *   night side                   natural, or night vision (green)
  *   language                     interface language
  *   logo                         use your own image as logo and favicon
+ *   ai keys                      your own Claude / OpenAI / Gemini / Venice /
+ *                                OpenRouter keys for Shepherd and voice
  *
  * Everything is stored in this browser only.
  */
 import './uiSettings.css';
+import {
+  KEY_PROVIDERS,
+  USER_KEYS_HEADER,
+  clearUserKeys,
+  maskKey,
+  readUserKeys,
+  saveUserKey,
+  userKeyHeaders,
+} from '../../shepherd/userKeys.js';
 
 export const SETTINGS_KEY = 'adam.settings.v1';
 const SIZES_KEY = 'adam.panel-sizes.v1';
 const LOGO_KEY = 'adam.brand.logo.v1';
 const SCALE_KEY = 'adam.ui.scale';
 const LABEL_TITLE = 'settings';
+const LABEL_SAVE = 'save';
+const LABEL_TEST = 'test';
+const LABEL_REMOVE = 'remove';
 
 export const SANS_FONTS = [
   { id: 'geist', label: 'Geist', family: 'Geist', axis: 'wght@300..700' },
@@ -461,6 +475,8 @@ export function installUiSettings({
     header.append(el(doc, 'h2', 'adam-ops-title', LABEL_TITLE), close);
     const body = el(doc, 'div', 'adam-ops-body adam-settings-body');
 
+    renderKeys(body);
+
     body.append(el(doc, 'h3', 'adam-meta adam-ops-section', 'type'));
     body.append(
       row(
@@ -599,6 +615,106 @@ export function installUiSettings({
     card.replaceChildren(header, body);
   }
 
+  // ── AI keys ────────────────────────────────────────────────────────────
+  const keyNotes = {};
+  async function testKey(id) {
+    keyNotes[id] = 'checking…';
+    render();
+    try {
+      const r = await fetchImpl(
+        `/api/shepherd/models?provider=${encodeURIComponent(id)}`,
+        { credentials: 'same-origin', headers: userKeyHeaders() },
+      );
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(b.error || `HTTP ${r.status}`);
+      keyNotes[id] = `works · ${(b.models || []).length} models`;
+    } catch (error) {
+      keyNotes[id] = `not working (${error.message})`;
+    }
+    render();
+    return keyNotes[id];
+  }
+
+  function renderKeys(body) {
+    body.append(el(doc, 'h3', 'adam-meta adam-ops-section', 'ai keys'));
+    const saved = readUserKeys();
+    for (const p of KEY_PROVIDERS) {
+      const wrap = el(doc, 'div', 'adam-settings-key');
+      const head = el(doc, 'div', 'adam-settings-key-head');
+      head.append(el(doc, 'span', 'adam-settings-label', p.label));
+      const link = el(doc, 'a', 'adam-settings-note', 'get a key');
+      link.href = p.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      head.append(link);
+      const input = el(
+        doc,
+        'input',
+        'adam-settings-select adam-settings-keyinput',
+      );
+      input.type = 'password';
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      input.placeholder = saved[p.id]
+        ? `saved ${maskKey(saved[p.id])}`
+        : p.placeholder;
+      input.setAttribute('aria-label', `${p.label} api key`);
+      input.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') save.click();
+      });
+      const save = el(doc, 'button', 'adam-chip', LABEL_SAVE);
+      save.type = 'button';
+      save.addEventListener('click', () => {
+        if (!input.value.trim()) return;
+        const r = saveUserKey(p.id, input.value);
+        input.value = '';
+        if (!r.ok) {
+          keyNotes[p.id] = r.error;
+          return render();
+        }
+        void testKey(p.id);
+      });
+      const actions = el(doc, 'div', 'adam-settings-actions');
+      actions.append(input, save);
+      if (saved[p.id]) {
+        const test = el(doc, 'button', 'adam-chip', LABEL_TEST);
+        test.type = 'button';
+        test.addEventListener('click', () => void testKey(p.id));
+        const remove = el(doc, 'button', 'adam-chip', LABEL_REMOVE);
+        remove.type = 'button';
+        remove.addEventListener('click', () => {
+          saveUserKey(p.id, '');
+          delete keyNotes[p.id];
+          render();
+        });
+        actions.append(test, remove);
+      }
+      wrap.append(head, actions);
+      if (keyNotes[p.id])
+        wrap.append(el(doc, 'span', 'adam-settings-note', keyNotes[p.id]));
+      body.append(wrap);
+    }
+    if (Object.keys(saved).length) {
+      const all = el(doc, 'button', 'adam-chip', 'remove all keys');
+      all.type = 'button';
+      all.addEventListener('click', () => {
+        clearUserKeys();
+        for (const k of Object.keys(keyNotes)) delete keyNotes[k];
+        render();
+      });
+      body.append(all);
+    }
+    body.append(
+      el(
+        doc,
+        'p',
+        'adam-settings-note',
+        `saved in this browser only and sent with each shepherd or voice request (${USER_KEYS_HEADER.toLowerCase()}); the server uses them for that request and never stores or logs them. with your own keys, the deployment's keys are never used. anyone with access to this browser profile can read them — remove them on shared machines.`,
+      ),
+    );
+  }
+
   function update(patch, { silent = false } = {}) {
     const before = settings;
     settings = { ...settings, ...patch };
@@ -710,6 +826,16 @@ export function installUiSettings({
     }),
     setLogo,
     clearLogo,
+    keys: () =>
+      Object.fromEntries(
+        Object.entries(readUserKeys()).map(([id, k]) => [id, maskKey(k)]),
+      ),
+    saveKey: (id, key) => {
+      const r = saveUserKey(id, key);
+      render();
+      return r;
+    },
+    testKey,
     resetSizes,
     applyNight,
     applyLanguage,

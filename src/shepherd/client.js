@@ -62,6 +62,8 @@ export async function* ndjsonEvents(body) {
   }
 }
 
+import { userKeyHeaders } from './userKeys.js';
+
 export function createShepherdClient({
   fetchImpl = (...a) => globalThis.fetch(...a),
   base = '/api',
@@ -86,6 +88,7 @@ export function createShepherdClient({
       return readJson(
         await fetchImpl(`${base}/shepherd/status`, {
           credentials: 'same-origin',
+          headers: userKeyHeaders(),
         }),
       );
     },
@@ -95,6 +98,7 @@ export function createShepherdClient({
           `${base}/shepherd/models?provider=${encodeURIComponent(provider)}`,
           {
             credentials: 'same-origin',
+            headers: userKeyHeaders(),
           },
         ),
       );
@@ -110,7 +114,7 @@ export function createShepherdClient({
       const response = await fetchImpl(`${base}/shepherd/chat`, {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...userKeyHeaders() },
         body: JSON.stringify({
           messages,
           console: consoleState,
@@ -128,7 +132,7 @@ export function createShepherdClient({
         await fetchImpl(`${base}/shepherd/geolocate`, {
           method: 'POST',
           credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...userKeyHeaders() },
           body: JSON.stringify({ image, hint, provider }),
           signal,
         }),

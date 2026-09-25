@@ -797,3 +797,84 @@ test('place dossier: wikipedia, commons, street view metadata; keys stay server-
   );
   assert.equal((await serve([plugin], '/api/place?lat=999&lon=0')).status, 400);
 });
+
+test('keys saved in the browser: used alone, and let paid routes through on an open public host', async () => {
+  const keysHeader = {
+    'X-ADAM-Provider-Keys': Buffer.from(
+      JSON.stringify({ openrouter: 'sk-or-user-key-0001' }),
+    ).toString('base64'),
+  };
+  const auths = [];
+  const fetchImpl = async (url, init) => {
+    auths.push([
+      String(url),
+      init?.headers?.Authorization || init?.headers?.authorization,
+    ]);
+    return new Response(
+      streamOf([
+        'data: {"choices":[{"delta":{"content":"your key"}}]}\n\ndata: [DONE]\n\n',
+      ]),
+      { status: 200 },
+    );
+  };
+  const plugin = shepherdProxy({
+    env: { OPENAI_API_KEY: 'server-openai', VENICE_API_KEY: 'server-venice' },
+    fetchImpl,
+  });
+  const r = await serve([plugin], '/api/shepherd/chat', {
+    method: 'POST',
+    headers: keysHeader,
+    body: JSON.stringify({ messages: [{ role: 'user', text: 'hello' }] }),
+  });
+  const events = r.text
+    .trim()
+    .split('\n')
+    .map((l) => JSON.parse(l));
+  assert.equal(events[0].provider, 'openrouter');
+  assert.equal(auths.length, 1);
+  assert.match(auths[0][0], /openrouter\.ai/);
+  assert.equal(auths[0][1], 'Bearer sk-or-user-key-0001');
+  const status = JSON.parse(
+    (await serve([plugin], '/api/shepherd/status', { headers: keysHeader }))
+      .text,
+  );
+  assert.equal(status.keysFrom, 'browser');
+  assert.deepEqual(
+    status.providers.filter((p) => p.configured).map((p) => p.id),
+    ['openrouter'],
+  );
+
+  const probe = {
+    name: 'probe',
+    configureServer(s) {
+      s.middlewares.use('/api', (_q, res) => res.end('ok'));
+    },
+  };
+  const open = [accessGate({ env: { VERCEL: '1' } }), probe];
+  assert.equal(
+    (await serve(open, '/api/shepherd/status', { headers: keysHeader })).text,
+    'ok',
+  );
+  assert.equal(
+    (
+      await serve(open, '/api/realtime/token?tier=mini', {
+        headers: keysHeader,
+      })
+    ).text,
+    'ok',
+  );
+  assert.equal(
+    (await serve(open, '/api/google/places', { headers: keysHeader })).status,
+    503,
+  );
+  assert.equal((await serve(open, '/api/shepherd/status')).status, 503);
+  const locked = [
+    accessGate({ env: { VERCEL: '1', ADAM_ACCESS_TOKEN: 't'.repeat(32) } }),
+    probe,
+  ];
+  assert.equal(
+    (await serve(locked, '/api/shepherd/status', { headers: keysHeader }))
+      .status,
+    401,
+  );
+});

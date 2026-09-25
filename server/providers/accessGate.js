@@ -17,6 +17,7 @@ import crypto from 'node:crypto';
 import { readRequestBody } from './common/request.js';
 import { makeRateLimiter, clientKey } from './common/rate-limit.js';
 import { handleSso, ssoConfig, ssoIdentity } from './sso.js';
+import { hasUserKeys } from '../shepherd/userKeys.js';
 
 const COOKIE = 'adam_access';
 /** Routes that spend the operator's provider credit. */
@@ -330,13 +331,19 @@ export function accessGate({
       if (!gated) {
         // Fail closed for paid endpoints on a public host with no token:
         // otherwise anyone holding the URL spends the operator's AI keys.
+        // A request carrying the operator's own keys spends only those
+        // (the deployment's keys are never used for it), so it may pass.
         if (
           isPublicHost(env) &&
-          PAID_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))
+          PAID_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`)) &&
+          !(
+            (path.startsWith('/shepherd/') || path === '/realtime/token') &&
+            hasUserKeys(req)
+          )
         )
           return send(res, 503, {
             error:
-              'set ADAM_ACCESS_TOKEN on this deployment to enable AI features',
+              'add your own key in settings → ai keys, or set ADAM_ACCESS_TOKEN on this deployment to use its keys',
             access: false,
           });
         return next();

@@ -22,6 +22,7 @@ import {
   streamProvider,
 } from './providers.js';
 import { shepherdSystemPrompt } from './prompt.js';
+import { envForRequest } from './userKeys.js';
 import { shepherdTools } from './tools.js';
 
 const SHEPHERD_TOOLS = shepherdTools();
@@ -179,7 +180,7 @@ export function parseGeolocation(text) {
  * @param {{env?: object, fetchImpl?: Function, clientFactory?: Function}} [options]
  */
 export function shepherdProxy({
-  env = process.env,
+  env: baseEnv = process.env,
   fetchImpl,
   clientFactory,
 } = {}) {
@@ -189,8 +190,9 @@ export function shepherdProxy({
     globalMax: 400,
   });
 
-  function status() {
+  function status(env, userKeys) {
     return {
+      keysFrom: userKeys ? 'browser' : 'server',
       providers: Object.values(PROVIDERS).map((spec) => ({
         id: spec.id,
         label: spec.label,
@@ -203,7 +205,7 @@ export function shepherdProxy({
     };
   }
 
-  async function chat(req, res) {
+  async function chat(req, res, env) {
     let parsed;
     try {
       parsed = JSON.parse(await readRequestBody(req, MAX_BODY_BYTES));
@@ -232,7 +234,7 @@ export function shepherdProxy({
       return json(res, 503, {
         error: needsVision
           ? 'no vision-capable ai provider is configured (add GEMINI_API_KEY, ANTHROPIC_API_KEY or OPENAI_API_KEY)'
-          : 'no ai provider is configured (add ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, VENICE_API_KEY or OPENROUTER_API_KEY)',
+          : 'no ai provider is configured (add a key in settings → ai keys, or set ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, VENICE_API_KEY or OPENROUTER_API_KEY)',
       });
 
     res.writeHead(200, {
@@ -284,7 +286,7 @@ export function shepherdProxy({
     }
   }
 
-  async function geolocate(req, res) {
+  async function geolocate(req, res, env) {
     let parsed;
     try {
       parsed = JSON.parse(await readRequestBody(req, MAX_BODY_BYTES));
@@ -353,9 +355,11 @@ export function shepherdProxy({
         return json(res, 429, { error: 'rate limit exceeded' });
       const url = new URL(req.url, 'http://localhost');
       const route = url.pathname.replace(/^\/+|\/+$/g, '');
+      // Keys saved in the operator's browser, for this request only.
+      const { env, userKeys } = envForRequest(req, baseEnv);
       try {
         if (route === 'status' && req.method === 'GET')
-          return json(res, 200, status());
+          return json(res, 200, status(env, userKeys));
         if (route === 'models' && req.method === 'GET') {
           const id = url.searchParams.get('provider');
           if (!PROVIDERS[id])
@@ -363,7 +367,9 @@ export function shepherdProxy({
           const key = providerKey(id, env);
           if (!key)
             return json(res, 404, {
-              error: `${PROVIDERS[id].keyEnv} is not set`,
+              error: userKeys
+                ? `no ${PROVIDERS[id].label} key saved in settings`
+                : `${PROVIDERS[id].keyEnv} is not set`,
             });
           return json(res, 200, {
             provider: id,
@@ -371,9 +377,9 @@ export function shepherdProxy({
           });
         }
         if (route === 'chat' && req.method === 'POST')
-          return await chat(req, res);
+          return await chat(req, res, env);
         if (route === 'geolocate' && req.method === 'POST')
-          return await geolocate(req, res);
+          return await geolocate(req, res, env);
         return json(res, 404, { error: 'unknown shepherd route' });
       } catch (error) {
         if (!res.headersSent)
