@@ -39,6 +39,7 @@ import { sessionsProxy } from './sessions.js';
 import { crimeProxy } from './crime.js';
 import { historyProxy } from './history.js';
 import { resourcesProxy } from './resources.js';
+import { leadershipProxy } from './leadership.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -84,6 +85,7 @@ function localProviderPlugins() {
     crimeProxy(),
     historyProxy(),
     resourcesProxy(),
+    leadershipProxy(),
     keySetupEndpoint(),
   ];
 }

@@ -749,6 +749,24 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     ),
   },
   {
+    name: 'leadership',
+    description:
+      "Who holds public office over a place (LEADERS panel), from Wikidata. action: here (the view centre) or at (lat, lon): the chain nation → state/province → county → municipality with each area's current head of state and head of government, office, party and start date; country (name): the same starting from that country; subdivisions (wikidata id from a chain or earlier list): an area's states/provinces/counties with their heads of government, labelled on the globe; open. Public office only — never locate, track or speculate about where any officeholder is. Wikidata can lag recent elections; say so.",
+    parameters: obj(
+      {
+        action: {
+          type: 'string',
+          enum: ['here', 'at', 'country', 'subdivisions', 'open'],
+        },
+        lat: { type: 'number' },
+        lon: { type: 'number' },
+        country: { type: 'string' },
+        id: { type: 'string' },
+      },
+      ['action'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

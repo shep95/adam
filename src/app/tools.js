@@ -527,6 +527,19 @@ export function createApplicationTools({
     );
   defer(() => resources?.destroy());
 
+  // LEADERS: public officeholders from nation down to municipality.
+  let leadership = null;
+  import('../ui/adam/leadershipPanel.js')
+    .then(({ installLeadershipPanel }) => {
+      if (signal?.aborted) return;
+      leadership = installLeadershipPanel({ viewer });
+      debug.leadership = leadership;
+    })
+    .catch((error) =>
+      console.warn('[adam] leaders panel failed to load:', error),
+    );
+  defer(() => leadership?.destroy());
+
   // MAPS: other map sources stacked over the base map, plus sea level rise.
   let mapLayers = null;
   import('../ui/adam/mapLayers.js')
