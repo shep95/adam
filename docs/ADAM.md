@@ -8,16 +8,17 @@ deploy it privately, and what it deliberately will not do.
 
 The ops rail sits in its own lane under the top action bar:
 
-| Chip      | Key | What it does                                                          |
-| --------- | --- | --------------------------------------------------------------------- |
-| BRIEF     | B   | Situational brief across every loaded layer, with baseline deviations |
-| ALERTS    | A   | Alert triggers: contacts in a zone, speed in a zone                   |
-| FILTER    | G   | Time window, region, altitude band, vessel class                      |
-| SKY       | L   | Live environment at the view centre (see below)                       |
-| NATIONS   | N   | State institutions, national infrastructure, summit venues            |
-| BUILDINGS | —   | 3D buildings: photoreal tiles with a key, OSM footprints without      |
-| KEYS      | ?   | Every shortcut live in the current mode                               |
-| SHEPHERD  | S   | The text analyst                                                      |
+| Chip      | Key | What it does                                                                                                                   |
+| --------- | --- | ------------------------------------------------------------------------------------------------------------------------------ |
+| BRIEF     | B   | Situational brief across every loaded layer, with baseline deviations                                                          |
+| ALERTS    | A   | Alert triggers: contacts in a zone, speed in a zone                                                                            |
+| FILTER    | G   | Time window, region, altitude band, vessel class                                                                               |
+| HEALTH    | —   | Feeds down, stale or on fallback, degraded capabilities; pulses amber past one fault. Exports and imports the operator profile |
+| SKY       | L   | Live environment at the view centre (see below)                                                                                |
+| NATIONS   | N   | State institutions, national infrastructure, summit venues                                                                     |
+| BUILDINGS | —   | 3D buildings: photoreal tiles with a key, OSM footprints without                                                               |
+| KEYS      | ?   | Every shortcut live in the current mode                                                                                        |
+| SHEPHERD  | S   | The text analyst                                                                                                               |
 
 The top action bar adds **snapshot** (PNG of the view with a caption strip),
 **record** (the whole tab via screen capture, falling back to the globe canvas;
@@ -28,6 +29,18 @@ Right-click the globe for: copy coordinates, drop pin, fly here, ask Shepherd
 about here, live sky here, a 25 nm aircraft alert zone, and 3D buildings.
 Location searches end on a precision pin. The local time at the camera sits
 under the coordinate readout.
+
+**Operator profile.** HEALTH → EXPORT writes alert rules, baselines, pins,
+layer preferences, the scene project, panel positions, voice limits, CCTV
+calibration and Shepherd preferences to one JSON file. It carries a SHA-256 of
+its canonical body and, when `ADAM_ACCESS_TOKEN` is set, an HMAC from
+`/api/access/sign`. IMPORT refuses edited files and signatures from another
+deployment, writes only allow-listed settings, then reloads. No keys or tokens
+ever enter the file.
+
+**Scene conflicts.** Two windows editing the scene project no longer overwrite
+each other silently: the other window's newer version is kept as a backup and
+a toast says who saved and when.
 
 ## Shepherd
 
