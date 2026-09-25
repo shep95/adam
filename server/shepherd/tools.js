@@ -533,6 +533,44 @@ export const SHEPHERD_EXTRA_TOOLS = Object.freeze([
     }),
   },
   {
+    name: 'notams',
+    description:
+      "FAA NOTAMs (temporary flight restrictions, closures, hazards) for an airport (icao) or around a point (lat, lon, radius_nm up to 100), drawn on the globe in amber. Needs the operator's FAA API key; if the tool says so, tell them which env vars to set.",
+    parameters: obj({
+      icao: { type: 'string' },
+      lat: { type: 'number' },
+      lon: { type: 'number' },
+      radius_nm: { type: 'integer', minimum: 1, maximum: 100 },
+    }),
+  },
+  {
+    name: 'conflict_events',
+    description:
+      "ACLED political violence and protest events for a country, or around a point (lat, lon, radius_km), over the last days (default 30), drawn on the globe in red, with counts by type and reported fatalities. Needs the operator's ACLED account. Cite ACLED.",
+    parameters: obj({
+      country: { type: 'string' },
+      lat: { type: 'number' },
+      lon: { type: 'number' },
+      radius_km: { type: 'integer', minimum: 5, maximum: 1000 },
+      days: { type: 'integer', minimum: 1, maximum: 365 },
+    }),
+  },
+  {
+    name: 'sanctions_check',
+    description:
+      'Check a vessel (name, IMO or MMSI), aircraft, company or organisation against sanctions and watch lists (OpenSanctions). schema narrows it: Vessel, Airplane, Company, Organization. Not for people: person results are never returned. A name match is not an identification; say so and give the list and link.',
+    parameters: obj(
+      {
+        query: { type: 'string' },
+        schema: {
+          type: 'string',
+          enum: ['Vessel', 'Airplane', 'Company', 'Organization'],
+        },
+      },
+      ['query'],
+    ),
+  },
+  {
     name: 'map_layers',
     description:
       'Stack other map sources over the base map (MAPS panel). action: list (the stack and sea level), catalog (sources you can add), add (id from catalog), remove, opacity (id, opacity 0-1), show / hide (id), raise / lower (id), import (url of an XYZ template, ArcGIS MapServer or WMS with layers=; optional label), sea_level (rise_m 0-100: the future coast — adds the world sea-level layer if needed; IPCC AR6 2100 medians are 0.44 m low, 0.56 m middle, 0.77 m high emissions; 2 m by 2100 and 5 m by 2150 are the low-likelihood ice-sheet cases; 7.4 m is all of Greenland, ~70 m all land ice), open. The world layer is a bathtub model on global elevation; say so when you use it.',

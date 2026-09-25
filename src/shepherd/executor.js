@@ -446,6 +446,29 @@ export function createShepherdExecutor({
   }
 
   let lastRecommendations = [];
+  /** Fetch a GeoJSON route and put it on the globe in its own colour. */
+  async function loadKeyedOverlay(url, name, color, summarize) {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok)
+      return { ok: false, error: body.error || `HTTP ${res.status}` };
+    const files = getConsole().shepherd?.files;
+    let shown = null;
+    if (files && body.features?.length)
+      shown = await files.load(
+        new File([JSON.stringify(body)], `${name}.geojson`, {
+          type: 'application/geo+json',
+        }),
+        { color },
+      );
+    return {
+      ok: true,
+      count: body.features?.length || 0,
+      shown,
+      ...summarize(body),
+    };
+  }
+
   const EXTRA = {
     console_command: consoleCommand,
     get_traffic_snapshot: ({ limit } = {}) => {
@@ -870,6 +893,64 @@ export function createShepherdExecutor({
           error: 'give an id from cctv_find or nearest=true',
         };
       return dir.connect(target);
+    },
+    notams: async ({ icao, lat, lon, radius_nm } = {}) => {
+      const q = new URLSearchParams();
+      if (icao) q.set('icao', icao);
+      else if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        q.set('lat', lat);
+        q.set('lon', lon);
+        q.set('radiusNm', radius_nm || 25);
+      } else return { ok: false, error: 'icao, or lat and lon' };
+      return loadKeyedOverlay(
+        `/api/notams?${q}`,
+        `notams-${icao || `${(+lat).toFixed(2)},${(+lon).toFixed(2)}`}`,
+        '#FFB454',
+        (fc) => ({
+          notams: fc.features.slice(0, 25).map((f) => ({
+            number: f.properties.number,
+            location: f.properties.location,
+            start: f.properties.start,
+            end: f.properties.end,
+            text: String(f.properties.text || '').slice(0, 240),
+          })),
+        }),
+      );
+    },
+    conflict_events: async ({ country, lat, lon, radius_km, days } = {}) => {
+      const q = new URLSearchParams({ days: String(days || 30) });
+      if (country) q.set('country', country);
+      else if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        q.set('lat', lat);
+        q.set('lon', lon);
+        q.set('radiusKm', radius_km || 100);
+      } else return { ok: false, error: 'country, or lat and lon' };
+      return loadKeyedOverlay(
+        `/api/acled?${q}`,
+        `acled-${country || `${(+lat).toFixed(2)},${(+lon).toFixed(2)}`}`,
+        '#FF5A5F',
+        (fc) => ({
+          summary: fc.summary,
+          latest: fc.features.slice(0, 12).map((f) => ({
+            date: f.properties.date,
+            type: f.properties.subType || f.properties.type,
+            place: f.properties.place,
+            fatalities: f.properties.fatalities,
+          })),
+          source: 'ACLED',
+        }),
+      );
+    },
+    sanctions_check: async ({ query, schema } = {}) => {
+      const q = new URLSearchParams({ q: String(query || '') });
+      if (schema) q.set('schema', schema);
+      const res = await fetch(`/api/sanctions?${q}`, {
+        credentials: 'same-origin',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok)
+        return { ok: false, error: body.error || `HTTP ${res.status}` };
+      return { ok: true, ...body };
     },
     map_layers: ({ action, id, opacity, url, label, rise_m } = {}) => {
       const maps = getConsole().mapLayers;

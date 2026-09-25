@@ -84,7 +84,7 @@ export function documentPrompt({ name, text, truncated }, ask = '') {
 export function createFileOverlays({ viewer }) {
   const sources = [];
 
-  async function load(file) {
+  async function load(file, { color = '#00BCD4', fly = true } = {}) {
     const name = String(file.name || 'overlay');
     let source;
     if (/\.kmz$|\.kml$/i.test(name)) {
@@ -97,9 +97,9 @@ export function createFileOverlays({ viewer }) {
       const parsed = JSON.parse(await file.text());
       if (!isGeoJson(parsed)) throw new Error('not GeoJSON');
       source = await Cesium.GeoJsonDataSource.load(parsed, {
-        stroke: Cesium.Color.fromCssColorString('#00BCD4'),
-        fill: Cesium.Color.fromCssColorString('#00BCD4').withAlpha(0.15),
-        markerColor: Cesium.Color.fromCssColorString('#00BCD4'),
+        stroke: Cesium.Color.fromCssColorString(color),
+        fill: Cesium.Color.fromCssColorString(color).withAlpha(0.15),
+        markerColor: Cesium.Color.fromCssColorString(color),
         strokeWidth: 2,
         clampToGround: true,
       });
@@ -114,10 +114,12 @@ export function createFileOverlays({ viewer }) {
       else if (e.polyline) kinds.lines += 1;
       else if (e.position) kinds.points += 1;
     }
-    try {
-      await viewer.flyTo(source, { duration: 1.6 });
-    } catch {
-      /* empty or unframeable */
+    if (fly && entities.length) {
+      try {
+        await viewer.flyTo(source, { duration: 1.6 });
+      } catch {
+        /* empty or unframeable */
+      }
     }
     governorRequestRender('file-overlay');
     return { name, features: entities.length, ...kinds };

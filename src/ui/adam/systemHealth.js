@@ -10,6 +10,11 @@
 const DOWN = new Set(['unavailable']);
 const STALE = new Set(['stale']);
 const FALLBACK = new Set(['fallback', 'partial', 'degraded']);
+const KEYED_SOURCES = [
+  ['notams', 'NOTAMS', 'FAA_NOTAM_CLIENT_ID'],
+  ['acled', 'CONFLICT EVENTS', 'ACLED_USERNAME'],
+  ['sanctions', 'SANCTIONS', 'OPENSANCTIONS_API_KEY'],
+];
 
 /**
  * @param {Array<object>} snapshots Layer snapshots (enabled layers only are read).
@@ -59,6 +64,13 @@ export function assessHealth(snapshots = [], capabilities = {}) {
     cap('shepherd', 'SHEPHERD', false, 'status unreachable');
   }
 
+  // Account-gated sources: informational, never a fault.
+  for (const [id, label, env] of KEYED_SOURCES) {
+    if (!capabilities.keyed || !(id in capabilities.keyed)) continue;
+    const ok = Boolean(capabilities.keyed[id]);
+    cap(`keyed-${id}`, label, ok, ok ? 'account set' : `not set · ${env}`);
+  }
+
   const hardFaults = down.length + stale.length;
   const capFaults = caps.filter(
     (c) => !c.ok && ['network', 'webgl'].includes(c.id),
@@ -84,6 +96,7 @@ export function healthLine(health) {
   if (health.fallback.length)
     bits.push(`fallback: ${health.fallback.map((r) => r.id).join(', ')}`);
   for (const c of health.capabilities)
-    if (!c.ok) bits.push(`${c.label.toLowerCase()}: ${c.detail}`);
+    if (!c.ok && !c.id.startsWith('keyed-'))
+      bits.push(`${c.label.toLowerCase()}: ${c.detail}`);
   return bits.join(' · ');
 }

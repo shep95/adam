@@ -85,6 +85,8 @@ function writeLocal(key, value) {
   }
 }
 
+const SANCTION_LAYERS = new Set(['ais-live-vessels', 'flights', 'military']);
+
 export function formatAltitude(m) {
   if (!Number.isFinite(m)) return '—';
   return `${Math.round(m * FT_PER_M).toLocaleString('en-US')} FT`;
@@ -938,6 +940,14 @@ export function installOpsDeck({
     } catch {
       healthFacts.shepherd = null;
     }
+    try {
+      const res = await globalThis.fetch('/api/keyed/status', {
+        credentials: 'same-origin',
+      });
+      healthFacts.keyed = res.ok ? await res.json() : undefined;
+    } catch {
+      healthFacts.keyed = undefined;
+    }
     if (activeView === 'health') renderHealth();
   }
 
@@ -956,6 +966,7 @@ export function installOpsDeck({
         ? false
         : undefined,
       shepherd: healthFacts.shepherd,
+      keyed: healthFacts.keyed,
     });
   }
 
@@ -1335,8 +1346,31 @@ export function installOpsDeck({
         ),
         button(doc, 'TRACK', 'adam-chip adam-latch', () => trackRef(ref)),
         button(doc, 'PIN', 'adam-chip adam-latch', () => pinRef(ref)),
+        ...(SANCTION_LAYERS.has(ref.layerKey)
+          ? [
+              button(doc, 'SANCTIONS', 'adam-chip adam-latch', () =>
+                globalThis.__godsEyeView?.shepherd?.room?.ask?.(
+                  sanctionsPrompt(ref),
+                ),
+              ),
+            ]
+          : []),
       ],
     });
+  }
+
+  function sanctionsPrompt(ref) {
+    const r = ref.record || {};
+    const ids = [
+      r.name || ref.label,
+      r.imo && `IMO ${r.imo}`,
+      r.mmsi && `MMSI ${r.mmsi}`,
+      r.icao24 && `ICAO24 ${r.icao24}`,
+      r.callsign && `callsign ${r.callsign}`,
+      r.registration && `registration ${r.registration}`,
+    ].filter(Boolean);
+    const kind = ref.layerKey === 'ais-live-vessels' ? 'Vessel' : 'Airplane';
+    return `run sanctions_check (schema ${kind}) for ${ids.join(', ')} and tell me whether it matches any sanctions or watch list, how strong the match is, and the links.`;
   }
 
   // ── Comparison rail ──────────────────────────────────────────────────────

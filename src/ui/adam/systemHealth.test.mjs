@@ -68,3 +68,17 @@ test('reduced render effects are reported without raising a fault', () => {
   assert.equal(h.level, 'nominal');
   assert.equal(h.capabilities[0].id, 'render');
 });
+
+test('account-gated sources show as capabilities, never as faults', async () => {
+  const { assessHealth: assess, healthLine: line } =
+    await import('./systemHealth.js');
+  const h = assess([], {
+    keyed: { notams: false, acled: true, sanctions: false },
+  });
+  assert.equal(h.level, 'nominal');
+  const notams = h.capabilities.find((c) => c.id === 'keyed-notams');
+  assert.equal(notams.ok, false);
+  assert.match(notams.detail, /FAA_NOTAM_CLIENT_ID/);
+  assert.equal(h.capabilities.find((c) => c.id === 'keyed-acled').ok, true);
+  assert.equal(line(h), 'all enabled feeds nominal');
+});

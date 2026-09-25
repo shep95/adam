@@ -149,6 +149,25 @@ export function installMapInteraction({
     }
   }
 
+  // Key-gated sources run through Shepherd's executor; the menu head shows
+  // how many came back or which key is missing, and stays open to say so.
+  async function keyed(tool, args) {
+    const exec = globalThis.__godsEyeView?.shepherd?.executor;
+    if (!exec) return;
+    const res = JSON.parse(await exec.run(tool, args));
+    const note = res.ok === false ? res.error : `${res.count} found`;
+    flash(note);
+  }
+
+  function flash(text) {
+    const head = el(doc, 'div', 'adam-ctx-head', text);
+    menu.replaceChildren(head);
+    menu.hidden = false;
+    setTimeout(() => {
+      if (menu.firstChild === head) close();
+    }, 4000);
+  }
+
   function openAt(x, y, point) {
     const { lat, lon } = point;
     const coords = formatCoords(lat, lon);
@@ -166,6 +185,12 @@ export function installMapInteraction({
       ),
       item("what's here · photos & pages", '', () =>
         globalThis.__godsEyeView?.placeDossier?.open(lat, lon),
+      ),
+      item('notams here', 'faa', () =>
+        keyed('notams', { lat, lon, radius_nm: 30 }),
+      ),
+      item('conflict events · 30 days', 'acled', () =>
+        keyed('conflict_events', { lat, lon, radius_km: 150, days: 30 }),
       ),
       item('live sky here', 'L', () => {
         overlay.flyToPoint(lat, lon, 2500);

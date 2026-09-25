@@ -32,6 +32,7 @@ import { shepherdProxy } from '../shepherd/router.js';
 import { notifyProxy } from './notify.js';
 import { openFeedsProxy } from './openFeeds.js';
 import { placeMediaProxy } from './placeMedia.js';
+import { keyedFeedsProxy } from './keyedFeeds.js';
 
 /** Construct the local provider plugins in their established order. */
 function localProviderPlugins() {
@@ -70,6 +71,7 @@ function localProviderPlugins() {
     notifyProxy(),
     openFeedsProxy(),
     placeMediaProxy(),
+    keyedFeedsProxy(),
     keySetupEndpoint(),
   ];
 }
